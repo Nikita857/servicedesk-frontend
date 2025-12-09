@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -9,9 +10,15 @@ import {
   Flex,
   Icon,
   VStack,
+  Spinner,
+  Button,
 } from '@chakra-ui/react';
-import { LuTicket, LuClock, LuCheck, LuClockAlert } from 'react-icons/lu';
+import { LuTicket, LuClock, LuCircleCheck, LuCircleAlert, LuArrowRight } from 'react-icons/lu';
+import Link from 'next/link';
 import type { IconType } from 'react-icons';
+import { ticketApi } from '@/lib/api/tickets';
+import type { TicketListItem } from '@/types/ticket';
+import { TicketCard } from '@/components/features/tickets';
 
 interface StatCardProps {
   label: string;
@@ -41,7 +48,7 @@ function StatCard({ label, value, icon, color }: StatCardProps) {
         <Box
           p={3}
           borderRadius="lg"
-          bg={`${color}/10`}
+          bg="bg.subtle"
         >
           <Icon as={icon} boxSize={6} color={color} />
         </Box>
@@ -51,12 +58,41 @@ function StatCard({ label, value, icon, color }: StatCardProps) {
 }
 
 export default function DashboardPage() {
-  // TODO: Fetch actual stats from API
-  const stats = [
-    { label: 'Всего тикетов', value: 124, icon: LuTicket, color: 'accent.500' },
-    { label: 'В работе', value: 18, icon: LuClock, color: 'warning.500' },
-    { label: 'Решено сегодня', value: 7, icon: LuCheck, color: 'success.500' },
-    { label: 'Просрочено', value: 3, icon: LuClockAlert, color: 'error.500' },
+  const [recentTickets, setRecentTickets] = useState<TicketListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    open: 0,
+    resolved: 0,
+    overdue: 0,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch recent tickets
+        const ticketsResponse = await ticketApi.list(0, 5);
+        setRecentTickets(ticketsResponse.content);
+        setStats({
+          total: ticketsResponse.totalElements,
+          open: ticketsResponse.content.filter(t => ['NEW', 'OPEN', 'PENDING'].includes(t.status)).length,
+          resolved: ticketsResponse.content.filter(t => t.status === 'RESOLVED').length,
+          overdue: ticketsResponse.content.filter(t => t.slaDeadline && new Date(t.slaDeadline) < new Date()).length,
+        });
+      } catch (error) {
+        console.error('Failed to fetch dashboard data', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const statCards = [
+    { label: 'Всего тикетов', value: stats.total, icon: LuTicket, color: 'gray.600' },
+    { label: 'В работе', value: stats.open, icon: LuClock, color: 'orange.500' },
+    { label: 'Решено', value: stats.resolved, icon: LuCircleCheck, color: 'green.500' },
+    { label: 'Просрочено', value: stats.overdue, icon: LuCircleAlert, color: 'red.500' },
   ];
 
   return (
@@ -79,7 +115,7 @@ export default function DashboardPage() {
         gap={5}
         mb={8}
       >
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <GridItem key={stat.label}>
             <StatCard {...stat} />
           </GridItem>
@@ -87,19 +123,41 @@ export default function DashboardPage() {
       </Grid>
 
       {/* Recent Tickets Section */}
-      <Box
-        bg="bg.surface"
-        borderRadius="xl"
-        borderWidth="1px"
-        borderColor="border.default"
-        p={5}
-      >
-        <Heading size="md" color="fg.default" mb={4}>
-          Последние тикеты
-        </Heading>
-        <Text color="fg.muted" fontSize="sm">
-          Здесь будет список последних тикетов...
-        </Text>
+      <Box>
+        <Flex justify="space-between" align="center" mb={4}>
+          <Heading size="md" color="fg.default">
+            Последние тикеты
+          </Heading>
+          <Link href="/dashboard/tickets">
+            <Button variant="ghost" size="sm" color="fg.muted">
+              Все тикеты
+              <LuArrowRight />
+            </Button>
+          </Link>
+        </Flex>
+
+        {isLoading ? (
+          <Flex justify="center" align="center" h="200px">
+            <Spinner />
+          </Flex>
+        ) : recentTickets.length === 0 ? (
+          <Box
+            bg="bg.surface"
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="border.default"
+            p={8}
+            textAlign="center"
+          >
+            <Text color="fg.muted">Нет тикетов</Text>
+          </Box>
+        ) : (
+          <VStack gap={3} align="stretch">
+            {recentTickets.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} />
+            ))}
+          </VStack>
+        )}
       </Box>
     </Box>
   );

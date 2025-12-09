@@ -2,7 +2,6 @@ export interface User {
   id: number;
   username: string;
   fio: string | null;
-  email: string | null;
   telegramId: number | null;
   specialist: boolean;
   roles: string[];
@@ -19,5 +18,5 @@ export interface AuthResponse {
   refreshToken: string;
   tokenType: string;
   expiresIn: number;
-  user: User;
+  userAuthResponse: User;  // matches backend API field name
 }

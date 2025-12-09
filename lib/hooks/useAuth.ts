@@ -16,11 +16,12 @@ export function useAuth() {
     setIsLoggingIn(true);
     try {
       const response = await authApi.login(credentials);
-      setAuth(response.user, response.accessToken, response.refreshToken);
+      const user = response.userAuthResponse;
+      setAuth(user, response.accessToken, response.refreshToken);
       
       toaster.success({
         title: 'Добро пожаловать!',
-        description: `Вы вошли как ${response.user.fio || response.user.username}`,
+        description: `Вы вошли как ${user.fio || user.username}`,
       });
       
       router.push('/dashboard');
