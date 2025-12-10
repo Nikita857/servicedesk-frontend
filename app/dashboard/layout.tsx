@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Flex, Spinner, Center } from '@chakra-ui/react';
+import { toaster } from '@/components/ui/toaster';
 import { useAuthStore } from '@/stores';
 import { Sidebar } from '@/components/features/layout/Sidebar';
 import { Header } from '@/components/features/layout/Header';
+import { 
+  connectNotifications, 
+  disconnectNotifications 
+} from '@/lib/websocket/notificationWebSocket';
+import type { Notification } from '@/types/notification';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -13,7 +19,41 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isAuthenticated, isHydrated } = useAuthStore();
+  const { isAuthenticated, isHydrated, user, accessToken } = useAuthStore();
+
+  // Handle incoming notifications
+  const handleNotification = useCallback((notification: Notification) => {
+    const toastType = notification.type === 'MESSAGE' ? 'info' : 
+                      notification.type === 'STATUS_CHANGE' ? 'info' : 
+                      notification.type === 'ASSIGNMENT' ? 'success' : 'info';
+    
+    toaster.create({
+      title: notification.title,
+      description: notification.body,
+      type: toastType,
+      duration: 5000,
+      meta: {
+        closable: true,
+      },
+    });
+  }, []);
+
+  // Connect to notification WebSocket when authenticated
+  useEffect(() => {
+    if (isHydrated && isAuthenticated && user?.id && accessToken) {
+      connectNotifications(
+        user.id,
+        accessToken,
+        handleNotification,
+        () => console.log('[Dashboard] Notifications connected'),
+        () => console.log('[Dashboard] Notifications disconnected')
+      );
+
+      return () => {
+        disconnectNotifications();
+      };
+    }
+  }, [isHydrated, isAuthenticated, user?.id, accessToken, handleNotification]);
 
   useEffect(() => {
     // Wait for hydration, then check auth
@@ -59,3 +99,4 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </Flex>
   );
 }
+

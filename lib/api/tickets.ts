@@ -80,17 +80,17 @@ export const ticketApi = {
   },
 
   // Assign to specialist
-  assignToSpecialist: async (id: number, specialistId: number): Promise<Ticket> => {
+  assignToSpecialist: async (id: number, specialistId: number, comment?: string): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(`/tickets/${id}/assign-specialist`, null, {
-      params: { specialistId },
+      params: { specialistId, comment },
     });
     return response.data.data;
   },
 
   // Assign to support line
-  assignToLine: async (id: number, lineId: number): Promise<Ticket> => {
+  assignToLine: async (id: number, lineId: number, comment?: string): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(`/tickets/${id}/assign-line`, null, {
-      params: { lineId },
+      params: { lineId, comment },
     });
     return response.data.data;
   },

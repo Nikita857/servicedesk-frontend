@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -13,33 +13,27 @@ import {
   VStack,
   Portal,
   createListCollection,
-} from '@chakra-ui/react';
-import { Select } from '@chakra-ui/react';
-import { LuArrowLeft } from 'react-icons/lu';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ticketApi } from '@/lib/api/tickets';
-import { toaster } from '@/components/ui/toaster';
-import type { CreateTicketRequest, TicketPriority } from '@/types/ticket';
-import api from '@/lib/api/client';
+} from "@chakra-ui/react";
+import { Select } from "@chakra-ui/react";
+import { LuArrowLeft } from "react-icons/lu";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ticketApi } from "@/lib/api/tickets";
+import { toaster } from "@/components/ui/toaster";
+import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
+import api from "@/lib/api/client";
 
 interface Category {
   id: number;
   name: string;
 }
 
-interface SupportLine {
-  id: number;
-  name: string;
-  description: string;
-}
-
 const priorityCollection = createListCollection({
   items: [
-    { label: 'Низкий', value: 'LOW' },
-    { label: 'Средний', value: 'MEDIUM' },
-    { label: 'Высокий', value: 'HIGH' },
-    { label: 'Срочный', value: 'URGENT' },
+    { label: "Низкий", value: "LOW" },
+    { label: "Средний", value: "MEDIUM" },
+    { label: "Высокий", value: "HIGH" },
+    { label: "Срочный", value: "URGENT" },
   ],
 });
 
@@ -47,63 +41,61 @@ export default function NewTicketPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [supportLines, setSupportLines] = useState<SupportLine[]>([]);
 
   const [formData, setFormData] = useState<CreateTicketRequest>({
-    title: '',
-    description: '',
-    link1c: '',
-    priority: 'MEDIUM',
+    title: "",
+    description: "",
+    link1c: "",
+    priority: "MEDIUM",
   });
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [catRes, linesRes] = await Promise.all([
-          api.get<{ data: Category[] }>('/categories/user-selectable'),
-          api.get<{ data: SupportLine[] }>('/support-lines'),
-        ]);
+        const catRes = await api.get<{ data: Category[] }>(
+          "/categories/user-selectable"
+        );
         setCategories(catRes.data.data);
-        setSupportLines(linesRes.data.data);
       } catch (error) {
-        console.error('Failed to load form data', error);
+        console.error("Failed to load categories", error);
       }
     };
     loadData();
   }, []);
 
-  // Dynamic collections for categories and support lines
-  const categoryCollection = useMemo(() => createListCollection({
-    items: categories.map(c => ({ label: c.name, value: String(c.id) })),
-  }), [categories]);
-
-  const lineCollection = useMemo(() => createListCollection({
-    items: supportLines.map(l => ({ label: l.name, value: String(l.id) })),
-  }), [supportLines]);
+  // Dynamic collection for categories
+  const categoryCollection = useMemo(
+    () =>
+      createListCollection({
+        items: categories.map((c) => ({ label: c.name, value: String(c.id) })),
+      }),
+    [categories]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.description.trim()) {
       toaster.error({
-        title: 'Ошибка',
-        description: 'Заполните заголовок и описание',
+        title: "Ошибка",
+        description: "Заполните заголовок и описание",
       });
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // Тикет автоматически направляется на первую линию на бэке
       const ticket = await ticketApi.create(formData);
       toaster.success({
-        title: 'Тикет создан',
+        title: "Тикет создан",
         description: `Тикет #${ticket.id} успешно создан`,
       });
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
       toaster.error({
-        title: 'Ошибка',
-        description: 'Не удалось создать тикет',
+        title: "Ошибка",
+        description: "Не удалось создать тикет",
       });
     } finally {
       setIsSubmitting(false);
@@ -149,7 +141,9 @@ export default function NewTicketPage() {
             </Text>
             <Input
               value={formData.title}
-              onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
               placeholder="Краткое описание проблемы"
               size="lg"
               bg="bg.subtle"
@@ -164,7 +158,12 @@ export default function NewTicketPage() {
             </Text>
             <Textarea
               value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               placeholder="Подробно опишите проблему..."
               minH="150px"
               bg="bg.subtle"
@@ -178,8 +177,10 @@ export default function NewTicketPage() {
               Ссылка 1С
             </Text>
             <Input
-              value={formData.link1c || ''}
-              onChange={(e) => setFormData((prev) => ({ ...prev, link1c: e.target.value }))}
+              value={formData.link1c || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, link1c: e.target.value }))
+              }
               placeholder="Ссылка на объект в 1С (опционально)"
               bg="bg.subtle"
               borderColor="border.default"
@@ -195,8 +196,13 @@ export default function NewTicketPage() {
               </Text>
               <Select.Root
                 collection={priorityCollection}
-                value={[formData.priority || 'MEDIUM']}
-                onValueChange={(e) => setFormData((prev) => ({ ...prev, priority: e.value[0] as TicketPriority }))}
+                value={[formData.priority || "MEDIUM"]}
+                onValueChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    priority: e.value[0] as TicketPriority,
+                  }))
+                }
               >
                 <Select.Trigger>
                   <Select.ValueText />
@@ -218,13 +224,27 @@ export default function NewTicketPage() {
             {/* Category */}
             {categories.length > 0 && (
               <Box flex={1}>
-                <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
+                <Text
+                  mb={1}
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="fg.default"
+                >
                   Категория
                 </Text>
                 <Select.Root
                   collection={categoryCollection}
-                  value={formData.categoryUserId ? [String(formData.categoryUserId)] : []}
-                  onValueChange={(e) => setFormData((prev) => ({ ...prev, categoryUserId: Number(e.value[0]) || undefined }))}
+                  value={
+                    formData.categoryUserId
+                      ? [String(formData.categoryUserId)]
+                      : []
+                  }
+                  onValueChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      categoryUserId: Number(e.value[0]) || undefined,
+                    }))
+                  }
                 >
                   <Select.Trigger>
                     <Select.ValueText placeholder="Выберите категорию" />
@@ -245,34 +265,10 @@ export default function NewTicketPage() {
             )}
           </HStack>
 
-          {/* Support Line */}
-          {supportLines.length > 0 && (
-            <Box>
-              <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-                Линия поддержки
-              </Text>
-              <Select.Root
-                collection={lineCollection}
-                value={formData.supportLineId ? [String(formData.supportLineId)] : []}
-                onValueChange={(e) => setFormData((prev) => ({ ...prev, supportLineId: Number(e.value[0]) || undefined }))}
-              >
-                <Select.Trigger>
-                  <Select.ValueText placeholder="Выберите линию (опционально)" />
-                </Select.Trigger>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {lineCollection.items.map((item) => (
-                        <Select.Item key={item.value} item={item}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Box>
-          )}
+          {/* Info text */}
+          <Text fontSize="xs" color="fg.muted">
+            Тикет будет направлен в службу поддержки автоматически
+          </Text>
 
           {/* Submit */}
           <Flex justify="flex-end" gap={3} mt={4}>
@@ -285,7 +281,7 @@ export default function NewTicketPage() {
               color="white"
               loading={isSubmitting}
               loadingText="Создание..."
-              _hover={{ bg: 'gray.800' }}
+              _hover={{ bg: "gray.800" }}
             >
               Создать тикет
             </Button>

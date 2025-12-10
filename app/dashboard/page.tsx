@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -12,52 +12,94 @@ import {
   VStack,
   Spinner,
   Button,
-} from '@chakra-ui/react';
-import { LuTicket, LuClock, LuCircleCheck, LuCircleAlert, LuArrowRight } from 'react-icons/lu';
-import Link from 'next/link';
-import type { IconType } from 'react-icons';
-import { ticketApi } from '@/lib/api/tickets';
-import type { TicketListItem } from '@/types/ticket';
-import { TicketCard } from '@/components/features/tickets';
+} from "@chakra-ui/react";
+import {
+  LuTicket,
+  LuClock,
+  LuCircleCheck,
+  LuCircleAlert,
+  LuArrowRight,
+  LuBellRing,
+} from "react-icons/lu";
+import Link from "next/link";
+import type { IconType } from "react-icons";
+import { ticketApi } from "@/lib/api/tickets";
+import { assignmentApi } from "@/lib/api/assignments";
+import { useAuthStore } from "@/stores";
+import type { TicketListItem } from "@/types/ticket";
+import { TicketCard } from "@/components/features/tickets";
 
 interface StatCardProps {
   label: string;
   value: string | number;
   icon: IconType;
   color: string;
+  href?: string;
+  highlight?: boolean;
 }
 
-function StatCard({ label, value, icon, color }: StatCardProps) {
-  return (
+function StatCard({
+  label,
+  value,
+  icon,
+  color,
+  href,
+  highlight,
+}: StatCardProps) {
+  const content = (
     <Box
-      bg="bg.surface"
+      bg={highlight ? "yellow.50" : "bg.surface"}
       borderRadius="xl"
       borderWidth="1px"
-      borderColor="border.default"
+      borderColor={highlight ? "yellow.300" : "border.default"}
       p={5}
+      _dark={
+        highlight
+          ? { bg: "yellow.900/20", borderColor: "yellow.700" }
+          : undefined
+      }
+      _hover={
+        href
+          ? {
+              borderColor: "gray.400",
+              transform: "translateY(-2px)",
+              transition: "all 0.2s",
+            }
+          : undefined
+      }
+      cursor={href ? "pointer" : "default"}
     >
       <Flex align="flex-start" justify="space-between">
         <VStack align="flex-start" gap={1}>
           <Text color="fg.muted" fontSize="sm">
             {label}
           </Text>
-          <Heading size="2xl" color="fg.default">
+          <Heading size="2xl" color={highlight ? "yellow.600" : "fg.default"}>
             {value}
           </Heading>
         </VStack>
         <Box
           p={3}
           borderRadius="lg"
-          bg="bg.subtle"
+          bg={highlight ? "yellow.100" : "bg.subtle"}
+          _dark={highlight ? { bg: "yellow.800/30" } : undefined}
         >
           <Icon as={icon} boxSize={6} color={color} />
         </Box>
       </Flex>
     </Box>
   );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+  return content;
 }
 
 export default function DashboardPage() {
+  const { user } = useAuthStore();
+  const isSpecialist = user?.specialist || false;
+
   const [recentTickets, setRecentTickets] = useState<TicketListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -66,6 +108,7 @@ export default function DashboardPage() {
     resolved: 0,
     overdue: 0,
   });
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,25 +118,69 @@ export default function DashboardPage() {
         setRecentTickets(ticketsResponse.content);
         setStats({
           total: ticketsResponse.totalElements,
-          open: ticketsResponse.content.filter(t => ['NEW', 'OPEN', 'PENDING'].includes(t.status)).length,
-          resolved: ticketsResponse.content.filter(t => t.status === 'RESOLVED').length,
-          overdue: ticketsResponse.content.filter(t => t.slaDeadline && new Date(t.slaDeadline) < new Date()).length,
+          open: ticketsResponse.content.filter((t) =>
+            ["NEW", "OPEN", "PENDING"].includes(t.status)
+          ).length,
+          resolved: ticketsResponse.content.filter(
+            (t) => t.status === "RESOLVED"
+          ).length,
+          overdue: ticketsResponse.content.filter(
+            (t) => t.slaDeadline && new Date(t.slaDeadline) < new Date()
+          ).length,
         });
+
+        // Fetch pending assignments count for specialists
+        if (isSpecialist) {
+          const count = await assignmentApi.getPendingCount();
+          setPendingCount(count);
+        }
       } catch (error) {
-        console.error('Failed to fetch dashboard data', error);
+        console.error("Failed to fetch dashboard data", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [isSpecialist]);
 
-  const statCards = [
-    { label: 'Всего тикетов', value: stats.total, icon: LuTicket, color: 'gray.600' },
-    { label: 'В работе', value: stats.open, icon: LuClock, color: 'orange.500' },
-    { label: 'Решено', value: stats.resolved, icon: LuCircleCheck, color: 'green.500' },
-    { label: 'Просрочено', value: stats.overdue, icon: LuCircleAlert, color: 'red.500' },
+  const statCards: StatCardProps[] = [
+    {
+      label: "Всего тикетов",
+      value: stats.total,
+      icon: LuTicket,
+      color: "gray.600",
+    },
+    {
+      label: "В работе",
+      value: stats.open,
+      icon: LuClock,
+      color: "orange.500",
+    },
+    {
+      label: "Решено",
+      value: stats.resolved,
+      icon: LuCircleCheck,
+      color: "green.500",
+    },
+    {
+      label: "Просрочено",
+      value: stats.overdue,
+      icon: LuCircleAlert,
+      color: "red.500",
+    },
   ];
+
+  // Add pending card for specialists
+  if (isSpecialist) {
+    statCards.push({
+      label: "Ожидают принятия",
+      value: pendingCount,
+      icon: LuBellRing,
+      color: "yellow.500",
+      href: "/dashboard/tickets?filter=pending",
+      highlight: pendingCount > 0,
+    });
+  }
 
   return (
     <Box>
@@ -111,7 +198,11 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <Grid
-        templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
+        templateColumns={{
+          base: "1fr",
+          md: "repeat(2, 1fr)",
+          lg: isSpecialist ? "repeat(5, 1fr)" : "repeat(4, 1fr)",
+        }}
         gap={5}
         mb={8}
       >

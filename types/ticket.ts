@@ -77,6 +77,7 @@ export interface CreateTicketRequest {
   categoryUserId?: number;
   priority?: TicketPriority;
   supportLineId?: number;
+  assignToUserId?: number; // Прямое назначение специалисту
 }
 
 export interface UpdateTicketRequest {
@@ -121,3 +122,30 @@ export const ticketPriorityConfig: Record<TicketPriority, { label: string; color
   HIGH: { label: 'Высокий', color: 'orange' },
   URGENT: { label: 'Срочный', color: 'red' },
 };
+
+// Status transition rules - which statuses can transition to which
+export const statusTransitions: Record<TicketStatus, TicketStatus[]> = {
+  NEW: ['OPEN', 'REJECTED', 'CANCELLED'],
+  OPEN: ['PENDING', 'ESCALATED', 'RESOLVED', 'CANCELLED'],
+  PENDING: ['OPEN', 'RESOLVED', 'CANCELLED'],
+  ESCALATED: ['OPEN', 'PENDING', 'RESOLVED'],
+  RESOLVED: ['CLOSED', 'REOPENED'],
+  CLOSED: ['REOPENED'],
+  REOPENED: ['OPEN', 'PENDING', 'RESOLVED', 'CANCELLED'],
+  REJECTED: [],
+  CANCELLED: [],
+};
+
+// User-allowed transitions (regular users)
+export const userStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
+  NEW: ['CANCELLED'],
+  OPEN: ['CANCELLED'],
+  PENDING: ['CANCELLED'],
+  ESCALATED: [],
+  RESOLVED: ['REOPENED'],
+  CLOSED: ['REOPENED'],
+  REOPENED: ['CANCELLED'],
+  REJECTED: [],
+  CANCELLED: [],
+};
+

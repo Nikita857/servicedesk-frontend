@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -13,54 +13,92 @@ import {
   IconButton,
   Portal,
   createListCollection,
-} from '@chakra-ui/react';
-import { Select } from '@chakra-ui/react';
-import { LuPlus, LuChevronLeft, LuChevronRight } from 'react-icons/lu';
-import Link from 'next/link';
-import { ticketApi } from '@/lib/api/tickets';
-import { toaster } from '@/components/ui/toaster';
-import type { TicketListItem, PagedTicketList } from '@/types/ticket';
-import { TicketCard } from '@/components/features/tickets';
+  Badge,
+} from "@chakra-ui/react";
+import { Select } from "@chakra-ui/react";
+import { LuPlus, LuChevronLeft, LuChevronRight, LuBell } from "react-icons/lu";
+import Link from "next/link";
+import { ticketApi } from "@/lib/api/tickets";
+import { assignmentApi, Assignment } from "@/lib/api/assignments";
+import { toaster } from "@/components/ui/toaster";
+import { useAuthStore } from "@/stores";
+import type { TicketListItem, PagedTicketList } from "@/types/ticket";
+import { TicketCard } from "@/components/features/tickets";
 
-type FilterType = 'all' | 'my' | 'assigned';
-
-const filterCollection = createListCollection({
-  items: [
-    { label: 'Все тикеты', value: 'all' },
-    { label: 'Мои тикеты', value: 'my' },
-    { label: 'Назначенные мне', value: 'assigned' },
-  ],
-});
+type FilterType = "all" | "my" | "assigned" | "pending";
 
 export default function TicketsPage() {
+  const { user } = useAuthStore();
+  const isSpecialist = user?.specialist || false;
+
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
+  const [pendingAssignments, setPendingAssignments] = useState<Assignment[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>(isSpecialist ? "all" : "my");
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Dynamic filter collection based on role
+  const filterCollection = useMemo(() => {
+    if (isSpecialist) {
+      return createListCollection({
+        items: [
+          { label: "Все тикеты", value: "all" },
+          { label: "Мои тикеты", value: "my" },
+          { label: "Назначенные мне", value: "assigned" },
+          { label: `Ожидающие (${pendingCount})`, value: "pending" },
+        ],
+      });
+    }
+    return createListCollection({
+      items: [{ label: "Мои тикеты", value: "my" }],
+    });
+  }, [isSpecialist, pendingCount]);
+
+  // Fetch pending count on load
+  useEffect(() => {
+    if (isSpecialist) {
+      assignmentApi
+        .getPendingCount()
+        .then(setPendingCount)
+        .catch(console.error);
+    }
+  }, [isSpecialist]);
 
   const fetchTickets = useCallback(async () => {
     setIsLoading(true);
     try {
-      let response: PagedTicketList;
-      
-      switch (filter) {
-        case 'my':
-          response = await ticketApi.listMy(page, 5);
-          break;
-        case 'assigned':
-          response = await ticketApi.listAssigned(page, 5);
-          break;
-        default:
-          response = await ticketApi.list(page, 5);
+      if (filter === "pending") {
+        // Fetch pending assignments instead of tickets
+        const response = await assignmentApi.getMyPending(page, 5);
+        setPendingAssignments(response.content);
+        setTickets([]);
+        setTotalPages(response.totalPages);
+      } else {
+        let response: PagedTicketList;
+
+        switch (filter) {
+          case "my":
+            response = await ticketApi.listMy(page, 5);
+            break;
+          case "assigned":
+            response = await ticketApi.listAssigned(page, 5);
+            break;
+          default:
+            response = await ticketApi.list(page, 5);
+        }
+
+        setTickets(response.content);
+        setPendingAssignments([]);
+        setTotalPages(response.totalPages);
       }
-      
-      setTickets(response.content);
-      setTotalPages(response.totalPages);
     } catch (error) {
       toaster.error({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить список тикетов',
+        title: "Ошибка",
+        description: "Не удалось загрузить список тикетов",
       });
     } finally {
       setIsLoading(false);
@@ -71,75 +109,210 @@ export default function TicketsPage() {
     fetchTickets();
   }, [fetchTickets]);
 
+  // Update filter when role changes
+  useEffect(() => {
+    if (!isSpecialist && filter !== "my") {
+      setFilter("my");
+    }
+  }, [isSpecialist, filter]);
+
+  const handleAcceptAssignment = async (id: number) => {
+    try {
+      await assignmentApi.accept(id);
+      toaster.success({ title: "Назначение принято" });
+      fetchTickets();
+      setPendingCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      toaster.error({
+        title: "Ошибка",
+        description: "Не удалось принять назначение",
+      });
+    }
+  };
+
+  const handleRejectAssignment = async (id: number) => {
+    const reason = prompt("Укажите причину отклонения:");
+    if (!reason) return;
+
+    try {
+      await assignmentApi.reject(id, reason);
+      toaster.success({ title: "Назначение отклонено" });
+      fetchTickets();
+      setPendingCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      toaster.error({
+        title: "Ошибка",
+        description: "Не удалось отклонить назначение",
+      });
+    }
+  };
+
   return (
     <Box>
       {/* Header */}
       <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
           <Heading size="lg" color="fg.default" mb={1}>
-            Тикеты
+            {isSpecialist ? "Тикеты" : "Мои заявки"}
           </Heading>
           <Text color="fg.muted" fontSize="sm">
-            Управление заявками пользователей
+            Управление обращениями
           </Text>
         </Box>
-        
+
         <HStack gap={3}>
-          {/* Filter */}
-          <Select.Root
-            collection={filterCollection}
-            value={[filter]}
-            onValueChange={(e) => {
-              setFilter(e.value[0] as FilterType);
-              setPage(0);
-            }}
-            size="sm"
-            width="180px"
-          >
-            <Select.Trigger>
-              <Select.ValueText placeholder="Фильтр" />
-            </Select.Trigger>
-            <Portal>
-              <Select.Positioner>
-                <Select.Content>
-                  {filterCollection.items.map((item) => (
-                    <Select.Item key={item.value} item={item}>
-                      {item.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Positioner>
-            </Portal>
-          </Select.Root>
+          {/* Filter select - only for specialists */}
+          {isSpecialist && (
+            <Select.Root
+              collection={filterCollection}
+              value={[filter]}
+              onValueChange={(e) => {
+                setFilter(e.value[0] as FilterType);
+                setPage(0);
+              }}
+              size="sm"
+              width="200px"
+            >
+              <Select.Trigger>
+                <Select.ValueText placeholder="Фильтр" />
+              </Select.Trigger>
+              <Portal>
+                <Select.Positioner>
+                  <Select.Content>
+                    {filterCollection.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Portal>
+            </Select.Root>
+          )}
 
           <Link href="/dashboard/tickets/new">
-            <Button size="sm" bg="gray.900" color="white" _hover={{ bg: 'gray.800' }}>
+            <Button
+              size="sm"
+              bg="gray.900"
+              color="white"
+              _hover={{ bg: "gray.800" }}
+            >
               <LuPlus />
-              Создать
+              Новый тикет
             </Button>
           </Link>
         </HStack>
       </Flex>
 
-      {/* Tickets Grid */}
+      {/* Content */}
       {isLoading ? (
-        <Flex justify="center" align="center" h="300px">
-          <Spinner size="xl" />
+        <Flex justify="center" align="center" h="200px">
+          <Spinner size="lg" />
         </Flex>
+      ) : filter === "pending" ? (
+        // Pending Assignments View
+        pendingAssignments.length === 0 ? (
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            h="200px"
+            bg="bg.surface"
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="border.default"
+          >
+            <LuBell size={48} color="gray" />
+            <Text mt={4} color="fg.muted">
+              Нет ожидающих назначений
+            </Text>
+          </Flex>
+        ) : (
+          <VStack gap={4} align="stretch">
+            {pendingAssignments.map((assignment) => (
+              <Box
+                key={assignment.id}
+                bg="yellow.50"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="yellow.200"
+                p={4}
+                _dark={{ bg: "yellow.900/20", borderColor: "yellow.700" }}
+              >
+                <Flex
+                  justify="space-between"
+                  align="flex-start"
+                  wrap="wrap"
+                  gap={3}
+                >
+                  <Box>
+                    <Link href={`/dashboard/tickets/${assignment.ticketId}`}>
+                      <Text
+                        fontWeight="medium"
+                        color="fg.default"
+                        _hover={{ textDecoration: "underline" }}
+                      >
+                        #{assignment.ticketId}: {assignment.ticketTitle}
+                      </Text>
+                    </Link>
+                    <Text fontSize="sm" color="fg.muted" mt={1}>
+                      От:{" "}
+                      {assignment.fromFio ||
+                        assignment.fromUsername ||
+                        assignment.fromLineName ||
+                        "—"}
+                    </Text>
+                    {assignment.note && (
+                      <Text fontSize="sm" color="fg.muted" mt={1}>
+                        Комментарий: {assignment.note}
+                      </Text>
+                    )}
+                    <Badge mt={2} colorPalette="yellow">
+                      Ожидает принятия
+                    </Badge>
+                  </Box>
+                  <HStack gap={2}>
+                    <Button
+                      size="sm"
+                      colorPalette="green"
+                      onClick={() => handleAcceptAssignment(assignment.id)}
+                    >
+                      Принять
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      colorPalette="red"
+                      onClick={() => handleRejectAssignment(assignment.id)}
+                    >
+                      Отклонить
+                    </Button>
+                  </HStack>
+                </Flex>
+              </Box>
+            ))}
+          </VStack>
+        )
       ) : tickets.length === 0 ? (
         <Flex
-          justify="center"
+          direction="column"
           align="center"
-          h="300px"
+          justify="center"
+          h="200px"
           bg="bg.surface"
           borderRadius="xl"
           borderWidth="1px"
           borderColor="border.default"
         >
           <Text color="fg.muted">Тикеты не найдены</Text>
+          <Link href="/dashboard/tickets/new">
+            <Button mt={4} size="sm" variant="outline">
+              Создать первый тикет
+            </Button>
+          </Link>
         </Flex>
       ) : (
-        <VStack gap={3} align="stretch">
+        <VStack gap={4} align="stretch">
           {tickets.map((ticket) => (
             <TicketCard key={ticket.id} ticket={ticket} />
           ))}
@@ -148,25 +321,23 @@ export default function TicketsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Flex justify="center" align="center" mt={6} gap={4}>
+        <Flex mt={6} justify="center" align="center" gap={4}>
           <IconButton
-            aria-label="Предыдущая"
-            size="sm"
-            variant="outline"
-            disabled={page === 0}
+            aria-label="Previous page"
+            variant="ghost"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
           >
             <LuChevronLeft />
           </IconButton>
           <Text color="fg.muted" fontSize="sm">
-            {page + 1} / {totalPages}
+            Страница {page + 1} из {totalPages}
           </Text>
           <IconButton
-            aria-label="Следующая"
-            size="sm"
-            variant="outline"
+            aria-label="Next page"
+            variant="ghost"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => p + 1)}
           >
             <LuChevronRight />
           </IconButton>
