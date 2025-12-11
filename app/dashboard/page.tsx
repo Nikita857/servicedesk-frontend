@@ -14,7 +14,6 @@ import {
   Button,
 } from "@chakra-ui/react";
 import {
-  LuTicket,
   LuClock,
   LuCircleCheck,
   LuCircleAlert,
@@ -103,7 +102,6 @@ export default function DashboardPage() {
   const [recentTickets, setRecentTickets] = useState<TicketListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
-    total: 0,
     open: 0,
     resolved: 0,
     overdue: 0,
@@ -117,7 +115,6 @@ export default function DashboardPage() {
         const ticketsResponse = await ticketApi.list(0, 5);
         setRecentTickets(ticketsResponse.content);
         setStats({
-          total: ticketsResponse.totalElements,
           open: ticketsResponse.content.filter((t) =>
             ["NEW", "OPEN", "PENDING"].includes(t.status)
           ).length,
@@ -144,12 +141,6 @@ export default function DashboardPage() {
   }, [isSpecialist]);
 
   const statCards: StatCardProps[] = [
-    {
-      label: "Всего тикетов",
-      value: stats.total,
-      icon: LuTicket,
-      color: "gray.600",
-    },
     {
       label: "В работе",
       value: stats.open,

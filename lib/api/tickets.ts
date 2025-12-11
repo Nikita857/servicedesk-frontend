@@ -95,8 +95,15 @@ export const ticketApi = {
     return response.data.data;
   },
 
+  // Take ticket into work (specialist becomes assignee)
+  takeTicket: async (id: number): Promise<Ticket> => {
+    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/take`);
+    return response.data.data;
+  },
+
   // Delete ticket
   delete: async (id: number): Promise<void> => {
     await api.delete(`/tickets/${id}`);
   },
 };
+

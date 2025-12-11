@@ -67,6 +67,29 @@ export interface Ticket {
   closedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  lastAssignment: LastAssignment | null;
+}
+
+// Assignment embedded in ticket response
+export interface LastAssignment {
+  id: number;
+  ticketId: number;
+  fromLineId: number | null;
+  fromLineName: string | null;
+  fromUserId: number | null;
+  fromUsername: string | null;
+  fromFio: string | null;
+  toLineId: number;
+  toLineName: string;
+  toUserId: number | null;
+  toUsername: string | null;
+  toFio: string | null;
+  note: string | null;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  createdAt: string;
+  acceptedAt: string | null;
+  rejectedAt: string | null;
+  rejectedReason: string | null;
 }
 
 // Request DTOs

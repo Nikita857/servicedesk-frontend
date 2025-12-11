@@ -1,7 +1,6 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-
-const WS_URL = (process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://192.168.14.9:8080') + '/ws';
+import { WS_URL } from '../config';
 
 export interface ChatMessageWS {
   id: number;

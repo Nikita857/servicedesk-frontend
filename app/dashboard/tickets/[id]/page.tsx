@@ -30,6 +30,8 @@ import {
   LuUserPlus,
   LuHistory,
   LuChevronDown,
+  LuPlay,
+  LuCircleX,
 } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -77,6 +79,7 @@ export default function TicketDetailPage({ params }: PageProps) {
   const [escalationComment, setEscalationComment] = useState("");
   const [isEscalating, setIsEscalating] = useState(false);
   const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(false);
+  const [isOnLastLine, setIsOnLastLine] = useState(false);
 
   // Assignment history
   const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(
@@ -112,12 +115,48 @@ export default function TicketDetailPage({ params }: PageProps) {
     fetchData();
   }, [id, router]);
 
-  // Load support lines for escalation
+  // Load support lines and determine if on last line (DEVELOPER line)
   useEffect(() => {
-    if (showEscalation && supportLines.length === 0) {
-      supportLineApi.getAll().then(setSupportLines).catch(console.error);
+    const loadSupportLines = async () => {
+      try {
+        const lines = await supportLineApi.getAll();
+        setSupportLines(lines);
+
+        // Determine if ticket is on the DEVELOPER line (last/3rd line)
+        // Check by line name containing DEVELOPER-related keywords or by max displayOrder
+        if (ticket?.supportLine && lines.length > 0) {
+          const ticketLineName = ticket.supportLine.name?.toLowerCase() || "";
+
+          // Check if current line is DEVELOPER line by name
+          const isDeveloperLine =
+            ticketLineName.includes("developer") ||
+            ticketLineName.includes("разработ") ||
+            ticketLineName.includes("3 линия") ||
+            ticketLineName.includes("третья");
+
+          // Fallback: check by displayOrder if name check doesn't match
+          if (!isDeveloperLine) {
+            const maxDisplayOrder = Math.max(
+              ...lines.map((l) => l.displayOrder || 0)
+            );
+            const ticketLineOrder = ticket.supportLine.displayOrder || 0;
+            // Only consider as last line if displayOrder is actually set and is the max
+            setIsOnLastLine(
+              ticketLineOrder > 0 && ticketLineOrder >= maxDisplayOrder
+            );
+          } else {
+            setIsOnLastLine(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load support lines", error);
+      }
+    };
+
+    if (ticket) {
+      loadSupportLines();
     }
-  }, [showEscalation, supportLines.length]);
+  }, [ticket]);
 
   // Load specialists when line is selected
   useEffect(() => {
@@ -292,15 +331,48 @@ export default function TicketDetailPage({ params }: PageProps) {
 
         {/* Action buttons */}
         <HStack gap={2}>
-          {/* Escalate button - only for specialists */}
+          {/* Take Ticket button - for specialists when ticket is unassigned */}
+          {isSpecialist && !ticket.assignedTo && ticket.status === "NEW" && (
+            <Button
+              size="sm"
+              colorPalette="green"
+              onClick={async () => {
+                try {
+                  const updated = await ticketApi.takeTicket(ticket.id);
+                  setTicket(updated);
+                  toaster.success({
+                    title: "Успех",
+                    description: "Тикет взят в работу",
+                  });
+                } catch (error) {
+                  toaster.error({
+                    title: "Ошибка",
+                    description: "Не удалось взять тикет",
+                  });
+                }
+              }}
+            >
+              <LuPlay />
+              Взять в работу
+            </Button>
+          )}
+
+          {/* Escalate button - only for specialists, disabled on last line */}
           {canEscalate && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => setShowEscalation(!showEscalation)}
+              disabled={isOnLastLine}
+              opacity={isOnLastLine ? 0.5 : 1}
+              title={
+                isOnLastLine
+                  ? "Тикет уже на последней линии поддержки"
+                  : undefined
+              }
             >
               <LuForward />
-              Переадресовать
+              {isOnLastLine ? "На последней линии" : "Переадресовать"}
             </Button>
           )}
 
@@ -692,6 +764,66 @@ export default function TicketDetailPage({ params }: PageProps) {
                       ? "Отклонено"
                       : "Ожидает"}
                   </Badge>
+                </VStack>
+              </Box>
+            )}
+
+            {/* Rejection Info - only for specialists when lastAssignment is rejected */}
+            {isSpecialist && ticket.lastAssignment?.status === "REJECTED" && (
+              <Box
+                bg="red.50"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="red.200"
+                p={4}
+                _dark={{ bg: "red.900/20", borderColor: "red.700" }}
+              >
+                <HStack mb={2}>
+                  <LuCircleX size={16} color="var(--chakra-colors-red-500)" />
+                  <Text
+                    fontWeight="medium"
+                    fontSize="sm"
+                    color="red.600"
+                    _dark={{ color: "red.400" }}
+                  >
+                    Назначение отклонено
+                  </Text>
+                </HStack>
+                <VStack align="stretch" gap={2} fontSize="sm">
+                  <Text>
+                    <Text as="span" color="fg.muted">
+                      Отклонил:{" "}
+                    </Text>
+                    {ticket.lastAssignment.toFio ||
+                      ticket.lastAssignment.toUsername}
+                  </Text>
+                  {ticket.lastAssignment.rejectedAt && (
+                    <Text>
+                      <Text as="span" color="fg.muted">
+                        Дата:{" "}
+                      </Text>
+                      {new Date(
+                        ticket.lastAssignment.rejectedAt
+                      ).toLocaleString("ru-RU")}
+                    </Text>
+                  )}
+                  {ticket.lastAssignment.rejectedReason && (
+                    <Box>
+                      <Text color="fg.muted" mb={1}>
+                        Причина:
+                      </Text>
+                      <Text
+                        bg="white"
+                        p={2}
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderColor="red.100"
+                        _dark={{ bg: "red.900/40", borderColor: "red.600" }}
+                      >
+                        {ticket.lastAssignment.rejectedReason}
+                      </Text>
+                    </Box>
+                  )}
                 </VStack>
               </Box>
             )}

@@ -25,11 +25,16 @@ import { useAuthStore } from "@/stores";
 import type { TicketListItem, PagedTicketList } from "@/types/ticket";
 import { TicketCard } from "@/components/features/tickets";
 
-type FilterType = "all" | "my" | "assigned" | "pending";
+type FilterType = "unprocessed" | "my" | "assigned" | "pending";
 
 export default function TicketsPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
+
+  // Only USER and ADMIN can create tickets, specialists (SYSADMIN, DEV1C, DEVELOPER) cannot
+  const userRoles = user?.roles || [];
+  const canCreateTicket =
+    userRoles.includes("USER") || userRoles.includes("ADMIN");
 
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<Assignment[]>(
@@ -38,7 +43,9 @@ export default function TicketsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [filter, setFilter] = useState<FilterType>(isSpecialist ? "all" : "my");
+  const [filter, setFilter] = useState<FilterType>(
+    isSpecialist ? "unprocessed" : "my"
+  );
   const [pendingCount, setPendingCount] = useState(0);
 
   // Dynamic filter collection based on role
@@ -46,8 +53,7 @@ export default function TicketsPage() {
     if (isSpecialist) {
       return createListCollection({
         items: [
-          { label: "Все тикеты", value: "all" },
-          { label: "Мои тикеты", value: "my" },
+          { label: "Необработанные", value: "unprocessed" },
           { label: "Назначенные мне", value: "assigned" },
           { label: `Ожидающие (${pendingCount})`, value: "pending" },
         ],
@@ -87,8 +93,18 @@ export default function TicketsPage() {
           case "assigned":
             response = await ticketApi.listAssigned(page, 5);
             break;
-          default:
+          case "unprocessed":
+            // Fetch NEW tickets from specialist's support line
+            // Backend's list() already filters by specialist's visibility
             response = await ticketApi.list(page, 5);
+            // Filter client-side to show only NEW tickets
+            response = {
+              ...response,
+              content: response.content.filter((t) => t.status === "NEW"),
+            };
+            break;
+          default:
+            response = await ticketApi.listMy(page, 5);
         }
 
         setTickets(response.content);
@@ -190,17 +206,19 @@ export default function TicketsPage() {
             </Select.Root>
           )}
 
-          <Link href="/dashboard/tickets/new">
-            <Button
-              size="sm"
-              bg="gray.900"
-              color="white"
-              _hover={{ bg: "gray.800" }}
-            >
-              <LuPlus />
-              Новый тикет
-            </Button>
-          </Link>
+          {canCreateTicket && (
+            <Link href="/dashboard/tickets/new">
+              <Button
+                size="sm"
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
+              >
+                <LuPlus />
+                Новый тикет
+              </Button>
+            </Link>
+          )}
         </HStack>
       </Flex>
 
@@ -305,11 +323,13 @@ export default function TicketsPage() {
           borderColor="border.default"
         >
           <Text color="fg.muted">Тикеты не найдены</Text>
-          <Link href="/dashboard/tickets/new">
-            <Button mt={4} size="sm" variant="outline">
-              Создать первый тикет
-            </Button>
-          </Link>
+          {canCreateTicket && (
+            <Link href="/dashboard/tickets/new">
+              <Button mt={4} size="sm" variant="outline">
+                Создать первый тикет
+              </Button>
+            </Link>
+          )}
         </Flex>
       ) : (
         <VStack gap={4} align="stretch">

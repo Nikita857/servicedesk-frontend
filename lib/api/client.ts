@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.14.9:8080/api/v1';
+import { API_BASE_URL } from '../config';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
