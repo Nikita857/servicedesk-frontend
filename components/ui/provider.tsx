@@ -52,7 +52,7 @@ const config = defineConfig({
         error: {
           500: { value: "#dc2626" },
           600: { value: "#b91c1c" },
-        },
+        }
       },
     },
     semanticTokens: {

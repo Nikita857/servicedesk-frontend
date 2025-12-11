@@ -3,7 +3,7 @@
 import type { UserShort } from './ticket';
 
 // Role hierarchy: USER < SYSADMIN (1 line) < DEV1C (2 line) < DEVELOPER (3 line + admin)
-export type SenderType = 'USER' | 'SYSADMIN' | 'DEV1C' | 'DEVELOPER';
+export type SenderType = 'USER' | 'SYSADMIN' | 'DEV1C' | 'DEVELOPER' | 'ADMIN';
 
 export interface MessageAttachment {
   id: number;

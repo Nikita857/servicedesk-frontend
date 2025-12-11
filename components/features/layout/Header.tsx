@@ -1,13 +1,27 @@
 'use client';
 
-import { Box, Flex, Text, Menu, Avatar, IconButton, HStack } from '@chakra-ui/react';
+import { Box, Flex, Text, Menu, Avatar, IconButton, HStack, Badge } from '@chakra-ui/react';
 import { LuBell, LuLogOut, LuSettings, LuUser, LuChevronDown } from 'react-icons/lu';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useAuthStore } from '@/stores';
+import { SenderType, userRolesBadges } from '@/types';
 
 export function Header() {
   const { logout } = useAuth();
   const { user } = useAuthStore();
+
+  
+
+  const rolePriority = ['USER', 'SYSADMIN', 'DEV1C', 'DEVELOPER', 'ADMIN'] as const;
+
+  const highestRole = user?.roles
+  ?.reduce<SenderType | null>((top, role) => {
+    const currentIdx = rolePriority.indexOf(role as SenderType);
+    const topIdx = top ? rolePriority.indexOf(top) : -1;
+    return currentIdx > topIdx ? (role as SenderType) : top;
+  }, null) ?? 'USER';
+
+  const roleBadgeInfo = userRolesBadges[highestRole];
 
   return (
     <Box
@@ -21,7 +35,7 @@ export function Header() {
         {/* Search or breadcrumb area */}
         <Box>
           <Text color="fg.muted" fontSize="sm">
-            Добро пожаловать, <Text as="span" fontWeight="medium" color="fg.default">{user?.fio || user?.username}</Text>
+            Добро пожаловать. Ваша роль: <Badge colorPalette={roleBadgeInfo.color}>{roleBadgeInfo.name}</Badge>
           </Text>
         </Box>
 

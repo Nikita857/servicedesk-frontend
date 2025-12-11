@@ -1,3 +1,5 @@
+import { SenderType } from "./message";
+
 export interface User {
   id: number;
   username: string;
@@ -20,3 +22,11 @@ export interface AuthResponse {
   expiresIn: number;
   userAuthResponse: User;  // matches backend API field name
 }
+
+export const userRolesBadges: Record<SenderType, {name: string, color: string}> = {
+    USER: {name: 'Пользователь', color: 'gray'},
+    SYSADMIN: {name: 'Системный администратор', color: 'green'},
+    DEV1C: {name: 'Программист 1С', color: 'blue'},
+    DEVELOPER: {name: 'Разработчик', color: 'purple'},
+    ADMIN: {name: 'Администратор', color: 'red'}
+  };
