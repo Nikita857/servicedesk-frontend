@@ -34,6 +34,7 @@ import {
 import {
   ticketWebSocket,
   type ChatMessageWS,
+  type TypingIndicator,
 } from "@/lib/websocket/ticketWebSocket";
 import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
@@ -79,6 +80,14 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [ticketStatus, setTicketStatus] = useState<TicketStatus>("OPEN");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Typing indicator state
+  const [typingUser, setTypingUser] = useState<{
+    fio: string | null;
+    username: string;
+  } | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
 
   // Fetch initial messages
   const fetchMessages = useCallback(async () => {
@@ -145,6 +154,24 @@ export function TicketChat({ ticketId }: TicketChatProps) {
             if (prev.find((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
+        },
+        onTyping: (indicator: TypingIndicator) => {
+          // Ignore own typing
+          if (indicator.userId === user?.id) return;
+
+          if (indicator.typing) {
+            setTypingUser({ fio: indicator.fio, username: indicator.username });
+            // Clear previous timeout
+            if (typingTimeoutRef.current)
+              clearTimeout(typingTimeoutRef.current);
+            // Hide after 3 seconds if no new typing event
+            typingTimeoutRef.current = setTimeout(
+              () => setTypingUser(null),
+              3000
+            );
+          } else {
+            setTypingUser(null);
+          }
         },
         onError: (error) => console.error("[WS] Error:", error),
       });
@@ -267,6 +294,24 @@ export function TicketChat({ ticketId }: TicketChatProps) {
       return false;
     }
     return true;
+  };
+
+  // Handle input change with typing indicator
+  const handleInputChange = (value: string) => {
+    setNewMessage(value);
+
+    // Send typing indicator (debounced - max once per 1 second)
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > 1000) {
+      ticketWebSocket.sendTyping(value.length > 0);
+      lastTypingSentRef.current = now;
+    }
+  };
+
+  // Send typing=false when message is sent
+  const handleSendWithTyping = () => {
+    ticketWebSocket.sendTyping(false);
+    handleSend();
   };
 
   return (
@@ -432,6 +477,38 @@ export function TicketChat({ ticketId }: TicketChatProps) {
           borderColor="border.default"
           bg="bg.subtle"
         >
+          {/* Typing Indicator */}
+          {typingUser && (
+            <Flex px={3} py={1} align="center" gap={2}>
+              <Box className="typing-dots" display="flex" gap={1}>
+                <Box
+                  w="6px"
+                  h="6px"
+                  borderRadius="full"
+                  bg="blue.500"
+                  animation="pulse 1.4s infinite"
+                />
+                <Box
+                  w="6px"
+                  h="6px"
+                  borderRadius="full"
+                  bg="blue.500"
+                  animation="pulse 1.4s infinite 0.2s"
+                />
+                <Box
+                  w="6px"
+                  h="6px"
+                  borderRadius="full"
+                  bg="blue.500"
+                  animation="pulse 1.4s infinite 0.4s"
+                />
+              </Box>
+              <Text fontSize="xs" color="fg.muted" fontStyle="italic">
+                {typingUser.fio || typingUser.username} печатает...
+              </Text>
+            </Flex>
+          )}
+
           {/* TODO я здесь нахуярил эту пидорисню */}
           {/* Проверка тикета на статус - если не активен сообщения в чат не отправляются */}
           {isTicketActive(ticketStatus) ? (
@@ -439,8 +516,8 @@ export function TicketChat({ ticketId }: TicketChatProps) {
               handleFileSelect={handleFileSelect}
               isUploading={isUploading}
               newMessage={newMessage}
-              setNewMessage={setNewMessage}
-              handleSend={handleSend}
+              setNewMessage={handleInputChange}
+              handleSend={handleSendWithTyping}
               fileInputRef={fileInputRef}
               isSending={isSending}
               selectedFile={selectedFile}
