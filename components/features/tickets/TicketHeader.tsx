@@ -23,7 +23,7 @@ import { LuArrowLeft, LuChevronDown, LuForward, LuPlay } from "react-icons/lu";
 
 interface TicketHeaderProps {
   ticket: Ticket;
-  setTicket: (newStatus: any) => void;
+  setTicket: (ticket: Ticket) => void;
   isSpecialist: boolean;
   canEscalate: boolean;
   showEscalation: boolean;

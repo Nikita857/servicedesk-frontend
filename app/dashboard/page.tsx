@@ -111,9 +111,15 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch recent tickets
-        const ticketsResponse = await ticketApi.list(0, 5);
-        setRecentTickets(ticketsResponse.content);
+        // Fetch recent tickets - load more to have unassigned available
+        const ticketsResponse = await ticketApi.list(0, 20);
+
+        // Filter to only unassigned tickets for dashboard display
+        const unassignedTickets = ticketsResponse.content.filter(
+          (t) => !t.assignedToUsername && t.status === "NEW"
+        );
+        setRecentTickets(unassignedTickets.slice(0, 5)); // Show max 5
+
         setStats({
           open: ticketsResponse.content.filter((t) =>
             ["NEW", "OPEN", "PENDING"].includes(t.status)
@@ -208,11 +214,11 @@ export default function DashboardPage() {
       <Box>
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="md" color="fg.default">
-            Последние тикеты
+            Невзятые тикеты
           </Heading>
-          <Link href="/dashboard/tickets">
+          <Link href="/dashboard/tickets?filter=unprocessed">
             <Button variant="ghost" size="sm" color="fg.muted">
-              Все тикеты
+              Все невзятые
               <LuArrowRight />
             </Button>
           </Link>
@@ -231,18 +237,16 @@ export default function DashboardPage() {
             p={8}
             textAlign="center"
           >
-            <Text color="fg.muted">Нет тикетов</Text>
+            <Text color="fg.muted">Нет невзятых тикетов</Text>
           </Box>
         ) : (
-          // Выводим только те тикеты, которые еще никто не забрал
           <VStack gap={3} align="stretch">
             {recentTickets
-              .filter((t) => !t.assignedToUsername) // только необработанные
               .sort(
                 (a, b) =>
                   new Date(b.createdAt).getTime() -
                   new Date(a.createdAt).getTime()
-              ) // новые → сверху
+              )
               .map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />
               ))}

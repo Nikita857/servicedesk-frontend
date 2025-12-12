@@ -36,6 +36,7 @@ import ChatInput from "../ticket-chat/ChatInput";
 
 interface TicketChatProps {
   ticketId: number;
+  ticketStatus: TicketStatus;
 }
 
 // File validation constants
@@ -54,16 +55,15 @@ const BLOCKED_EXTENSIONS = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function TicketChat({ ticketId }: TicketChatProps) {
+export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const { user } = useAuthStore();
 
-  // Use custom hook for WebSocket and messages
+  // Use custom hook for WebSocket and messages (no longer fetches ticketStatus)
   const {
     messages,
     setMessages,
     isLoading,
     isConnected,
-    ticketStatus,
     typingUser,
     sendTypingIndicator,
   } = useChatWebSocket(ticketId);
