@@ -79,6 +79,7 @@ export default function NewTicketPage() {
       toaster.error({
         title: "Ошибка",
         description: "Заполните заголовок и описание",
+        closable: true,
       });
       return;
     }
@@ -90,12 +91,14 @@ export default function NewTicketPage() {
       toaster.success({
         title: "Тикет создан",
         description: `Тикет #${ticket.id} успешно создан`,
+        closable: true,
       });
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
       toaster.error({
         title: "Ошибка",
         description: "Не удалось создать тикет",
+        closable: true,
       });
     } finally {
       setIsSubmitting(false);
@@ -166,22 +169,6 @@ export default function NewTicketPage() {
               }
               placeholder="Подробно опишите проблему..."
               minH="150px"
-              bg="bg.subtle"
-              borderColor="border.default"
-            />
-          </Box>
-
-          {/* Link 1C */}
-          <Box>
-            <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-              Ссылка 1С
-            </Text>
-            <Input
-              value={formData.link1c || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, link1c: e.target.value }))
-              }
-              placeholder="Ссылка на объект в 1С (опционально)"
               bg="bg.subtle"
               borderColor="border.default"
             />
@@ -265,6 +252,25 @@ export default function NewTicketPage() {
             )}
           </HStack>
 
+          {/* Link 1C */}
+          {/* TODO проверить логику, может можно сделать более надженый способ, например получать категории отдельным маршрутом */}
+          {formData.categoryUserId ===
+            categories.find((c) => c.name.includes("1С"))?.id && (
+            <Box>
+              <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
+                Ссылка 1С
+              </Text>
+              <Input
+                value={formData.link1c || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, link1c: e.target.value }))
+                }
+                placeholder="Ссылка на объект в 1С (опционально)"
+                bg="bg.subtle"
+                borderColor="border.default"
+              />
+            </Box>
+          )}
           {/* Info text */}
           <Text fontSize="xs" color="fg.muted">
             Тикет будет направлен в службу поддержки автоматически

@@ -204,7 +204,7 @@ export default function DashboardPage() {
         ))}
       </Grid>
 
-      {/* Recent Tickets Section */}
+      {/* Секция последние тикеты */}
       <Box>
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="md" color="fg.default">
@@ -234,10 +234,18 @@ export default function DashboardPage() {
             <Text color="fg.muted">Нет тикетов</Text>
           </Box>
         ) : (
+          // Выводим только те тикеты, которые еще никто не забрал
           <VStack gap={3} align="stretch">
-            {recentTickets.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} />
-            ))}
+            {recentTickets
+              .filter((t) => !t.assignedToUsername) // только необработанные
+              .sort(
+                (a, b) =>
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime()
+              ) // новые → сверху
+              .map((ticket) => (
+                <TicketCard key={ticket.id} ticket={ticket} />
+              ))}
           </VStack>
         )}
       </Box>

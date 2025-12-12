@@ -22,6 +22,12 @@ export const ticketApi = {
     });
     return response.data.data;
   },
+  listAllDB: async (page = 0, size = 9999): Promise<PagedTicketList> => {
+    const response = await api.get<ApiResponse<PagedTicketList>>('/tickets', {
+      params: { page, size },
+    });
+    return response.data.data;
+  },
 
   // Get tickets by status
   listByStatus: async (status: TicketStatus, page = 0, size = 20): Promise<PagedTicketList> => {

@@ -97,8 +97,10 @@ const system = createSystem(defaultConfig, config)
 export function Provider(props: ColorModeProviderProps) {
   return (
     <ChakraProvider value={system}>
-      <ColorModeProvider {...props} />
-      <Toaster />
+      <ColorModeProvider {...props}>
+        <Toaster />
+        {props.children}
+      </ColorModeProvider>
     </ChakraProvider>
-  )
+  );
 }

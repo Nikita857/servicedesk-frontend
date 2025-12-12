@@ -31,114 +31,160 @@ export default function TicketsPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
 
-  // Only USER and ADMIN can create tickets, specialists (SYSADMIN, DEV1C, DEVELOPER) cannot
+  const username = user?.username;
   const userRoles = user?.roles || [];
   const canCreateTicket =
     userRoles.includes("USER") || userRoles.includes("ADMIN");
 
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<Assignment[]>(
-    []
-  );
+  const [pendingAssignments, setPendingAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [filter, setFilter] = useState<FilterType>(
     isSpecialist ? "unprocessed" : "my"
   );
+
   const [pendingCount, setPendingCount] = useState(0);
+  const [assignedToMeCount, setAssignedToMeCount] = useState(0);
+  const [unprocessedCount, setUnprocessedCount] = useState(0);
 
-  // Dynamic filter collection based on role
-  const filterCollection = useMemo(() => {
-    if (isSpecialist) {
-      return createListCollection({
-        items: [
-          { label: "Необработанные", value: "unprocessed" },
-          { label: "Назначенные мне", value: "assigned" },
-          { label: `Ожидающие (${pendingCount})`, value: "pending" },
-        ],
-      });
-    }
-    return createListCollection({
-      items: [{ label: "Мои тикеты", value: "my" }],
-    });
-  }, [isSpecialist, pendingCount]);
-
-  // Fetch pending count on load
+  // ------------------------------------------------
+  // Correct counters calculation
+  // ------------------------------------------------
   useEffect(() => {
-    if (isSpecialist) {
-      assignmentApi
-        .getPendingCount()
-        .then(setPendingCount)
-        .catch(console.error);
-    }
-  }, [isSpecialist]);
+    if (!isSpecialist) return;
 
-  const fetchTickets = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      if (filter === "pending") {
-        // Fetch pending assignments instead of tickets
-        const response = await assignmentApi.getMyPending(page, 5);
-        setPendingAssignments(response.content);
-        setTickets([]);
-        setTotalPages(response.totalPages);
-      } else {
-        let response: PagedTicketList;
+    const loadCounts = async () => {
+      try {
+        const all = await ticketApi.listAllDB(0, 9999);
 
-        switch (filter) {
-          case "my":
-            response = await ticketApi.listMy(page, 5);
-            break;
-          case "assigned":
-            response = await ticketApi.listAssigned(page, 5);
-            break;
-          case "unprocessed":
-            // Fetch NEW tickets from specialist's support line
-            // Backend's list() already filters by specialist's visibility
-            response = await ticketApi.list(page, 5);
-            // Filter client-side to show only NEW tickets
-            response = {
-              ...response,
-              content: response.content.filter((t) => t.status === "NEW"),
-            };
-            break;
-          default:
-            response = await ticketApi.listMy(page, 5);
-        }
+        const assigned = all.content.filter(
+          (t) => t.assignedToUsername && t.assignedToUsername === username
+        ).length;
 
-        setTickets(response.content);
-        setPendingAssignments([]);
-        setTotalPages(response.totalPages);
+        const unprocessed = all.content.filter(
+          (t) =>
+            (!t.assignedToUsername || t.assignedToUsername.trim() === "") &&
+            t.status === "NEW"
+        ).length;
+
+        const pending = await assignmentApi.getPendingCount();
+
+        setAssignedToMeCount(assigned);
+        setUnprocessedCount(unprocessed);
+        setPendingCount(pending);
+      } catch (e) {
+        console.error("Ошибка вычисления счётчиков", e);
       }
-    } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось загрузить список тикетов",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, filter]);
+    };
+
+    loadCounts();
+  }, [isSpecialist, username]);
+
+  // ------------------------------------------------
+  // Ticket loader
+  // ------------------------------------------------
+  const fetchTickets = useCallback(
+    async () => {
+      setIsLoading(true);
+      try {
+        if (filter === "pending") {
+          const response = await assignmentApi.getMyPending(page, 5);
+          setPendingAssignments(response.content);
+          setTickets([]);
+          setTotalPages(response.totalPages);
+        } else {
+          let response: PagedTicketList;
+
+          switch (filter) {
+            case "my":
+              response = await ticketApi.listMy(page, 5);
+              break;
+
+            case "assigned":
+              response = await ticketApi.listAssigned(page, 5);
+              break;
+
+            case "unprocessed":
+              response = await ticketApi.list(page, 5);
+              response = {
+                ...response,
+                content: response.content.filter((t) => t.status === "NEW"),
+              };
+              break;
+
+            default:
+              response = await ticketApi.listMy(page, 5);
+          }
+
+          setTickets(response.content);
+          setPendingAssignments([]);
+          setTotalPages(response.totalPages);
+        }
+      } catch (error) {
+        toaster.error({
+          title: "Ошибка",
+          description: "Не удалось загрузить список тикетов",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [page, filter]
+  );
 
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Update filter when role changes
+  // ------------------------------------------------
+  // Auto-switch filter for non-specialists
+  // ------------------------------------------------
   useEffect(() => {
     if (!isSpecialist && filter !== "my") {
       setFilter("my");
     }
   }, [isSpecialist, filter]);
 
+  // ------------------------------------------------
+  // Filter dropdown collection
+  // ------------------------------------------------
+  const filterCollection = useMemo(() => {
+    if (isSpecialist) {
+      return createListCollection({
+        items: [
+          {
+            label: `Необработанные: (${unprocessedCount})`,
+            value: "unprocessed",
+          },
+          {
+            label: `Назначенные мне: (${assignedToMeCount})`,
+            value: "assigned",
+          },
+          {
+            label: `Ожидающие: (${pendingCount})`,
+            value: "pending",
+          },
+        ],
+      });
+    }
+
+    return createListCollection({
+      items: [{ label: "Мои тикеты", value: "my" }],
+    });
+  }, [isSpecialist, unprocessedCount, assignedToMeCount, pendingCount]);
+
+  // ------------------------------------------------
+  // Assignment actions
+  // ------------------------------------------------
   const handleAcceptAssignment = async (id: number) => {
     try {
       await assignmentApi.accept(id);
       toaster.success({ title: "Назначение принято" });
       fetchTickets();
       setPendingCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
+    } catch {
       toaster.error({
         title: "Ошибка",
         description: "Не удалось принять назначение",
@@ -155,7 +201,7 @@ export default function TicketsPage() {
       toaster.success({ title: "Назначение отклонено" });
       fetchTickets();
       setPendingCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
+    } catch {
       toaster.error({
         title: "Ошибка",
         description: "Не удалось отклонить назначение",
@@ -163,9 +209,11 @@ export default function TicketsPage() {
     }
   };
 
+  // ------------------------------------------------
+  // UI
+  // ------------------------------------------------
   return (
     <Box>
-      {/* Header */}
       <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
           <Heading size="lg" color="fg.default" mb={1}>
@@ -177,7 +225,6 @@ export default function TicketsPage() {
         </Box>
 
         <HStack gap={3}>
-          {/* Filter select - only for specialists */}
           {isSpecialist && (
             <Select.Root
               collection={filterCollection}
@@ -228,7 +275,6 @@ export default function TicketsPage() {
           <Spinner size="lg" />
         </Flex>
       ) : filter === "pending" ? (
-        // Pending Assignments View
         pendingAssignments.length === 0 ? (
           <Flex
             direction="column"
@@ -257,12 +303,7 @@ export default function TicketsPage() {
                 p={4}
                 _dark={{ bg: "yellow.900/20", borderColor: "yellow.700" }}
               >
-                <Flex
-                  justify="space-between"
-                  align="flex-start"
-                  wrap="wrap"
-                  gap={3}
-                >
+                <Flex justify="space-between" align="flex-start" wrap="wrap" gap={3}>
                   <Box>
                     <Link href={`/dashboard/tickets/${assignment.ticketId}`}>
                       <Text
@@ -323,6 +364,7 @@ export default function TicketsPage() {
           borderColor="border.default"
         >
           <Text color="fg.muted">Тикеты не найдены</Text>
+
           {canCreateTicket && (
             <Link href="/dashboard/tickets/new">
               <Button mt={4} size="sm" variant="outline">
@@ -339,7 +381,6 @@ export default function TicketsPage() {
         </VStack>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <Flex mt={6} justify="center" align="center" gap={4}>
           <IconButton
@@ -350,9 +391,11 @@ export default function TicketsPage() {
           >
             <LuChevronLeft />
           </IconButton>
+
           <Text color="fg.muted" fontSize="sm">
             Страница {page + 1} из {totalPages}
           </Text>
+
           <IconButton
             aria-label="Next page"
             variant="ghost"

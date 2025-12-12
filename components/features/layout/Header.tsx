@@ -5,6 +5,7 @@ import { LuBell, LuLogOut, LuSettings, LuUser, LuChevronDown } from 'react-icons
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useAuthStore } from '@/stores';
 import { SenderType, userRolesBadges } from '@/types';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 export function Header() {
   const { logout } = useAuth();
@@ -41,6 +42,11 @@ export function Header() {
 
         {/* Right side: notifications & profile */}
         <HStack gap={3}>
+
+          {/* Theme switcher */}
+
+          <ThemeSwitcher/>
+
           {/* Notifications */}
           <IconButton
             aria-label="Уведомления"

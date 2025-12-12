@@ -37,12 +37,17 @@ import {
 } from "@/lib/websocket/ticketWebSocket";
 import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
+import type { Ticket, TicketStatus } from "@/types";
 import type { Message } from "@/types/message";
 import { getSenderConfig, type SenderType } from "@/types/message";
+import { ticketApi } from "@/lib/api";
+import ChatInput from "../ticket-chat/ChatInput";
 
 interface TicketChatProps {
   ticketId: number;
 }
+
+// TODO вын6ести эти константы в конфиг
 
 // Blocked file extensions
 const BLOCKED_EXTENSIONS = [
@@ -71,8 +76,9 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [ticketStatus, setTicketStatus] = useState<TicketStatus>("OPEN");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch initial messages
   const fetchMessages = useCallback(async () => {
@@ -97,10 +103,20 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     }
   }, [ticketId]);
 
+  const fetchTicket = useCallback(async () => {
+    try {
+      const response = await ticketApi.get(ticketId);
+      setTicketStatus(response.status);
+    } catch (error) {
+      console.error("Failed to load ticket", error);
+    }
+  }, [ticketId]);
+
   // Connect to WebSocket
   useEffect(() => {
     fetchMessages();
     fetchAttachments();
+    fetchTicket();
 
     if (accessToken) {
       ticketWebSocket.connect(ticketId, accessToken, {
@@ -219,13 +235,6 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   const formatTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString("ru-RU", {
       hour: "2-digit",
@@ -252,6 +261,13 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
   const isImageType = (mimeType: string) => mimeType?.startsWith("image/");
+
+  const isTicketActive = (ticketStatus: TicketStatus): boolean => {
+    if (ticketStatus === "CLOSED" || ticketStatus === "CANCELLED") {
+      return false;
+    }
+    return true;
+  };
 
   return (
     <VStack gap={4} align="stretch">
@@ -416,46 +432,33 @@ export function TicketChat({ ticketId }: TicketChatProps) {
           borderColor="border.default"
           bg="bg.subtle"
         >
-          <Flex gap={2} align="center">
-            <input
-              ref={fileInputRef}
-              type="file"
-              style={{ display: "none" }}
-              onChange={handleFileSelect}
+          {/* TODO я здесь нахуярил эту пидорисню */}
+          {/* Проверка тикета на статус - если не активен сообщения в чат не отправляются */}
+          {isTicketActive(ticketStatus) ? (
+            <ChatInput
+              handleFileSelect={handleFileSelect}
+              isUploading={isUploading}
+              newMessage={newMessage}
+              setNewMessage={setNewMessage}
+              handleSend={handleSend}
+              fileInputRef={fileInputRef}
+              isSending={isSending}
+              selectedFile={selectedFile}
+              isChatInactive={false}
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <LuPaperclip />
-            </Button>
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Введите сообщение..."
-              bg="bg.surface"
-              borderColor="border.default"
-              _focus={{ borderColor: "gray.400" }}
-              flex={1}
+          ) : (
+            <ChatInput
+              handleFileSelect={handleFileSelect}
+              isUploading={isUploading}
+              newMessage={newMessage}
+              setNewMessage={setNewMessage}
+              handleSend={handleSend}
+              fileInputRef={fileInputRef}
+              isSending={isSending}
+              selectedFile={selectedFile}
+              isChatInactive={true}
             />
-            <Button
-              onClick={handleSend}
-              disabled={
-                (!newMessage.trim() && !selectedFile) ||
-                isSending ||
-                isUploading
-              }
-              loading={isSending || isUploading}
-              bg="gray.900"
-              color="white"
-              _hover={{ bg: "gray.800" }}
-            >
-              <LuSend />
-            </Button>
-          </Flex>
+          )}
         </Box>
       </Box>
 

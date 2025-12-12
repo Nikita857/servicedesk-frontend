@@ -16,9 +16,10 @@ const nextConfig: NextConfig = {
   },
   allowedDevOrigins: [
     "http://localhost:3000",
+    "http://localhost",
     "http://192.168.14.9:3000",
     "http://192.168.14.9",
-    "https://subpermanent-phebe-attently.ngrok-free.dev",
+    "192.168.14.9" //Для работы Hot module replpacement (HMR) by websocket connection. Крч чтобы страница сама не перезажгружалась
     ]
 };
 
