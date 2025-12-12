@@ -36,6 +36,7 @@ export default function TicketDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
+  const isAdmin = user?.roles?.includes("ADMIN") || false;
   // Check if user can escalate (all specialists can escalate)
   const canEscalate = isSpecialist;
 
@@ -115,11 +116,15 @@ export default function TicketDetailPage({ params }: PageProps) {
             );
             const ticketLineOrder = ticket.supportLine.displayOrder || 0;
             // Only consider as last line if displayOrder is actually set and is the max
+            // Admin can escalate from any line regardless
             setIsOnLastLine(
-              ticketLineOrder > 0 && ticketLineOrder >= maxDisplayOrder
+              !isAdmin &&
+                ticketLineOrder > 0 &&
+                ticketLineOrder >= maxDisplayOrder
             );
           } else {
-            setIsOnLastLine(true);
+            // Admin can escalate even from developer line
+            setIsOnLastLine(!isAdmin);
           }
         }
       } catch (error) {
@@ -130,7 +135,7 @@ export default function TicketDetailPage({ params }: PageProps) {
     if (ticket) {
       loadSupportLines();
     }
-  }, [ticket]);
+  }, [ticket, isAdmin]);
 
   // Load specialists when line is selected
   useEffect(() => {
@@ -192,7 +197,7 @@ export default function TicketDetailPage({ params }: PageProps) {
       setSelectedSpecialistId(undefined);
       setEscalationComment("");
     } catch (error) {
-      //CHECKME это моя реализация обработки ошибок с помощью тостов. Возможно будет правильно создать файл с разными тостами error, success, warning и т.п 
+      //CHECKME это моя реализация обработки ошибок с помощью тостов. Возможно будет правильно создать файл с разными тостами error, success, warning и т.п
       // И использовать их во всем проекте. Да и на будущее, делай все тосты closable: true
       if (axios.isAxiosError(error) && error.response) {
         toaster.error({
