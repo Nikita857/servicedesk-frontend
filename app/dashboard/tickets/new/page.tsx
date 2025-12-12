@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
 import { toaster } from "@/components/ui/toaster";
+import axios from "axios";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
 import api from "@/lib/api/client";
 
@@ -95,11 +96,20 @@ export default function NewTicketPage() {
       });
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось создать тикет",
-        closable: true,
-      });
+      if (axios.isAxiosError(error) && error.response) {
+        toaster.error({
+          title: "Ошибка",
+          description:
+            error.response.data.message || "Не удалось создать тикет",
+          closable: true,
+        });
+      } else {
+        toaster.error({
+          title: "Ошибка",
+          description: "Не удалось создать тикет",
+          closable: true,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

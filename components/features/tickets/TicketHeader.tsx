@@ -43,11 +43,11 @@ export default function TicketHeader({
   const priorityConf = ticketPriorityConfig[ticket.priority];
 
   const canReassign = () => {
-    if(ticket.status === 'CLOSED' || ticket.status === 'RESOLVED') {
-        return false;
+    if (ticket.status === "CLOSED" || ticket.status === "RESOLVED") {
+      return false;
     }
     return true;
-  }
+  };
 
   const handleStatusChange = async (newStatus: TicketStatus) => {
     if (!ticket) return;
@@ -118,10 +118,20 @@ export default function TicketHeader({
                   description: "Тикет взят в работу",
                 });
               } catch (error) {
-                toaster.error({
-                  title: "Ошибка",
-                  description: "Не удалось взять тикет",
-                });
+                if (axios.isAxiosError(error) && error.response) {
+                  toaster.error({
+                    title: "Ошибка",
+                    description:
+                      error.response.data.message || "Не удалось взять тикет",
+                    closable: true,
+                  });
+                } else {
+                  toaster.error({
+                    title: "Ошибка",
+                    description: "Не удалось взять тикет",
+                    closable: true,
+                  });
+                }
               }
             }}
           >

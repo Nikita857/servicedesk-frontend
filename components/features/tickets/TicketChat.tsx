@@ -39,6 +39,7 @@ import {
 import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
 import type { Ticket, TicketStatus } from "@/types";
+import axios from "axios";
 import type { Message } from "@/types/message";
 import { getSenderConfig, type SenderType } from "@/types/message";
 import { ticketApi } from "@/lib/api";
@@ -233,10 +234,20 @@ export function TicketChat({ ticketId }: TicketChatProps) {
         // Refresh attachments
         fetchAttachments();
       } catch (error) {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось загрузить файл",
-        });
+        if (axios.isAxiosError(error) && error.response) {
+          toaster.error({
+            title: "Ошибка",
+            description:
+              error.response.data.message || "Не удалось загрузить файл",
+            closable: true,
+          });
+        } else {
+          toaster.error({
+            title: "Ошибка",
+            description: "Не удалось загрузить файл",
+            closable: true,
+          });
+        }
       } finally {
         setIsUploading(false);
       }
@@ -251,10 +262,20 @@ export function TicketChat({ ticketId }: TicketChatProps) {
         const message = await messageApi.send(ticketId, { content });
         setMessages((prev) => [...prev, message]);
       } catch (error) {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось отправить сообщение",
-        });
+        if (axios.isAxiosError(error) && error.response) {
+          toaster.error({
+            title: "Ошибка",
+            description:
+              error.response.data.message || "Не удалось отправить сообщение",
+            closable: true,
+          });
+        } else {
+          toaster.error({
+            title: "Ошибка",
+            description: "Не удалось отправить сообщение",
+            closable: true,
+          });
+        }
         setNewMessage(content);
       } finally {
         setIsSending(false);
