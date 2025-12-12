@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/stores";
 import { messageApi } from "@/lib/api/messages";
-import { ticketApi } from "@/lib/api";
 import {
   ticketWebSocket,
   type ChatMessageWS,
@@ -11,7 +10,6 @@ import {
 } from "@/lib/websocket/ticketWebSocket";
 import type { Message } from "@/types/message";
 import type { SenderType } from "@/types/message";
-import type { TicketStatus } from "@/types";
 
 interface TypingUser {
   fio: string | null;
@@ -23,7 +21,6 @@ interface UseChatWebSocketReturn {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   isLoading: boolean;
   isConnected: boolean;
-  ticketStatus: TicketStatus;
   typingUser: TypingUser | null;
   sendTypingIndicator: (typing: boolean) => void;
   fetchMessages: () => Promise<void>;
@@ -34,7 +31,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const [ticketStatus, setTicketStatus] = useState<TicketStatus>("OPEN");
   const [typingUser, setTypingUser] = useState<TypingUser | null>(null);
   
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,16 +49,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     }
   }, [ticketId]);
 
-  // Fetch ticket status
-  const fetchTicket = useCallback(async () => {
-    try {
-      const response = await ticketApi.get(ticketId);
-      setTicketStatus(response.status);
-    } catch (error) {
-      console.error("Failed to load ticket", error);
-    }
-  }, [ticketId]);
-
   // Send typing indicator (debounced)
   const sendTypingIndicator = useCallback((typing: boolean) => {
     const now = Date.now();
@@ -75,7 +61,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   // Connect to WebSocket
   useEffect(() => {
     fetchMessages();
-    fetchTicket();
 
     if (accessToken) {
       ticketWebSocket.connect(ticketId, accessToken, {
@@ -123,14 +108,13 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     return () => {
       ticketWebSocket.disconnect();
     };
-  }, [ticketId, accessToken, fetchMessages, fetchTicket, user?.id]);
+  }, [ticketId, accessToken, fetchMessages, user?.id]);
 
   return {
     messages,
     setMessages,
     isLoading,
     isConnected,
-    ticketStatus,
     typingUser,
     sendTypingIndicator,
     fetchMessages,

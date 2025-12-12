@@ -289,7 +289,7 @@ export default function TicketDetailPage({ params }: PageProps) {
 
           {/* Messages section */}
           <Box mt={6}>
-            <TicketChat ticketId={ticket.id} />
+            <TicketChat ticketId={ticket.id} ticketStatus={ticket.status} />
           </Box>
         </GridItem>
 
