@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import {
   LuArrowLeft,
-  LuEdit,
+  LuPencil,
   LuHeart,
   LuEye,
   LuUser,
@@ -214,7 +214,7 @@ export default function WikiArticlePage({ params }: PageProps) {
             <HStack gap={2}>
               <Link href={`/dashboard/wiki/${article.slug}/edit`}>
                 <Button variant="outline">
-                  <LuEdit />
+                  <LuPencil />
                   Редактировать
                 </Button>
               </Link>

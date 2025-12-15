@@ -13,6 +13,7 @@ import {
   LuUsers,
 } from 'react-icons/lu';
 import type { IconType } from 'react-icons';
+import { useColorMode } from '@/components/ui/color-mode';
 
 interface NavItem {
   label: string;
@@ -35,6 +36,7 @@ const adminItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { colorMode } = useColorMode();
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -89,7 +91,7 @@ export function Sidebar() {
               align="center"
               gap={3}
               bg={isActive(item.href) ? 'bg.subtle' : 'transparent'}
-              color={isActive(item.href) ? 'accent.600' : 'fg.muted'}
+              color={isActive(item.href) ? colorMode === 'dark' ? 'accent.100' : 'accent.900' : 'fg.muted'}
               fontWeight={isActive(item.href) ? 'medium' : 'normal'}
               transition="all 0.2s"
               _hover={{

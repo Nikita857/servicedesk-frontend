@@ -156,7 +156,7 @@ export default function WikiPage() {
                   p={5}
                   h="100%"
                   _hover={{
-                    borderColor: "blue.300",
+                    borderColor: "fg.subtle",
                     transform: "translateY(-2px)",
                     transition: "all 0.2s",
                   }}
@@ -215,7 +215,7 @@ export default function WikiPage() {
                         <Text>{article.viewCount}</Text>
                       </HStack>
                       <HStack gap={1}>
-                        <LuHeart size={12} />
+                        <LuHeart size={12}/>
                         <Text>{article.likeCount}</Text>
                       </HStack>
                       <HStack gap={1} ml="auto">
