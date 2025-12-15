@@ -63,17 +63,42 @@ export default function WikiArticlePage({ params }: PageProps) {
 
   const handleLike = async () => {
     if (!article) return;
+
+    const isLiked = article.likedByCurrentUser;
+
     setIsLiking(true);
     try {
-      await wikiApi.like(article.id);
-      setArticle((prev) =>
-        prev ? { ...prev, likeCount: prev.likeCount + 1 } : null
-      );
-      toaster.success({ title: "Спасибо за отзыв!" });
+      if (isLiked) {
+        // Unlike
+        await wikiApi.unlike(article.id);
+        setArticle((prev) =>
+          prev
+            ? {
+                ...prev,
+                likeCount: Math.max(0, prev.likeCount - 1),
+                likedByCurrentUser: false,
+              }
+            : null
+        );
+        toaster.success({ title: "Статья удалена из избранного" });
+      } else {
+        // Like
+        await wikiApi.like(article.id);
+        setArticle((prev) =>
+          prev
+            ? {
+                ...prev,
+                likeCount: prev.likeCount + 1,
+                likedByCurrentUser: true,
+              }
+            : null
+        );
+        toaster.success({ title: "Статья добавлена в избранное!" });
+      }
     } catch (error) {
       toaster.error({
         title: "Ошибка",
-        description: "Не удалось поставить лайк",
+        description: "Не удалось обновить лайк",
       });
     } finally {
       setIsLiking(false);
@@ -205,9 +230,19 @@ export default function WikiArticlePage({ params }: PageProps) {
           flexWrap="wrap"
           gap={2}
         >
-          <Button variant="outline" onClick={handleLike} loading={isLiking}>
-            <LuHeart />
-            Нравится ({article.likeCount})
+          <Button
+            variant={article.likedByCurrentUser ? "solid" : "outline"}
+            colorPalette={article.likedByCurrentUser ? "red" : "gray"}
+            onClick={handleLike}
+            loading={isLiking}
+          >
+            <LuHeart
+              style={{
+                fill: article.likedByCurrentUser ? "currentColor" : "none",
+              }}
+            />
+            {article.likedByCurrentUser ? "В избранном" : "Нравится"} (
+            {article.likeCount})
           </Button>
 
           {canEdit && (

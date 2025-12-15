@@ -22,6 +22,7 @@ export interface WikiArticle {
   } | null;
   viewCount: number;
   likeCount: number;
+  likedByCurrentUser: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +37,7 @@ export interface WikiArticleListItem {
   authorName: string | null;
   viewCount: number;
   likeCount: number;
+  likedByCurrentUser: boolean;
   updatedAt: string;
 }
 
@@ -107,6 +109,11 @@ export const wikiApi = {
   // Like article
   like: async (id: number): Promise<void> => {
     await api.post(`/wiki/${id}/like`);
+  },
+
+  // Unlike article (remove like)
+  unlike: async (id: number): Promise<void> => {
+    await api.delete(`/wiki/${id}/like`);
   },
 
   // Search articles
