@@ -1,6 +1,7 @@
 import { Button, Flex, Input } from "@chakra-ui/react";
 import { RefObject } from "react";
 import { LuPaperclip, LuSend } from "react-icons/lu";
+import { CustomEmojiPicker } from "./CustomEmojiPicker";
 
 interface ChatInputProps {
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -22,7 +23,6 @@ export default function ChatInput({
   handleSend,
   fileInputRef,
   isSending,
-  selectedFile,
   isChatInactive,
 }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -38,16 +38,15 @@ export default function ChatInput({
         type="file"
         style={{ display: "none" }}
         onChange={handleFileSelect}
-        disabled
       />
       <Button
         variant="ghost"
         size="sm"
         onClick={() => fileInputRef.current?.click()}
-        disabled
       >
         <LuPaperclip />
       </Button>
+      <CustomEmojiPicker onSelect={(e) => setNewMessage(e)}/>
       <Input
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
@@ -60,7 +59,6 @@ export default function ChatInput({
       />
       <Button
         onClick={handleSend}
-        disabled
         loading={isSending || isUploading}
         bg="gray.900"
         color="white"
