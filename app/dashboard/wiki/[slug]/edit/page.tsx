@@ -22,6 +22,8 @@ import {
 } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
+import { AxiosError } from "axios";
+import { CustomEmojiPicker } from "@/components/features/ticket-chat/CustomEmojiPicker";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -57,10 +59,13 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         setTagsInput(data.tags.join(", "));
       } catch (error) {
         console.error("Failed to load article", error);
-        toaster.error({
-          title: "Ошибка",
-          description: "Статья не найдена",
-        });
+        if (error instanceof AxiosError) {
+          toaster.error({
+            title: "Ошибка",
+            description: error.response?.data.message,
+            closable: true,
+          });
+        }
         router.push("/dashboard/wiki");
       } finally {
         setIsLoading(false);
@@ -73,15 +78,25 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   useEffect(() => {
     if (!isLoading && article) {
       const isAuthor = user?.id === article.createdBy.id;
-      if (!isSpecialist || !isAuthor) {
+      const isAdmin = user?.roles.every((role) => role === "ADMIN");
+      if (!isSpecialist) {
         toaster.error({
           title: "Доступ запрещён",
           description: "Вы можете редактировать только свои статьи",
+          closable: true
+        });
+        router.push(`/dashboard/wiki/${slug}`);
+      }
+      if (!isAuthor && !isAdmin) {
+        toaster.error({
+          title: "Доступ запрещён",
+          description: "Вы не являетесь специалистом",
+          closable: true
         });
         router.push(`/dashboard/wiki/${slug}`);
       }
     }
-  }, [isLoading, article, isSpecialist, user?.id, router, slug]);
+  }, [isLoading, article, isSpecialist, user?.id, router, slug, user?.roles]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +106,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
       toaster.error({
         title: "Ошибка",
         description: "Введите заголовок статьи",
+        closable: true,
       });
       return;
     }
@@ -99,6 +115,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
       toaster.error({
         title: "Ошибка",
         description: "Введите содержимое статьи",
+        closable: true,
       });
       return;
     }
@@ -118,11 +135,13 @@ export default function EditWikiArticlePage({ params }: PageProps) {
       toaster.success({ title: "Статья обновлена!" });
       router.push(`/dashboard/wiki/${updated.slug}`);
     } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось обновить статью",
-        closable: true,
-      });
+      if (error instanceof AxiosError) {
+        toaster.error({
+          title: "Ошибка",
+          description: error.response?.data.message,
+          closable: true,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

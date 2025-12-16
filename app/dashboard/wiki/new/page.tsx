@@ -17,6 +17,8 @@ import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
+import { CustomEmojiPicker } from "@/components/features/ticket-chat/CustomEmojiPicker";
+import { AxiosError } from "axios";
 
 export default function NewWikiArticlePage() {
   const router = useRouter();
@@ -38,6 +40,7 @@ export default function NewWikiArticlePage() {
       toaster.error({
         title: "Доступ запрещён",
         description: "Только специалисты могут создавать статьи",
+        closable: true
       });
       router.push("/dashboard/wiki");
     }
@@ -50,6 +53,7 @@ export default function NewWikiArticlePage() {
       toaster.error({
         title: "Ошибка",
         description: "Введите заголовок статьи",
+        closable: true
       });
       return;
     }
@@ -58,6 +62,7 @@ export default function NewWikiArticlePage() {
       toaster.error({
         title: "Ошибка",
         description: "Введите содержимое статьи",
+        closable: true
       });
       return;
     }
@@ -74,15 +79,22 @@ export default function NewWikiArticlePage() {
         ...formData,
         tags,
       });
-
       toaster.success({ title: "Статья опубликована!" });
       router.push(`/dashboard/wiki/${article.slug}`);
     } catch (error) {
-      toaster.error({
+      if(error instanceof AxiosError) {
+        toaster.error({
+        title: "Ошибка",
+        description: error.response?.data.message,
+        closable: true,
+      });
+      }else{
+        toaster.error({
         title: "Ошибка",
         description: "Не удалось создать статью",
         closable: true,
       });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -180,6 +192,10 @@ export default function NewWikiArticlePage() {
                 rows={15}
                 minH="300px"
               />
+              <Box>
+                {/* Эмодзи перезаписывает текст */}
+                <CustomEmojiPicker onSelect={(emoji) => setFormData((prev) => ({...prev, content: emoji}))}/>
+              </Box>
             </Box>
 
             {/* Submit */}

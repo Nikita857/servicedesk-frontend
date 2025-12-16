@@ -20,12 +20,14 @@ import {
   LuUser,
   LuClock,
   LuTrash,
+  LuDownload,
 } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, type WikiArticle } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
+import { API_BASE_URL } from "@/lib/config";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -146,7 +148,8 @@ export default function WikiArticlePage({ params }: PageProps) {
   }
 
   const isAuthor = user?.id === article.createdBy.id;
-  const canEdit = isSpecialist && isAuthor;
+  const canEdit =
+    (isSpecialist && isAuthor) || user?.roles.every((role) => role === "ADMIN");
 
   return (
     <Box maxW="900px" mx="auto">
@@ -244,6 +247,11 @@ export default function WikiArticlePage({ params }: PageProps) {
             {article.likedByCurrentUser ? "В избранном" : "Нравится"} (
             {article.likeCount})
           </Button>
+          <Link href={`${API_BASE_URL}/wiki/${article.slug}/download`}>
+            <Button variant="ghost" aria-label="Скачать PDF версию статьи">
+              <LuDownload />
+            </Button>
+          </Link>
 
           {canEdit && (
             <HStack gap={2}>
