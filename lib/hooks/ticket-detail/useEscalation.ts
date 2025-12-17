@@ -1,9 +1,8 @@
 import { useState, useCallback } from "react";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { ticketApi } from "@/lib/api/tickets";
-import { toaster } from "@/components/ui/toaster";
+import { toast, handleApiError } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
-import axios from "axios";
 import type { Ticket } from "@/types/ticket";
 
 interface UseEscalationOptions {
@@ -44,11 +43,7 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
 
   const handleEscalate = useCallback(async () => {
     if (!ticket || !selectedLineId || !escalationComment.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Выберите линию поддержки и укажите комментарий",
-        closable: true,
-      });
+      toast.error("Ошибка", "Выберите линию поддержки и укажите комментарий");
       return;
     }
 
@@ -65,13 +60,12 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
         mode: selectedSpecialistId ? "DIRECT" : "FIRST_AVAILABLE",
       });
 
-      toaster.success({
-        title: "Тикет переадресован",
-        description: selectedSpecialistId
+      toast.success(
+        "Тикет переадресован",
+        selectedSpecialistId
           ? "Тикет назначен на специалиста"
-          : "Тикет передан на линию поддержки",
-        closable: true,
-      });
+          : "Тикет передан на линию поддержки"
+      );
 
       // Refresh ticket data
       const updatedTicket = await ticketApi.get(ticket.id);
@@ -80,20 +74,7 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
       // Reset form
       resetForm();
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        toaster.error({
-          title: "Ошибка",
-          description: `Не удалось переадресовать тикет. ${error.response.data.message}`,
-          closable: true,
-        });
-      } else {
-        console.error(error);
-        toaster.error({
-          title: "Ошибка",
-          description: "Неизвестная ошибка",
-          closable: true,
-        });
-      }
+      handleApiError(error, { context: "переадресовать тикет" });
     } finally {
       setIsEscalating(false);
     }

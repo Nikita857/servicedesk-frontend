@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "@/lib/providers";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
 
 interface UseTicketWebSocketOptions {
@@ -78,21 +78,14 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
       const message = generateChangeMessage(currentTicketRef.current, updatedTicket);
       
       if (message) {
-        toaster.info({
-          title: `Тикет #${ticketId}`,
-          description: message,
-          closable: true,
-        });
+        toast.ticketUpdated(ticketId, message);
       }
 
       updateCallbackRef.current?.(updatedTicket);
     });
 
     const unsubscribeDeleted = subscribeToTicketDeleted(ticketId, () => {
-      toaster.warning({
-        title: `Тикет #${ticketId} удалён`,
-        closable: true,
-      });
+      toast.warning(`Тикет #${ticketId} удалён`);
       deleteCallbackRef.current?.();
     });
 

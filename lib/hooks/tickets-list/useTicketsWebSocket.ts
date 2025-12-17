@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useWebSocket } from "@/lib/providers";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
 import type { TicketListItem } from "@/types/ticket";
 
@@ -41,11 +41,7 @@ export function useTicketsWebSocket(options: UseTicketsWebSocketOptions = {}) {
       };
 
       // Notify via toast
-      toaster.info({
-        title: `Новый тикет #${ticket.id}`,
-        description: ticket.title,
-        closable: true,
-      });
+      toast.newTicket(ticket.id, ticket.title);
 
       // Call the callback to add ticket to list
       callbackRef.current?.(listItem);
