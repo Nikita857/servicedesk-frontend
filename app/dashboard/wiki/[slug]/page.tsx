@@ -1,0 +1,286 @@
+"use client";
+
+import { useState, useEffect, use } from "react";
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Spinner,
+  Badge,
+} from "@chakra-ui/react";
+import {
+  LuArrowLeft,
+  LuPencil,
+  LuHeart,
+  LuEye,
+  LuUser,
+  LuClock,
+  LuTrash,
+  LuDownload,
+} from "react-icons/lu";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { wikiApi, type WikiArticle } from "@/lib/api/wiki";
+import { useAuthStore } from "@/stores";
+import { toaster } from "@/components/ui/toaster";
+import { API_BASE_URL } from "@/lib/config";
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default function WikiArticlePage({ params }: PageProps) {
+  const { slug } = use(params);
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const isSpecialist = user?.specialist || false;
+
+  const [article, setArticle] = useState<WikiArticle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        const data = await wikiApi.getBySlug(slug);
+        setArticle(data);
+      } catch (error) {
+        console.error("Failed to load article", error);
+        toaster.error({
+          title: "Ошибка",
+          description: "Статья не найдена",
+        });
+        router.push("/dashboard/wiki");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [slug, router]);
+
+  const handleLike = async () => {
+    if (!article) return;
+
+    const isLiked = article.likedByCurrentUser;
+
+    setIsLiking(true);
+    try {
+      if (isLiked) {
+        // Unlike
+        await wikiApi.unlike(article.id);
+        setArticle((prev) =>
+          prev
+            ? {
+                ...prev,
+                likeCount: Math.max(0, prev.likeCount - 1),
+                likedByCurrentUser: false,
+              }
+            : null
+        );
+        toaster.success({ title: "Статья удалена из избранного" });
+      } else {
+        // Like
+        await wikiApi.like(article.id);
+        setArticle((prev) =>
+          prev
+            ? {
+                ...prev,
+                likeCount: prev.likeCount + 1,
+                likedByCurrentUser: true,
+              }
+            : null
+        );
+        toaster.success({ title: "Статья добавлена в избранное!" });
+      }
+    } catch (error) {
+      toaster.error({
+        title: "Ошибка",
+        description: "Не удалось обновить лайк",
+      });
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!article) return;
+    if (!confirm("Вы уверены, что хотите удалить эту статью?")) return;
+
+    setIsDeleting(true);
+    try {
+      await wikiApi.delete(article.id);
+      toaster.success({ title: "Статья удалена" });
+      router.push("/dashboard/wiki");
+    } catch (error) {
+      toaster.error({
+        title: "Ошибка",
+        description: "Не удалось удалить статью",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" h="400px">
+        <Spinner size="lg" />
+      </Flex>
+    );
+  }
+
+  if (!article) {
+    return null;
+  }
+
+  const isAuthor = user?.id === article.createdBy.id;
+  const canEdit =
+    (isSpecialist && isAuthor) || user?.roles.every((role) => role === "ADMIN");
+
+  return (
+    <Box maxW="900px" mx="auto">
+      {/* Back button */}
+      <Link href="/dashboard/wiki">
+        <Button variant="ghost" size="sm" mb={4}>
+          <LuArrowLeft />
+          Назад к списку
+        </Button>
+      </Link>
+
+      {/* Article */}
+      <Box
+        bg="bg.surface"
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor="border.default"
+        p={8}
+      >
+        {/* Header */}
+        <VStack align="stretch" gap={4} mb={6}>
+          {/* Category & Tags */}
+          <HStack gap={2} flexWrap="wrap">
+            {article.categoryName && (
+              <Badge colorPalette="purple" size="sm">
+                {article.categoryName}
+              </Badge>
+            )}
+            {article.tags.map((tag) => (
+              <Badge key={tag} colorPalette="blue" variant="subtle" size="sm">
+                {tag}
+              </Badge>
+            ))}
+          </HStack>
+
+          {/* Title */}
+          <Heading size="xl" color="fg.default">
+            {article.title}
+          </Heading>
+
+          {/* Meta */}
+          <HStack gap={4} fontSize="sm" color="fg.muted" flexWrap="wrap">
+            <HStack gap={1}>
+              <LuUser size={14} />
+              <Text>{article.createdBy.fio || article.createdBy.username}</Text>
+            </HStack>
+            <HStack gap={1}>
+              <LuClock size={14} />
+              <Text>{formatDate(article.createdAt)}</Text>
+            </HStack>
+            <HStack gap={1}>
+              <LuEye size={14} />
+              <Text>{article.viewCount} просмотров</Text>
+            </HStack>
+            <HStack gap={1}>
+              <LuHeart size={14} />
+              <Text>{article.likeCount} лайков</Text>
+            </HStack>
+          </HStack>
+        </VStack>
+
+        {/* Content */}
+        <Box
+          className="article-content"
+          color="fg.default"
+          fontSize="md"
+          lineHeight="1.8"
+          whiteSpace="pre-wrap"
+          mb={6}
+        >
+          {article.content}
+        </Box>
+
+        {/* Actions */}
+        <Flex
+          pt={4}
+          borderTopWidth="1px"
+          borderColor="border.default"
+          justify="space-between"
+          align="center"
+          flexWrap="wrap"
+          gap={2}
+        >
+          <Button
+            variant={article.likedByCurrentUser ? "solid" : "outline"}
+            colorPalette={article.likedByCurrentUser ? "red" : "gray"}
+            onClick={handleLike}
+            loading={isLiking}
+          >
+            <LuHeart
+              style={{
+                fill: article.likedByCurrentUser ? "currentColor" : "none",
+              }}
+            />
+            {article.likedByCurrentUser ? "В избранном" : "Нравится"} (
+            {article.likeCount})
+          </Button>
+          <Link href={`${API_BASE_URL}/wiki/${article.slug}/download`}>
+            <Button variant="ghost" aria-label="Скачать PDF версию статьи">
+              <LuDownload />
+            </Button>
+          </Link>
+
+          {canEdit && (
+            <HStack gap={2}>
+              <Link href={`/dashboard/wiki/${article.slug}/edit`}>
+                <Button variant="outline">
+                  <LuPencil />
+                  Редактировать
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                color="red.500"
+                onClick={handleDelete}
+                loading={isDeleting}
+              >
+                <LuTrash />
+              </Button>
+            </HStack>
+          )}
+        </Flex>
+
+        {/* Updated info */}
+        {article.updatedBy && article.updatedAt !== article.createdAt && (
+          <Text fontSize="xs" color="fg.muted" mt={4}>
+            Обновлено {formatDate(article.updatedAt)} пользователем{" "}
+            {article.updatedBy.fio || article.updatedBy.username}
+          </Text>
+        )}
+      </Box>
+    </Box>
+  );
+}

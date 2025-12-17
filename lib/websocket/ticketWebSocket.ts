@@ -18,6 +18,7 @@ export interface TypingIndicator {
   ticketId: number;
   userId: number;
   username: string;
+  fio: string | null;
   typing: boolean;
 }
 

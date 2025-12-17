@@ -1,0 +1,400 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Input,
+  VStack,
+  HStack,
+  Spinner,
+  Badge,
+  SimpleGrid,
+  IconButton,
+} from "@chakra-ui/react";
+import {
+  LuPlus,
+  LuSearch,
+  LuBookOpen,
+  LuEye,
+  LuHeart,
+  LuUser,
+  LuClock,
+} from "react-icons/lu";
+import { wikiApi, type WikiArticleListItem } from "@/lib/api/wiki";
+import { useAuthStore } from "@/stores";
+import { toaster } from "@/components/ui/toaster";
+import Link from "next/link";
+
+export default function WikiPage() {
+  const { user } = useAuthStore();
+  const isSpecialist = user?.specialist || false;
+
+  const [articles, setArticles] = useState<WikiArticleListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [likingArticleId, setLikingArticleId] = useState<number | null>(null);
+
+  const fetchArticles = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = searchQuery
+        ? await wikiApi.search(searchQuery, page, 12)
+        : await wikiApi.list(page, 12);
+      setArticles(response.content);
+      setTotalPages(response.totalPages);
+    } catch (error) {
+      console.error("Failed to load articles", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, searchQuery]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(0);
+    setShowFavorites(false);
+    fetchArticles();
+  };
+
+  const handleLike = async (e: React.MouseEvent, articleId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toaster.error({ title: "Войдите, чтобы лайкать статьи" });
+      return;
+    }
+
+    const article = articles.find((a) => a.id === articleId);
+    if (!article) return;
+
+    const isLiked = article.likedByCurrentUser;
+
+    setLikingArticleId(articleId);
+    try {
+      if (isLiked) {
+        // Unlike
+        await wikiApi.unlike(articleId);
+        setArticles((prev) =>
+          prev.map((a) =>
+            a.id === articleId
+              ? {
+                  ...a,
+                  likedByCurrentUser: false,
+                  likeCount: Math.max(0, a.likeCount - 1),
+                }
+              : a
+          )
+        );
+        toaster.success({ title: "Статья удалена из избранного" });
+      } else {
+        // Like
+        await wikiApi.like(articleId);
+        setArticles((prev) =>
+          prev.map((a) =>
+            a.id === articleId
+              ? {
+                  ...a,
+                  likedByCurrentUser: true,
+                  likeCount: a.likeCount + 1,
+                }
+              : a
+          )
+        );
+        toaster.success({ title: "Статья добавлена в избранное" });
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Не удалось обновить лайк";
+      toaster.error({ title: errorMessage });
+    } finally {
+      setLikingArticleId(null);
+    }
+  };
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  // Фильтруем статьи для показа избранного
+  const displayedArticles = showFavorites
+    ? articles.filter((a) => a.likedByCurrentUser)
+    : articles;
+
+  return (
+    <Box>
+      {/* Header */}
+      <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
+        <Box>
+          <Heading size="lg" color="fg.default" mb={1}>
+            База знаний
+          </Heading>
+          <Text color="fg.muted" fontSize="sm">
+            Статьи и документация для специалистов
+          </Text>
+        </Box>
+
+        <HStack gap={2}>
+          {/* Favorites filter */}
+          <Button
+            variant={showFavorites ? "solid" : "outline"}
+            colorPalette={showFavorites ? "red" : "gray"}
+            onClick={() => setShowFavorites(!showFavorites)}
+          >
+            <LuHeart />
+            Избранное
+          </Button>
+
+          {isSpecialist && (
+            <Link href="/dashboard/wiki/new">
+              <Button bg="gray.900" color="white" _hover={{ bg: "gray.800" }}>
+                <LuPlus />
+                Новая статья
+              </Button>
+            </Link>
+          )}
+        </HStack>
+      </Flex>
+
+      {/* Search */}
+      <Box mb={6}>
+        <form onSubmit={handleSearch}>
+          <Flex gap={2}>
+            <Input
+              placeholder="Поиск по статьям..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              bg="bg.surface"
+              flex={1}
+            />
+            <Button type="submit" variant="outline">
+              <LuSearch />
+              Найти
+            </Button>
+          </Flex>
+        </form>
+      </Box>
+
+      {/* Articles Grid */}
+      {isLoading ? (
+        <Flex justify="center" align="center" h="200px">
+          <Spinner />
+        </Flex>
+      ) : displayedArticles.length === 0 ? (
+        <Box
+          bg="bg.surface"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor="border.default"
+          p={8}
+          textAlign="center"
+        >
+          <LuBookOpen size={48} style={{ margin: "0 auto", opacity: 0.3 }} />
+          <Text color="fg.muted" mt={4}>
+            {showFavorites
+              ? "У вас пока нет избранных статей"
+              : searchQuery
+              ? "Статьи не найдены"
+              : "Нет статей в базе знаний"}
+          </Text>
+          {showFavorites && (
+            <Button
+              mt={4}
+              variant="outline"
+              onClick={() => setShowFavorites(false)}
+            >
+              Показать все статьи
+            </Button>
+          )}
+          {isSpecialist && !searchQuery && !showFavorites && (
+            <Link href="/dashboard/wiki/new">
+              <Button
+                mt={4}
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
+              >
+                <LuPlus />
+                Создать первую статью
+              </Button>
+            </Link>
+          )}
+        </Box>
+      ) : (
+        <>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+            {displayedArticles.map((article) => (
+              <Link key={article.id} href={`/dashboard/wiki/${article.slug}`}>
+                <Box
+                  bg="bg.surface"
+                  borderRadius="xl"
+                  borderWidth="1px"
+                  borderColor={
+                    article.likedByCurrentUser ? "red.200" : "border.default"
+                  }
+                  p={5}
+                  h="100%"
+                  _hover={{
+                    borderColor: article.likedByCurrentUser
+                      ? "red.400"
+                      : "fg.subtle",
+                    transform: "translateY(-2px)",
+                    transition: "all 0.2s",
+                  }}
+                  cursor="pointer"
+                  position="relative"
+                >
+                  {/* Like badge indicator */}
+                  {article.likedByCurrentUser && (
+                    <Badge
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      colorPalette="red"
+                      variant="subtle"
+                      size="sm"
+                    >
+                      <LuHeart size={10} style={{ marginRight: 4 }} />В
+                      избранном
+                    </Badge>
+                  )}
+
+                  <VStack align="stretch" gap={3}>
+                    {/* Title */}
+                    <Heading
+                      size="sm"
+                      color="fg.default"
+                      lineClamp={2}
+                      pr={article.likedByCurrentUser ? 20 : 0}
+                    >
+                      {article.title}
+                    </Heading>
+
+                    {/* Excerpt */}
+                    {article.excerpt && (
+                      <Text color="fg.muted" fontSize="sm" lineClamp={3}>
+                        {article.excerpt}
+                      </Text>
+                    )}
+
+                    {/* Tags */}
+                    {article.tags.length > 0 && (
+                      <HStack gap={1} flexWrap="wrap">
+                        {article.tags.slice(0, 3).map((tag) => (
+                          <Badge
+                            key={tag}
+                            size="sm"
+                            colorPalette="blue"
+                            variant="subtle"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                        {article.tags.length > 3 && (
+                          <Badge size="sm" variant="subtle">
+                            +{article.tags.length - 3}
+                          </Badge>
+                        )}
+                      </HStack>
+                    )}
+
+                    {/* Meta */}
+                    <HStack
+                      gap={3}
+                      fontSize="xs"
+                      color="fg.muted"
+                      mt="auto"
+                      pt={2}
+                      borderTopWidth="1px"
+                      borderColor="border.default"
+                    >
+                      <HStack gap={1}>
+                        <LuUser size={12} />
+                        <Text>{article.authorName || "Аноним"}</Text>
+                      </HStack>
+                      <HStack gap={1}>
+                        <LuEye size={12} />
+                        <Text>{article.viewCount}</Text>
+                      </HStack>
+
+                      {/* Like button */}
+                      <HStack
+                        gap={1}
+                        as="button"
+                        onClick={(e) => handleLike(e, article.id)}
+                        color={
+                          article.likedByCurrentUser ? "red.500" : "fg.muted"
+                        }
+                        _hover={{ color: "red.500" }}
+                        transition="color 0.2s"
+                        cursor="pointer"
+                      >
+                        {likingArticleId === article.id ? (
+                          <Spinner size="xs" />
+                        ) : (
+                          <LuHeart
+                            size={12}
+                            fill={
+                              article.likedByCurrentUser
+                                ? "currentColor"
+                                : "none"
+                            }
+                          />
+                        )}
+                        <Text>{article.likeCount}</Text>
+                      </HStack>
+
+                      <HStack gap={1} ml="auto">
+                        <LuClock size={12} />
+                        <Text>{formatDate(article.updatedAt)}</Text>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                </Box>
+              </Link>
+            ))}
+          </SimpleGrid>
+
+          {/* Pagination */}
+          {totalPages > 1 && !showFavorites && (
+            <Flex justify="center" mt={6} gap={2}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                Назад
+              </Button>
+              <Text alignSelf="center" fontSize="sm" color="fg.muted">
+                {page + 1} / {totalPages}
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                Вперёд
+              </Button>
+            </Flex>
+          )}
+        </>
+      )}
+    </Box>
+  );
+}

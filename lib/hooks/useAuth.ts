@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores';
 import { authApi } from '@/lib/api/auth';
 import { toaster } from '@/components/ui/toaster';
 import type { AuthRequest } from '@/types/auth';
+import { AxiosError } from 'axios';
 
 export function useAuth() {
   const router = useRouter();
@@ -30,8 +31,8 @@ export function useAuth() {
       setIsLoggingIn(false);
       
       let message = 'Ошибка авторизации';
-      if (error instanceof Error) {
-        message = error.message;
+      if (error instanceof AxiosError) {
+        message = error.response?.data.message;
       }
       
       toaster.error({

@@ -37,7 +37,9 @@ export default function TicketsPage() {
     userRoles.includes("USER") || userRoles.includes("ADMIN");
 
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<Assignment[]>([]);
+  const [pendingAssignments, setPendingAssignments] = useState<Assignment[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -52,87 +54,85 @@ export default function TicketsPage() {
   // ------------------------------------------------
   // Correct counters calculation
   // ------------------------------------------------
-  useEffect(() => {
+  // Counter loader - extracted to callback for reuse
+  const loadCounts = useCallback(async () => {
     if (!isSpecialist) return;
 
-    const loadCounts = async () => {
-      try {
-        const all = await ticketApi.listAllDB(0, 9999);
+    try {
+      const all = await ticketApi.listAllDB(0, 9999);
 
-        const assigned = all.content.filter(
-          (t) => t.assignedToUsername && t.assignedToUsername === username
-        ).length;
+      const assigned = all.content.filter(
+        (t) => t.assignedToUsername && t.assignedToUsername === username
+      ).length;
 
-        const unprocessed = all.content.filter(
-          (t) =>
-            (!t.assignedToUsername || t.assignedToUsername.trim() === "") &&
-            t.status === "NEW"
-        ).length;
+      const unprocessed = all.content.filter(
+        (t) =>
+          (!t.assignedToUsername || t.assignedToUsername.trim() === "") &&
+          t.status === "NEW"
+      ).length;
 
-        const pending = await assignmentApi.getPendingCount();
+      const pending = await assignmentApi.getPendingCount();
 
-        setAssignedToMeCount(assigned);
-        setUnprocessedCount(unprocessed);
-        setPendingCount(pending);
-      } catch (e) {
-        console.error("Ошибка вычисления счётчиков", e);
-      }
-    };
-
-    loadCounts();
+      setAssignedToMeCount(assigned);
+      setUnprocessedCount(unprocessed);
+      setPendingCount(pending);
+    } catch (e) {
+      console.error("Ошибка вычисления счётчиков", e);
+    }
   }, [isSpecialist, username]);
+
+  useEffect(() => {
+    loadCounts();
+  }, [loadCounts]);
 
   // ------------------------------------------------
   // Ticket loader
   // ------------------------------------------------
-  const fetchTickets = useCallback(
-    async () => {
-      setIsLoading(true);
-      try {
-        if (filter === "pending") {
-          const response = await assignmentApi.getMyPending(page, 5);
-          setPendingAssignments(response.content);
-          setTickets([]);
-          setTotalPages(response.totalPages);
-        } else {
-          let response: PagedTicketList;
+  const fetchTickets = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (filter === "pending") {
+        const response = await assignmentApi.getMyPending(page, 5);
+        setPendingAssignments(response.content);
+        setTickets([]);
+        setTotalPages(response.totalPages);
+      } else {
+        let response: PagedTicketList;
 
-          switch (filter) {
-            case "my":
-              response = await ticketApi.listMy(page, 5);
-              break;
+        switch (filter) {
+          case "my":
+            response = await ticketApi.listMy(page, 5);
+            break;
 
-            case "assigned":
-              response = await ticketApi.listAssigned(page, 5);
-              break;
+          case "assigned":
+            response = await ticketApi.listAssigned(page, 5);
+            break;
 
-            case "unprocessed":
-              response = await ticketApi.list(page, 5);
-              response = {
-                ...response,
-                content: response.content.filter((t) => t.status === "NEW"),
-              };
-              break;
+          case "unprocessed":
+            response = await ticketApi.list(page, 5);
+            response = {
+              ...response,
+              content: response.content.filter((t) => t.status === "NEW"),
+            };
+            break;
 
-            default:
-              response = await ticketApi.listMy(page, 5);
-          }
-
-          setTickets(response.content);
-          setPendingAssignments([]);
-          setTotalPages(response.totalPages);
+          default:
+            response = await ticketApi.listMy(page, 5);
         }
-      } catch (error) {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось загрузить список тикетов",
-        });
-      } finally {
-        setIsLoading(false);
+
+        setTickets(response.content);
+        setPendingAssignments([]);
+        setTotalPages(response.totalPages);
       }
-    },
-    [page, filter]
-  );
+    } catch (error) {
+      toaster.error({
+        title: "Ошибка",
+        description: "Не удалось загрузить список тикетов",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, filter]);
 
   useEffect(() => {
     fetchTickets();
@@ -182,8 +182,8 @@ export default function TicketsPage() {
     try {
       await assignmentApi.accept(id);
       toaster.success({ title: "Назначение принято" });
-      fetchTickets();
-      setPendingCount((prev) => Math.max(0, prev - 1));
+      await fetchTickets();
+      await loadCounts(); // Refresh all counters
     } catch {
       toaster.error({
         title: "Ошибка",
@@ -199,8 +199,8 @@ export default function TicketsPage() {
     try {
       await assignmentApi.reject(id, reason);
       toaster.success({ title: "Назначение отклонено" });
-      fetchTickets();
-      setPendingCount((prev) => Math.max(0, prev - 1));
+      await fetchTickets();
+      await loadCounts(); // Refresh all counters
     } catch {
       toaster.error({
         title: "Ошибка",
@@ -303,7 +303,12 @@ export default function TicketsPage() {
                 p={4}
                 _dark={{ bg: "yellow.900/20", borderColor: "yellow.700" }}
               >
-                <Flex justify="space-between" align="flex-start" wrap="wrap" gap={3}>
+                <Flex
+                  justify="space-between"
+                  align="flex-start"
+                  wrap="wrap"
+                  gap={3}
+                >
                   <Box>
                     <Link href={`/dashboard/tickets/${assignment.ticketId}`}>
                       <Text

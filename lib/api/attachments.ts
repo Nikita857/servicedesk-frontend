@@ -1,5 +1,5 @@
 import api from './client';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, API_SERVER_URL } from '../config';
 
 export interface Attachment {
   id: number;
@@ -28,14 +28,7 @@ interface ApiResponse<T> {
  * Otherwise prepend API base URL
  */
 export const getAttachmentUrl = (url: string): string => {
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  // URL from backend like "/attachments/file/uuid" or just "uuid"
-  if (url.startsWith('/')) {
-    return `${API_BASE_URL}${url}`;
-  }
-  return `${API_BASE_URL}/attachments/file/${url}`;
+  return `${API_SERVER_URL}${url}`;
 };
 
 export const attachmentApi = {
