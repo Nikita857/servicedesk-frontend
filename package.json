@@ -12,6 +12,7 @@
     "@chakra-ui/react": "^3.30.0",
     "@emotion/react": "^11.14.0",
     "@stomp/stompjs": "^7.2.1",
+    "@tanstack/react-query": "^5.90.12",
     "axios": "^1.13.2",
     "emoji-picker-react": "^4.16.1",
     "jose": "^6.1.3",

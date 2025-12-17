@@ -64,8 +64,8 @@ class TicketWebSocket {
       console.log('[WS] Connected to ticket', ticketId);
       callbacks.onConnect?.();
 
-      // Subscribe to messages
-      this.client?.subscribe(`/topic/ticket/${ticketId}`, (message: IMessage) => {
+      // Subscribe to messages (now on /messages channel)
+      this.client?.subscribe(`/topic/ticket/${ticketId}/messages`, (message: IMessage) => {
         try {
           const chatMessage: ChatMessageWS = JSON.parse(message.body);
           callbacks.onMessage?.(chatMessage);
