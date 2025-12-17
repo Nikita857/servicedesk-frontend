@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { use, useCallback, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -11,21 +11,17 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { ticketApi } from "@/lib/api/tickets";
-import {
-  supportLineApi,
-  Specialist,
-  SupportLine,
-} from "@/lib/api/supportLines";
-import { assignmentApi, Assignment } from "@/lib/api/assignments";
-import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
 import { TicketChat } from "@/components/features/tickets";
-import type { Ticket } from "@/types/ticket";
 import TicketHeader from "@/components/features/tickets/TicketHeader";
 import EscalationPanel from "@/components/features/tickets/EscalationPanel";
 import TicketSidebar from "@/components/features/tickets/TicketSidebar";
-import axios, { AxiosError } from "axios";
+import {
+  useTicketDetail,
+  useEscalation,
+  useSupportLines,
+  useTicketWebSocket,
+} from "@/lib/hooks";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -36,188 +32,66 @@ export default function TicketDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  // Check if user can escalate (all specialists can escalate)
   const canEscalate = isSpecialist;
 
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // ==================== Hooks ====================
+  const {
+    ticket,
+    isLoading,
+    currentAssignment,
+    assignmentHistory,
+    showHistory,
+    setShowHistory,
+    updateTicket,
+    refresh,
+  } = useTicketDetail(Number(id));
 
-  // Escalation state
-  const [showEscalation, setShowEscalation] = useState(false);
-  const [supportLines, setSupportLines] = useState<SupportLine[]>([]);
-  const [specialists, setSpecialists] = useState<Specialist[]>([]);
-  const [selectedLineId, setSelectedLineId] = useState<number | undefined>();
-  const [selectedSpecialistId, setSelectedSpecialistId] = useState<
-    number | undefined
-  >();
-  const [escalationComment, setEscalationComment] = useState("");
-  const [isEscalating, setIsEscalating] = useState(false);
-  const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(false);
-  const [isOnLastLine, setIsOnLastLine] = useState(false);
+  const {
+    supportLines,
+    specialists,
+    isLoadingSpecialists,
+    isOnLastLine,
+    loadSpecialists,
+    clearSpecialists,
+  } = useSupportLines({ ticket });
 
-  // Assignment history
-  const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(
-    null
+  const handleEscalationSuccess = useCallback(
+    async (
+      updatedTicket: typeof ticket,
+      newAssignment: typeof currentAssignment
+    ) => {
+      if (updatedTicket) {
+        updateTicket(updatedTicket);
+      }
+      await refresh();
+    },
+    [updateTicket, refresh]
   );
-  const [assignmentHistory, setAssignmentHistory] = useState<Assignment[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
 
-  // Load ticket and assignment info
+  const escalation = useEscalation({
+    ticket,
+    onSuccess: handleEscalationSuccess,
+  });
+
+  // Load specialists when line changes
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const ticketData = await ticketApi.get(Number(id));
-        setTicket(ticketData);
-
-        // Load current assignment
-        const current = await assignmentApi.getCurrentForTicket(Number(id));
-        setCurrentAssignment(current);
-
-        // Load assignment history
-        const history = await assignmentApi.getTicketHistory(Number(id));
-        setAssignmentHistory(history);
-      } catch (error) {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось загрузить тикет",
-        });
-        router.push("/dashboard/tickets");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [id, router]);
-
-  // Load support lines and determine if on last line (DEVELOPER line)
-  useEffect(() => {
-    const loadSupportLines = async () => {
-      try {
-        const lines = await supportLineApi.getAll();
-        setSupportLines(lines);
-
-        // Determine if ticket is on the DEVELOPER line (last/3rd line)
-        // Check by line name containing DEVELOPER-related keywords or by max displayOrder
-        if (ticket?.supportLine && lines.length > 0) {
-          const ticketLineName = ticket.supportLine.name?.toLowerCase() || "";
-
-          // Check if current line is DEVELOPER line by name
-          const isDeveloperLine =
-            ticketLineName.includes("developer") ||
-            ticketLineName.includes("разработ") ||
-            ticketLineName.includes("3 линия") ||
-            ticketLineName.includes("третья");
-
-          // Fallback: check by displayOrder if name check doesn't match
-          if (!isDeveloperLine) {
-            const maxDisplayOrder = Math.max(
-              ...lines.map((l) => l.displayOrder || 0)
-            );
-            const ticketLineOrder = ticket.supportLine.displayOrder || 0;
-            // Only consider as last line if displayOrder is actually set and is the max
-            // Admin can escalate from any line regardless
-            setIsOnLastLine(
-              !isAdmin &&
-                ticketLineOrder > 0 &&
-                ticketLineOrder >= maxDisplayOrder
-            );
-          } else {
-            // Admin can escalate even from developer line
-            setIsOnLastLine(!isAdmin);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load support lines", error);
-      }
-    };
-
-    if (ticket) {
-      loadSupportLines();
-    }
-  }, [ticket, isAdmin]);
-
-  // Load specialists when line is selected
-  useEffect(() => {
-    if (selectedLineId) {
-      setIsLoadingSpecialists(true);
-      setSpecialists([]);
-      setSelectedSpecialistId(undefined);
-
-      supportLineApi
-        .getSpecialists(selectedLineId)
-        .then(setSpecialists)
-        .catch(console.error)
-        .finally(() => setIsLoadingSpecialists(false));
+    if (escalation.selectedLineId) {
+      loadSpecialists(escalation.selectedLineId);
     } else {
-      setSpecialists([]);
-      setSelectedSpecialistId(undefined);
+      clearSpecialists();
     }
-  }, [selectedLineId]);
+  }, [escalation.selectedLineId, loadSpecialists, clearSpecialists]);
 
-  const handleEscalate = async () => {
-    if (!ticket || !selectedLineId || !escalationComment.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Выберите линию поддержки и укажите комментарий",
-        closable: true,
-      });
-      return;
-    }
+  // WebSocket for real-time updates
+  useTicketWebSocket({
+    ticketId: Number(id),
+    currentTicket: ticket,
+    onTicketUpdate: updateTicket,
+    onTicketDeleted: () => router.push("/dashboard/tickets"),
+    enabled: !!ticket,
+  });
 
-    setIsEscalating(true);
-    try {
-      // Use the new assignments API
-      const assignment = await assignmentApi.create({
-        ticketId: ticket.id,
-        toLineId: selectedLineId,
-        toUserId: selectedSpecialistId,
-        fromLineId: ticket.supportLine?.id,
-        fromUserId: user?.id,
-        note: escalationComment,
-        mode: selectedSpecialistId ? "DIRECT" : "FIRST_AVAILABLE",
-      });
-
-      toaster.success({
-        title: "Тикет переадресован",
-        description: selectedSpecialistId
-          ? "Тикет назначен на специалиста"
-          : "Тикет передан на линию поддержки",
-      });
-
-      // Refresh ticket and assignment data
-      const updatedTicket = await ticketApi.get(ticket.id);
-      setTicket(updatedTicket);
-      setCurrentAssignment(assignment);
-      setAssignmentHistory((prev) => [assignment, ...prev]);
-
-      // Reset form
-      setShowEscalation(false);
-      setSelectedLineId(undefined);
-      setSelectedSpecialistId(undefined);
-      setEscalationComment("");
-    } catch (error) {
-      //CHECKME это моя реализация обработки ошибок с помощью тостов. Возможно будет правильно создать файл с разными тостами error, success, warning и т.п
-      // И использовать их во всем проекте. Да и на будущее, делай все тосты closable: true
-      if (axios.isAxiosError(error) && error.response) {
-        toaster.error({
-          title: "Ошибка",
-          description: `Не удалось переадресовать тикет. ${error.response.data.message}`,
-          closable: true,
-        });
-      } else {
-        console.error(error);
-        toaster.error({
-          title: "Ошибка",
-          description: "Неизвестная ошибка",
-          closable: true,
-        });
-      }
-    } finally {
-      setIsEscalating(false);
-    }
-  };
-
+  // ==================== Loading State ====================
   if (isLoading) {
     return (
       <Flex justify="center" align="center" h="400px">
@@ -228,36 +102,36 @@ export default function TicketDetailPage({ params }: PageProps) {
 
   if (!ticket) return null;
 
+  // ==================== UI ====================
   return (
-    // TODO Проверить качество рефакторинга, выявить недостатки и исправить
     <Box>
       {/* Ticket Header */}
       <TicketHeader
         ticket={ticket}
-        setTicket={setTicket}
+        setTicket={updateTicket}
         isSpecialist={isSpecialist}
         canEscalate={canEscalate}
-        showEscalation={showEscalation}
-        setShowEscalation={setShowEscalation}
+        showEscalation={escalation.showEscalation}
+        setShowEscalation={escalation.setShowEscalation}
         isOnLastLine={isOnLastLine}
       />
 
       {/* Escalation Panel */}
-      {showEscalation && (
+      {escalation.showEscalation && (
         <EscalationPanel
           supportLines={supportLines}
           specialists={specialists}
-          selectedLineId={selectedLineId}
-          setSelectedLineId={setSelectedLineId}
-          selectedSpecialistId={selectedSpecialistId}
-          setSelectedSpecialistId={setSelectedSpecialistId}
+          selectedLineId={escalation.selectedLineId}
+          setSelectedLineId={escalation.setSelectedLineId}
+          selectedSpecialistId={escalation.selectedSpecialistId}
+          setSelectedSpecialistId={escalation.setSelectedSpecialistId}
           isLoadingSpecialists={isLoadingSpecialists}
-          setIsLoadingSpecialists={setIsLoadingSpecialists}
-          escalationComment={escalationComment}
-          setEscalationComment={setEscalationComment}
-          isEscalating={isEscalating}
-          setShowEscalation={setShowEscalation}
-          handleEscalate={handleEscalate}
+          setIsLoadingSpecialists={() => {}}
+          escalationComment={escalation.escalationComment}
+          setEscalationComment={escalation.setEscalationComment}
+          isEscalating={escalation.isEscalating}
+          setShowEscalation={escalation.setShowEscalation}
+          handleEscalate={escalation.handleEscalate}
         />
       )}
 
