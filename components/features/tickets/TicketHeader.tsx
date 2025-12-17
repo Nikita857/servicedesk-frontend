@@ -1,4 +1,4 @@
-import { toaster } from "@/components/ui/toaster";
+import { toast, handleApiError } from "@/lib/utils";
 import { ticketApi } from "@/lib/api";
 import {
   statusTransitions,
@@ -18,7 +18,6 @@ import {
   Menu,
   Portal,
 } from "@chakra-ui/react";
-import axios from "axios";
 import { LuArrowLeft, LuChevronDown, LuForward, LuPlay } from "react-icons/lu";
 
 interface TicketHeaderProps {
@@ -39,8 +38,14 @@ export default function TicketHeader({
   setShowEscalation,
   isOnLastLine,
 }: TicketHeaderProps) {
-  const statusConf = ticketStatusConfig[ticket.status];
-  const priorityConf = ticketPriorityConfig[ticket.priority];
+  const statusConf = ticketStatusConfig[ticket.status] || {
+    label: ticket.status,
+    color: "gray",
+  };
+  const priorityConf = ticketPriorityConfig[ticket.priority] || {
+    label: ticket.priority,
+    color: "gray",
+  };
 
   const canReassign = () => {
     if (ticket.status === "CLOSED" || ticket.status === "RESOLVED") {
@@ -56,25 +61,9 @@ export default function TicketHeader({
         status: newStatus,
       });
       setTicket(updated);
-      toaster.success({
-        title: "Статус изменен",
-        description: `Тикет переведен в статус "${ticketStatusConfig[newStatus].label}"`,
-      });
+      // Toast is shown by WebSocket handler for all users
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        toaster.error({
-          title: "Ошибка",
-          description: `Не удалось переадресовать тикет. ${error.response.data.message}`,
-          closable: true,
-        });
-      } else {
-        console.error(error);
-        toaster.error({
-          title: "Ошибка",
-          description: "Неизвестная ошибка",
-          closable: true,
-        });
-      }
+      handleApiError(error, { context: "изменить статус тикета" });
     }
   };
 
@@ -113,25 +102,9 @@ export default function TicketHeader({
               try {
                 const updated = await ticketApi.takeTicket(ticket.id);
                 setTicket(updated);
-                toaster.success({
-                  title: "Успех",
-                  description: "Тикет взят в работу",
-                });
+                // Toast is shown by WebSocket handler for all users
               } catch (error) {
-                if (axios.isAxiosError(error) && error.response) {
-                  toaster.error({
-                    title: "Ошибка",
-                    description:
-                      error.response.data.message || "Не удалось взять тикет",
-                    closable: true,
-                  });
-                } else {
-                  toaster.error({
-                    title: "Ошибка",
-                    description: "Не удалось взять тикет",
-                    closable: true,
-                  });
-                }
+                handleApiError(error, { context: "взять тикет в работу" });
               }
             }}
           >

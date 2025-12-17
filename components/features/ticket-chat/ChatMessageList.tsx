@@ -36,7 +36,10 @@ const formatDate = (dateStr: string) =>
     month: "short",
   });
 
-const getInitials = (name: string | null, username: string) => {
+const getInitials = (
+  name: string | null | undefined,
+  username: string | undefined
+) => {
   if (name)
     return name
       .split(" ")
@@ -44,7 +47,8 @@ const getInitials = (name: string | null, username: string) => {
       .join("")
       .slice(0, 2)
       .toUpperCase();
-  return username.slice(0, 2).toUpperCase();
+  if (username) return username.slice(0, 2).toUpperCase();
+  return "??";
 };
 
 export function ChatMessageList({

@@ -148,7 +148,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       callback: (message: IMessage) => void
     ): (() => void) => {
       const client = clientRef.current;
-      if (!client?.connected) {
+
+      // Check both ref and actual connection state
+      if (!client || !client.connected) {
         console.warn("[WS] Not connected, cannot subscribe to", destination);
         return () => {};
       }
@@ -159,10 +161,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         subscriptionsRef.current.get(existingKey)?.unsubscribe();
       }
 
+      console.log("[WS] Subscribing to", destination);
       const subscription = client.subscribe(destination, callback);
       subscriptionsRef.current.set(existingKey, subscription);
 
       return () => {
+        console.log("[WS] Unsubscribing from", destination);
         subscription.unsubscribe();
         subscriptionsRef.current.delete(existingKey);
       };

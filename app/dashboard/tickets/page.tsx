@@ -64,10 +64,13 @@ export default function TicketsPage() {
     },
   });
 
-  // WebSocket for new tickets
+  // WebSocket for new tickets (enabled for all users)
   useTicketsWebSocket({
-    onNewTicket: addTicket,
-    enabled: isSpecialist,
+    onNewTicket: (ticket) => {
+      addTicket(ticket);
+      refreshCounts();
+    },
+    enabled: true,
   });
 
   // ==================== Filter Collection ====================

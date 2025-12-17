@@ -9,6 +9,7 @@ interface UseTicketWebSocketOptions {
   onTicketUpdate?: (ticket: Ticket) => void;
   onTicketDeleted?: () => void;
   enabled?: boolean;
+  showToasts?: boolean; // Whether to show toast notifications for updates (default: true)
 }
 
 /**
@@ -22,6 +23,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     onTicketUpdate,
     onTicketDeleted,
     enabled = true,
+    showToasts = true,
   } = options;
 
   const { isConnected, subscribeToTicketUpdates, subscribeToTicketDeleted } = useWebSocket();
@@ -41,18 +43,19 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     (oldTicket: Ticket | null, newTicket: Ticket): string | null => {
       if (!oldTicket) return null;
 
-      // Status changed
-      if (oldTicket.status !== newTicket.status) {
-        return `Статус изменён: ${getStatusLabel(oldTicket.status)} → ${getStatusLabel(newTicket.status)}`;
-      }
-
-      // Assigned to specialist
+      // Check assignedTo first - "Ticket taken" is more specific than "status changed"
+      // When specialist takes ticket, both assignedTo AND status change
       if (
         oldTicket.assignedTo?.username !== newTicket.assignedTo?.username &&
         newTicket.assignedTo
       ) {
         const name = newTicket.assignedTo.fio || newTicket.assignedTo.username;
         return `Тикет взят в работу: ${name}`;
+      }
+
+      // Status changed (only if not taken by someone)
+      if (oldTicket.status !== newTicket.status) {
+        return `Статус изменён: ${getStatusLabel(oldTicket.status)} → ${getStatusLabel(newTicket.status)}`;
       }
 
       // Support line changed
@@ -77,7 +80,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     const unsubscribeUpdate = subscribeToTicketUpdates(ticketId, (updatedTicket: Ticket) => {
       const message = generateChangeMessage(currentTicketRef.current, updatedTicket);
       
-      if (message) {
+      if (message && showToasts) {
         toast.ticketUpdated(ticketId, message);
       }
 
@@ -85,7 +88,9 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     });
 
     const unsubscribeDeleted = subscribeToTicketDeleted(ticketId, () => {
-      toast.warning(`Тикет #${ticketId} удалён`);
+      if (showToasts) {
+        toast.warning(`Тикет #${ticketId} удалён`);
+      }
       deleteCallbackRef.current?.();
     });
 

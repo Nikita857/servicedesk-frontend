@@ -81,6 +81,7 @@ export default function TicketDetailPage({ params }: PageProps) {
     onTicketUpdate: updateTicket,
     onTicketDeleted: () => router.push("/dashboard/tickets"),
     enabled: !!ticket,
+    showToasts: true,
   });
 
   // ==================== Loading State ====================
