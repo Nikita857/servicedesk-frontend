@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "@/lib/providers";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
 
 interface UseTicketWebSocketOptions {
@@ -9,6 +9,7 @@ interface UseTicketWebSocketOptions {
   onTicketUpdate?: (ticket: Ticket) => void;
   onTicketDeleted?: () => void;
   enabled?: boolean;
+  showToasts?: boolean; // Whether to show toast notifications for updates (default: true)
 }
 
 /**
@@ -22,6 +23,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     onTicketUpdate,
     onTicketDeleted,
     enabled = true,
+    showToasts = true,
   } = options;
 
   const { isConnected, subscribeToTicketUpdates, subscribeToTicketDeleted } = useWebSocket();
@@ -41,18 +43,19 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     (oldTicket: Ticket | null, newTicket: Ticket): string | null => {
       if (!oldTicket) return null;
 
-      // Status changed
-      if (oldTicket.status !== newTicket.status) {
-        return `Статус изменён: ${getStatusLabel(oldTicket.status)} → ${getStatusLabel(newTicket.status)}`;
-      }
-
-      // Assigned to specialist
+      // Check assignedTo first - "Ticket taken" is more specific than "status changed"
+      // When specialist takes ticket, both assignedTo AND status change
       if (
         oldTicket.assignedTo?.username !== newTicket.assignedTo?.username &&
         newTicket.assignedTo
       ) {
         const name = newTicket.assignedTo.fio || newTicket.assignedTo.username;
         return `Тикет взят в работу: ${name}`;
+      }
+
+      // Status changed (only if not taken by someone)
+      if (oldTicket.status !== newTicket.status) {
+        return `Статус изменён: ${getStatusLabel(oldTicket.status)} → ${getStatusLabel(newTicket.status)}`;
       }
 
       // Support line changed
@@ -77,22 +80,17 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     const unsubscribeUpdate = subscribeToTicketUpdates(ticketId, (updatedTicket: Ticket) => {
       const message = generateChangeMessage(currentTicketRef.current, updatedTicket);
       
-      if (message) {
-        toaster.info({
-          title: `Тикет #${ticketId}`,
-          description: message,
-          closable: true,
-        });
+      if (message && showToasts) {
+        toast.ticketUpdated(ticketId, message);
       }
 
       updateCallbackRef.current?.(updatedTicket);
     });
 
     const unsubscribeDeleted = subscribeToTicketDeleted(ticketId, () => {
-      toaster.warning({
-        title: `Тикет #${ticketId} удалён`,
-        closable: true,
-      });
+      if (showToasts) {
+        toast.warning(`Тикет #${ticketId} удалён`);
+      }
       deleteCallbackRef.current?.();
     });
 

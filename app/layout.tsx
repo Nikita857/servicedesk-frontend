@@ -1,13 +1,15 @@
-import { Provider } from "../components/ui/provider"
-
+import { Provider } from "../components/ui/provider";
+import { QueryProvider } from "@/lib/providers";
 
 export default function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
+  const { children } = props;
   return (
     <html suppressHydrationWarning>
-      <body>
-        <Provider>{children}</Provider>
+      <body suppressHydrationWarning>
+        <QueryProvider>
+          <Provider>{children}</Provider>
+        </QueryProvider>
       </body>
     </html>
-  )
+  );
 }

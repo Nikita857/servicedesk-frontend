@@ -37,7 +37,6 @@ export default function TicketSidebar({
   showHistory,
   setShowHistory,
 }: TicketSidebarProps) {
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -81,7 +80,7 @@ export default function TicketSidebar({
             <HStack>
               <LuUser size={16} />
               <Text color="fg.default">
-                {ticket.createdBy.fio || ticket.createdBy.username}
+                {ticket.createdBy?.fio || ticket.createdBy?.username || "—"}
               </Text>
             </HStack>
           </Box>
@@ -165,7 +164,7 @@ export default function TicketSidebar({
             </Text>
           </Box>
 
-          <Separator/>
+          <Separator />
 
           {ticket.resolvedAt && (
             <Box>

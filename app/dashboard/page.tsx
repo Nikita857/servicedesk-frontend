@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Grid,
@@ -27,6 +27,7 @@ import { assignmentApi } from "@/lib/api/assignments";
 import { useAuthStore } from "@/stores";
 import type { TicketListItem } from "@/types/ticket";
 import { TicketCard } from "@/components/features/tickets";
+import { useTicketsWebSocket } from "@/lib/hooks";
 
 interface StatCardProps {
   label: string;
@@ -145,6 +146,25 @@ export default function DashboardPage() {
     };
     fetchData();
   }, [isSpecialist]);
+
+  // Handle new ticket from WebSocket
+  const handleNewTicket = useCallback((ticket: TicketListItem) => {
+    // Add to list if unassigned
+    if (!ticket.assignedToUsername && ticket.status === "NEW") {
+      setRecentTickets((prev) => [ticket, ...prev].slice(0, 5));
+    }
+    // Update stats
+    setStats((prev) => ({
+      ...prev,
+      open: prev.open + 1,
+    }));
+  }, []);
+
+  // WebSocket for real-time new tickets
+  useTicketsWebSocket({
+    onNewTicket: handleNewTicket,
+    enabled: true,
+  });
 
   const statCards: StatCardProps[] = [
     {

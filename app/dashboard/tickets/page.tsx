@@ -21,8 +21,8 @@ import Link from "next/link";
 import { useAuthStore } from "@/stores";
 import { TicketCard } from "@/components/features/tickets";
 import {
-  useTicketsList,
-  useTicketsCounts,
+  useTicketsQuery,
+  useTicketsCountsQuery,
   useAssignmentsActions,
   useTicketsWebSocket,
   FilterType,
@@ -35,38 +35,42 @@ export default function TicketsPage() {
   const canCreateTicket =
     userRoles.includes("USER") || userRoles.includes("ADMIN");
 
-  // ==================== Hooks ====================
+  // ==================== React Query Hooks ====================
   const {
     tickets,
     pendingAssignments,
     isLoading,
+    isFetching,
     page,
     totalPages,
     filter,
     setPage,
     setFilter,
-    refresh,
+    refetch,
     addTicket,
-  } = useTicketsList();
+  } = useTicketsQuery();
 
   const {
     pendingCount,
     assignedToMeCount,
     unprocessedCount,
-    refresh: refreshCounts,
-  } = useTicketsCounts();
+    refetch: refreshCounts,
+  } = useTicketsCountsQuery();
 
   const { handleAccept, handleReject } = useAssignmentsActions({
     onSuccess: async () => {
-      await refresh();
-      await refreshCounts();
+      refetch();
+      refreshCounts();
     },
   });
 
-  // WebSocket for new tickets
+  // WebSocket for new tickets (enabled for all users)
   useTicketsWebSocket({
-    onNewTicket: addTicket,
-    enabled: isSpecialist,
+    onNewTicket: (ticket) => {
+      addTicket(ticket);
+      refreshCounts();
+    },
+    enabled: true,
   });
 
   // ==================== Filter Collection ====================
@@ -99,6 +103,9 @@ export default function TicketsPage() {
         <Box>
           <Heading size="lg" color="fg.default" mb={1}>
             {isSpecialist ? "Тикеты" : "Мои заявки"}
+            {isFetching && !isLoading && (
+              <Spinner size="sm" ml={2} color="gray.400" />
+            )}
           </Heading>
           <Text color="fg.muted" fontSize="sm">
             Управление обращениями

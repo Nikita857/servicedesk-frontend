@@ -10,7 +10,7 @@ interface ChatInputProps {
   setNewMessage: (msg: string) => void;
   handleSend: () => void;
   isSending: boolean;
-  fileInputRef: RefObject<HTMLInputElement | null>
+  fileInputRef: RefObject<HTMLInputElement | null>;
   selectedFile: File | null;
   isChatInactive: boolean;
 }
@@ -46,7 +46,9 @@ export default function ChatInput({
       >
         <LuPaperclip />
       </Button>
-      <CustomEmojiPicker onSelect={(e) => setNewMessage(e)}/>
+      <CustomEmojiPicker
+        onSelect={(emoji) => setNewMessage(newMessage + emoji)}
+      />
       <Input
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
@@ -69,11 +71,7 @@ export default function ChatInput({
     </Flex>
   ) : (
     <Flex gap={2} align="center">
-      <input
-        ref={fileInputRef}
-        type="file"
-        style={{ display: "none" }}
-      />
+      <input ref={fileInputRef} type="file" style={{ display: "none" }} />
       <Button
         variant="ghost"
         size="sm"

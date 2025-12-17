@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { assignmentApi } from "@/lib/api/assignments";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 
 interface UseAssignmentsActionsReturn {
   handleAccept: (id: number) => Promise<boolean>;
@@ -20,15 +20,11 @@ export function useAssignmentsActions(
     async (id: number): Promise<boolean> => {
       try {
         await assignmentApi.accept(id);
-        toaster.success({ title: "Назначение принято", closable: true });
+        toast.success("Назначение принято");
         onSuccess?.();
         return true;
       } catch {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось принять назначение",
-          closable: true,
-        });
+        toast.error("Ошибка", "Не удалось принять назначение");
         return false;
       }
     },
@@ -42,15 +38,11 @@ export function useAssignmentsActions(
 
       try {
         await assignmentApi.reject(id, rejectReason);
-        toaster.success({ title: "Назначение отклонено", closable: true });
+        toast.success("Назначение отклонено");
         onSuccess?.();
         return true;
       } catch {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось отклонить назначение",
-          closable: true,
-        });
+        toast.error("Ошибка", "Не удалось отклонить назначение");
         return false;
       }
     },

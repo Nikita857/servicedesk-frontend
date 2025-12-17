@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect } from "react";
+import { use, useCallback, useState } from "react";
 import {
   Box,
   Flex,
@@ -17,9 +17,9 @@ import TicketHeader from "@/components/features/tickets/TicketHeader";
 import EscalationPanel from "@/components/features/tickets/EscalationPanel";
 import TicketSidebar from "@/components/features/tickets/TicketSidebar";
 import {
-  useTicketDetail,
+  useTicketQuery,
+  useSupportLinesQuery,
   useEscalation,
-  useSupportLines,
   useTicketWebSocket,
 } from "@/lib/hooks";
 
@@ -29,66 +29,59 @@ interface PageProps {
 
 export default function TicketDetailPage({ params }: PageProps) {
   const { id } = use(params);
+  const ticketId = Number(id);
   const router = useRouter();
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const canEscalate = isSpecialist;
 
-  // ==================== Hooks ====================
+  const [showHistory, setShowHistory] = useState(false);
+
+  // ==================== React Query Hooks ====================
   const {
     ticket,
     isLoading,
     currentAssignment,
     assignmentHistory,
-    showHistory,
-    setShowHistory,
     updateTicket,
-    refresh,
-  } = useTicketDetail(Number(id));
+    refetch,
+  } = useTicketQuery(ticketId);
 
   const {
     supportLines,
     specialists,
     isLoadingSpecialists,
     isOnLastLine,
-    loadSpecialists,
-    clearSpecialists,
-  } = useSupportLines({ ticket });
+    selectedLineId,
+    setSelectedLineId,
+  } = useSupportLinesQuery({ ticket });
 
-  const handleEscalationSuccess = useCallback(
-    async (
-      updatedTicket: typeof ticket,
-      newAssignment: typeof currentAssignment
-    ) => {
-      if (updatedTicket) {
-        updateTicket(updatedTicket);
-      }
-      await refresh();
-    },
-    [updateTicket, refresh]
-  );
+  const handleEscalationSuccess = useCallback(async () => {
+    refetch();
+  }, [refetch]);
 
   const escalation = useEscalation({
     ticket,
     onSuccess: handleEscalationSuccess,
   });
 
-  // Load specialists when line changes
-  useEffect(() => {
-    if (escalation.selectedLineId) {
-      loadSpecialists(escalation.selectedLineId);
-    } else {
-      clearSpecialists();
-    }
-  }, [escalation.selectedLineId, loadSpecialists, clearSpecialists]);
+  // Sync selectedLineId between hooks
+  const handleLineChange = useCallback(
+    (lineId: number | undefined) => {
+      setSelectedLineId(lineId);
+      escalation.setSelectedLineId(lineId);
+    },
+    [setSelectedLineId, escalation]
+  );
 
   // WebSocket for real-time updates
   useTicketWebSocket({
-    ticketId: Number(id),
+    ticketId,
     currentTicket: ticket,
     onTicketUpdate: updateTicket,
     onTicketDeleted: () => router.push("/dashboard/tickets"),
     enabled: !!ticket,
+    showToasts: true,
   });
 
   // ==================== Loading State ====================
@@ -121,8 +114,8 @@ export default function TicketDetailPage({ params }: PageProps) {
         <EscalationPanel
           supportLines={supportLines}
           specialists={specialists}
-          selectedLineId={escalation.selectedLineId}
-          setSelectedLineId={escalation.setSelectedLineId}
+          selectedLineId={selectedLineId}
+          setSelectedLineId={handleLineChange}
           selectedSpecialistId={escalation.selectedSpecialistId}
           setSelectedSpecialistId={escalation.setSelectedSpecialistId}
           isLoadingSpecialists={isLoadingSpecialists}
