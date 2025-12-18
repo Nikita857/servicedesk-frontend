@@ -73,7 +73,7 @@ export default function TicketsPage() {
     enabled: true,
   });
 
-  // ==================== Filter Collection ====================
+  // ==================== Фильтр тикетов ====================
   const filterCollection = useMemo(() => {
     if (isSpecialist) {
       return createListCollection({
