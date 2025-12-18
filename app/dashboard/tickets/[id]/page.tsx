@@ -80,6 +80,7 @@ export default function TicketDetailPage({ params }: PageProps) {
     currentTicket: ticket,
     onTicketUpdate: updateTicket,
     onTicketDeleted: () => router.push("/dashboard/tickets"),
+    user: user,
     enabled: !!ticket,
     showToasts: true,
   });

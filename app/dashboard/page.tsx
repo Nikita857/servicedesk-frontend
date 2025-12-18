@@ -117,7 +117,7 @@ export default function DashboardPage() {
 
         // Filter to only unassigned tickets for dashboard display
         const unassignedTickets = ticketsResponse.content.filter(
-          (t) => !t.assignedToUsername && t.status === "NEW"
+          (t) => !t.assignedToUsername && (t.status === "NEW" || t.status === 'PENDING')
         );
         setRecentTickets(unassignedTickets.slice(0, 5)); // Show max 5
 

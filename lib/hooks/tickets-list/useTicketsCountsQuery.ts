@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi } from "@/lib/api/assignments";
