@@ -1,16 +1,5 @@
-"use client";
-
-import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  VStack,
-  HStack,
-  Image,
-  SimpleGrid,
-} from "@chakra-ui/react";
+import { useState, useRef } from "react";
+import { Box, Flex, Text, Button, VStack, HStack } from "@chakra-ui/react";
 import {
   LuWifi,
   LuWifiOff,
@@ -20,15 +9,12 @@ import {
   LuDownload,
 } from "react-icons/lu";
 import { messageApi } from "@/lib/api/messages";
-import {
-  attachmentApi,
-  getAttachmentUrl,
-  Attachment,
-} from "@/lib/api/attachments";
+import { attachmentApi } from "@/lib/api/attachments";
 import { ticketWebSocket } from "@/lib/websocket/ticketWebSocket";
 import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
+import type { Message } from "@/types/message";
 import axios from "axios";
 import { useChatWebSocket } from "@/lib/hooks/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
@@ -39,7 +25,7 @@ interface TicketChatProps {
   ticketStatus: TicketStatus;
 }
 
-// File validation constants
+// File validation constants - only block executable files
 const BLOCKED_EXTENSIONS = [
   ".exe",
   ".bat",
@@ -50,8 +36,8 @@ const BLOCKED_EXTENSIONS = [
   ".dll",
   ".scr",
   ".vbs",
-  ".js",
-  ".jar",
+  ".com",
+  ".pif",
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -68,28 +54,13 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     sendTypingIndicator,
   } = useChatWebSocket(ticketId);
 
-  // Local state for attachments and file handling
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  // Local state for file handling
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [showAttachments, setShowAttachments] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Fetch attachments
-  const fetchAttachments = useCallback(async () => {
-    try {
-      const data = await attachmentApi.getByTicket(ticketId);
-      setAttachments(data);
-    } catch (error) {
-      console.error("Failed to load attachments", error);
-    }
-  }, [ticketId]);
-
-  useEffect(() => {
-    fetchAttachments();
-  }, [fetchAttachments]);
 
   // File validation
   const validateFile = (file: File): string | null => {
@@ -121,17 +92,48 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     if (!newMessage.trim() && !selectedFile) return;
 
     const content = newMessage.trim();
-    setNewMessage("");
+    const fileToUpload = selectedFile;
 
-    // Upload file if selected
-    if (selectedFile) {
+    setNewMessage("");
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    // Handle edit mode
+    if (editingMessage) {
+      try {
+        const updatedMessage = await messageApi.edit(editingMessage.id, {
+          content,
+        });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m))
+        );
+        toaster.success({ title: "Сообщение обновлено" });
+      } catch (error) {
+        toaster.error({
+          title: "Ошибка",
+          description: "Не удалось обновить сообщение",
+        });
+        setNewMessage(content);
+      } finally {
+        setEditingMessage(null);
+      }
+      return;
+    }
+
+    // If we have a file, we need to create a message first then attach the file
+    if (fileToUpload) {
       setIsUploading(true);
       try {
-        await attachmentApi.uploadToTicket(ticketId, selectedFile);
-        toaster.success({ title: "Успех", description: "Файл загружен" });
-        setSelectedFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        fetchAttachments();
+        // Create message with content or placeholder
+        const messageContent = content || `📎 ${fileToUpload.name}`;
+        const message = await messageApi.send(ticketId, {
+          content: messageContent,
+        });
+        setMessages((prev) => [...prev, message]);
+
+        // Upload file to this message
+        await attachmentApi.uploadToMessage(message.id, fileToUpload);
+        // WebSocket will update the message with attachment for all users
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
           toaster.error({
@@ -150,10 +152,8 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
       } finally {
         setIsUploading(false);
       }
-    }
-
-    // Send message if there's content
-    if (content) {
+    } else if (content) {
+      // Send message without file
       if (isConnected && ticketWebSocket.sendMessage(content)) return;
 
       setIsSending(true);
@@ -251,6 +251,22 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
             messages={messages}
             currentUserId={user?.id}
             isLoading={isLoading}
+            onEditMessage={(msg) => {
+              setEditingMessage(msg);
+              setNewMessage(msg.content);
+            }}
+            onDeleteMessage={async (msgId) => {
+              try {
+                await messageApi.delete(msgId);
+                setMessages((prev) => prev.filter((m) => m.id !== msgId));
+                toaster.success({ title: "Сообщение удалено" });
+              } catch (error) {
+                toaster.error({
+                  title: "Ошибка",
+                  description: "Не удалось удалить сообщение",
+                });
+              }
+            }}
           />
         </Box>
 
@@ -344,92 +360,6 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
           )}
         </Box>
       </Box>
-
-      {/* Attachments Section */}
-      {attachments.length > 0 && (
-        <Box
-          bg="bg.surface"
-          borderRadius="xl"
-          borderWidth="1px"
-          borderColor="border.default"
-          p={4}
-        >
-          <Flex justify="space-between" align="center" mb={3}>
-            <HStack>
-              <LuPaperclip size={16} />
-              <Text fontWeight="medium" color="fg.default">
-                Вложения ({attachments.length})
-              </Text>
-            </HStack>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => setShowAttachments(!showAttachments)}
-            >
-              {showAttachments ? "Скрыть" : "Показать"}
-            </Button>
-          </Flex>
-
-          {showAttachments && (
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} gap={3}>
-              {attachments.map((att) => (
-                <Box
-                  key={att.id}
-                  bg="bg.subtle"
-                  borderRadius="md"
-                  overflow="hidden"
-                  borderWidth="1px"
-                  borderColor="border.default"
-                >
-                  {isImageType(att.mimeType) ? (
-                    <a
-                      href={getAttachmentUrl(att.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Image
-                        src={getAttachmentUrl(att.url)}
-                        alt={att.filename}
-                        h="100px"
-                        w="100%"
-                        objectFit="cover"
-                      />
-                    </a>
-                  ) : (
-                    <Flex
-                      h="100px"
-                      justify="center"
-                      align="center"
-                      bg="bg.muted"
-                    >
-                      <LuFile size={32} color="gray" />
-                    </Flex>
-                  )}
-                  <Box p={2}>
-                    <Text fontSize="xs" truncate mb={1}>
-                      {att.filename}
-                    </Text>
-                    <Flex justify="space-between" align="center">
-                      <Text fontSize="xs" color="fg.muted">
-                        {formatFileSize(att.fileSize)}
-                      </Text>
-                      <a
-                        href={getAttachmentUrl(att.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Button size="xs" variant="ghost">
-                          <LuDownload size={12} />
-                        </Button>
-                      </a>
-                    </Flex>
-                  </Box>
-                </Box>
-              ))}
-            </SimpleGrid>
-          )}
-        </Box>
-      )}
     </VStack>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -18,6 +18,7 @@ import {
 import { Select } from "@chakra-ui/react";
 import { LuPlus, LuChevronLeft, LuChevronRight, LuBell } from "react-icons/lu";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 import { TicketCard } from "@/components/features/tickets";
 import {
@@ -35,6 +36,10 @@ export default function TicketsPage() {
   const canCreateTicket =
     userRoles.includes("USER") || userRoles.includes("ADMIN");
 
+  // Read filter from URL query param
+  const searchParams = useSearchParams();
+  const urlFilter = searchParams.get("filter") as FilterType | null;
+
   // ==================== React Query Hooks ====================
   const {
     tickets,
@@ -48,7 +53,14 @@ export default function TicketsPage() {
     setFilter,
     refetch,
     addTicket,
-  } = useTicketsQuery();
+  } = useTicketsQuery({ initialFilter: urlFilter || undefined });
+
+  // Sync filter when URL changes
+  useEffect(() => {
+    if (urlFilter && urlFilter !== filter) {
+      setFilter(urlFilter);
+    }
+  }, [urlFilter, filter, setFilter]);
 
   const {
     pendingCount,
@@ -57,11 +69,20 @@ export default function TicketsPage() {
     refetch: refreshCounts,
   } = useTicketsCountsQuery();
 
+  const router = useRouter();
+
+  // Check if user should be redirected after accepting assignment
+  // Redirect for specialists (not USER and not ADMIN)
+  const shouldRedirectOnAccept = isSpecialist && !userRoles.includes("ADMIN");
+
   const { handleAccept, handleReject } = useAssignmentsActions({
     onSuccess: async () => {
       refetch();
       refreshCounts();
     },
+    onAcceptSuccess: shouldRedirectOnAccept
+      ? (ticketId) => router.push(`/dashboard/tickets/${ticketId}`)
+      : undefined,
   });
 
   // WebSocket for new tickets (enabled for all users)

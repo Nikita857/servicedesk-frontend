@@ -9,26 +9,28 @@ interface UseAssignmentsActionsReturn {
 
 interface UseAssignmentsActionsOptions {
   onSuccess?: () => void;
+  onAcceptSuccess?: (ticketId: number) => void; // Called after accept with ticketId for navigation
 }
 
 export function useAssignmentsActions(
   options?: UseAssignmentsActionsOptions
 ): UseAssignmentsActionsReturn {
-  const { onSuccess } = options || {};
+  const { onSuccess, onAcceptSuccess } = options || {};
 
   const handleAccept = useCallback(
     async (id: number): Promise<boolean> => {
       try {
-        await assignmentApi.accept(id);
+        const assignment = await assignmentApi.accept(id);
         toast.success("Назначение принято");
         onSuccess?.();
+        onAcceptSuccess?.(assignment.ticketId);
         return true;
       } catch {
         toast.error("Ошибка", "Не удалось принять назначение");
         return false;
       }
     },
-    [onSuccess]
+    [onSuccess, onAcceptSuccess]
   );
 
   const handleReject = useCallback(

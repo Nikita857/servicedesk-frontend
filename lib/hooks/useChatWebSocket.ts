@@ -7,8 +7,9 @@ import {
   ticketWebSocket,
   type ChatMessageWS,
   type TypingIndicator,
+  type AttachmentWS,
 } from "@/lib/websocket/ticketWebSocket";
-import type { Message } from "@/types/message";
+import type { Message, MessageAttachment } from "@/types/message";
 import type { SenderType } from "@/types/message";
 
 interface TypingUser {
@@ -26,14 +27,19 @@ interface UseChatWebSocketReturn {
   fetchMessages: () => Promise<void>;
 }
 
-export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
-  const { user, accessToken } = useAuthStore();
+export function useChatWebSocket(ticketId: number) {
+  const { accessToken, user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const [typingUser, setTypingUser] = useState<TypingUser | null>(null);
+  const [typingUser, setTypingUser] = useState<{
+    fio: string;
+    username: string;
+  } | null>(null);
   
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  // Buffer for attachments that arrive before their messages
+  const pendingAttachmentsRef = useRef<Map<number, MessageAttachment[]>>(new Map());
   const lastTypingSentRef = useRef<number>(0);
 
   // Fetch initial messages
@@ -87,6 +93,14 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
 
           setMessages((prev) => {
             if (prev.find((m) => m.id === newMsg.id)) return prev;
+            
+            // Check if there are pending attachments for this message
+            const pendingAttachments = pendingAttachmentsRef.current.get(newMsg.id);
+            if (pendingAttachments) {
+              newMsg.attachments = pendingAttachments;
+              pendingAttachmentsRef.current.delete(newMsg.id);
+            }
+            
             return [...prev, newMsg];
           });
         },
@@ -94,11 +108,49 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           if (indicator.userId === user?.id) return;
 
           if (indicator.typing) {
-            setTypingUser({ fio: indicator.fio, username: indicator.username });
+            setTypingUser({ fio: indicator.fio ?? indicator.username, username: indicator.username });
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
             typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
           } else {
             setTypingUser(null);
+          }
+        },
+        onAttachment: (attachment: AttachmentWS) => {
+          // Convert AttachmentWS to MessageAttachment
+          const newAttachment: MessageAttachment = {
+            id: attachment.id,
+            filename: attachment.filename,
+            url: attachment.url,
+            fileSize: attachment.fileSize,
+            mimeType: attachment.mimeType,
+            type: attachment.type,
+          };
+
+          // Update message with this attachment
+          const messageId = attachment.messageId;
+          if (messageId !== null && messageId !== undefined) {
+            setMessages((prev) => {
+              const messageExists = prev.some(m => m.id === messageId);
+              
+              if (!messageExists) {
+                // Message hasn't arrived yet, buffer the attachment
+                const existing = pendingAttachmentsRef.current.get(messageId) || [];
+                pendingAttachmentsRef.current.set(messageId, [...existing, newAttachment]);
+                return prev; // No update needed yet
+              }
+              
+              const updated = prev.map((msg) =>
+                msg.id === messageId
+                  ? {
+                      ...msg,
+                      attachments: [...(msg.attachments || []), newAttachment],
+                    }
+                  : msg
+              );
+              return updated;
+            });
+          } else {
+            // No messageId, skip update
           }
         },
         onError: (error) => console.error("[WS] Error:", error),
