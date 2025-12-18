@@ -22,9 +22,24 @@ export interface TypingIndicator {
   typing: boolean;
 }
 
+export interface AttachmentWS {
+  id: number;
+  filename: string;
+  url: string;
+  fileSize: number;
+  mimeType: string;
+  type: 'PHOTO' | 'SCREENSHOT' | 'VIDEO' | 'DOCUMENT';
+  ticketId: number;
+  messageId: number | null;
+  uploadedById: number;
+  uploadedByUsername: string;
+  createdAt: string;
+}
+
 export interface WebSocketCallbacks {
   onMessage?: (message: ChatMessageWS) => void;
   onTyping?: (indicator: TypingIndicator) => void;
+  onAttachment?: (attachment: AttachmentWS) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: string) => void;
@@ -81,6 +96,16 @@ class TicketWebSocket {
           callbacks.onTyping?.(indicator);
         } catch (e) {
           console.error('[WS] Failed to parse typing indicator', e);
+        }
+      });
+
+      // Subscribe to attachments
+      this.client?.subscribe(`/topic/ticket/${ticketId}/attachment`, (message: IMessage) => {
+        try {
+          const attachment: AttachmentWS = JSON.parse(message.body);
+          callbacks.onAttachment?.(attachment);
+        } catch (e) {
+          console.error('[WS] Failed to parse attachment', e);
         }
       });
     };

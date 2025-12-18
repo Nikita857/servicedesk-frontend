@@ -55,6 +55,40 @@ export default function TicketSidebar({
 
   return (
     <VStack gap={4} align="stretch">
+      {/* Rejection Alert - shown when last assignment was rejected */}
+      {ticket.lastAssignment?.status === "REJECTED" && (
+        <Box
+          bg="red.50"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor="red.200"
+          p={4}
+          _dark={{ bg: "red.900/20", borderColor: "red.700" }}
+        >
+          <HStack gap={2} mb={2}>
+            <LuCircleX color="var(--chakra-colors-red-500)" />
+            <Text
+              fontWeight="semibold"
+              color="red.600"
+              _dark={{ color: "red.300" }}
+            >
+              Переадресация отклонена
+            </Text>
+          </HStack>
+          {ticket.lastAssignment.rejectedReason && (
+            <Text fontSize="sm" color="red.700" _dark={{ color: "red.200" }}>
+              Причина: {ticket.lastAssignment.rejectedReason}
+            </Text>
+          )}
+          <Text fontSize="xs" color="red.500" mt={2}>
+            Отклонено:{" "}
+            {ticket.lastAssignment.toFio ||
+              ticket.lastAssignment.toUsername ||
+              "—"}
+          </Text>
+        </Box>
+      )}
+
       {/* Main Info */}
       <Box
         bg="bg.surface"

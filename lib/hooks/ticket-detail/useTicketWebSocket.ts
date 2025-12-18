@@ -2,12 +2,15 @@ import { useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "@/lib/providers";
 import { toast } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
+import router from "next/navigation";
+import { User } from "@/types";
 
 interface UseTicketWebSocketOptions {
   ticketId: number;
   currentTicket: Ticket | null;
   onTicketUpdate?: (ticket: Ticket) => void;
   onTicketDeleted?: () => void;
+  user: User | null;
   enabled?: boolean;
   showToasts?: boolean; // Whether to show toast notifications for updates (default: true)
 }
@@ -22,21 +25,25 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     currentTicket,
     onTicketUpdate,
     onTicketDeleted,
+    user,
     enabled = true,
     showToasts = true,
   } = options;
 
   const { isConnected, subscribeToTicketUpdates, subscribeToTicketDeleted } = useWebSocket();
+
   const updateCallbackRef = useRef(onTicketUpdate);
   const deleteCallbackRef = useRef(onTicketDeleted);
   const currentTicketRef = useRef(currentTicket);
+  const currentUser = useRef(user);
 
   // Keep refs updated
   useEffect(() => {
     updateCallbackRef.current = onTicketUpdate;
     deleteCallbackRef.current = onTicketDeleted;
     currentTicketRef.current = currentTicket;
-  }, [onTicketUpdate, onTicketDeleted, currentTicket]);
+    currentUser.current = user;
+  }, [onTicketUpdate, onTicketDeleted, currentTicket, user]);
 
   // Generate toast message based on what changed
   const generateChangeMessage = useCallback(
@@ -55,11 +62,16 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
 
       // Status changed (only if not taken by someone)
       if (oldTicket.status !== newTicket.status) {
-        return `Статус изменён: ${getStatusLabel(oldTicket.status)} → ${getStatusLabel(newTicket.status)}`;
+        return `Статус изменён: ${getStatusLabel(
+          oldTicket.status
+        )} → ${getStatusLabel(newTicket.status)}`;
       }
 
       // Support line changed
-      if (oldTicket.supportLine?.id !== newTicket.supportLine?.id && newTicket.supportLine) {
+      if (
+        oldTicket.supportLine?.id !== newTicket.supportLine?.id &&
+        newTicket.supportLine
+      ) {
         return `Тикет переадресован: ${newTicket.supportLine.name}`;
       }
 
@@ -77,21 +89,45 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
   useEffect(() => {
     if (!enabled || !isConnected || !ticketId) return;
 
-    const unsubscribeUpdate = subscribeToTicketUpdates(ticketId, (updatedTicket: Ticket) => {
-      const message = generateChangeMessage(currentTicketRef.current, updatedTicket);
-      
-      if (message && showToasts) {
-        toast.ticketUpdated(ticketId, message);
+    const unsubscribeUpdate = subscribeToTicketUpdates(
+      ticketId,
+      (updatedTicket: Ticket) => {
+        const message = generateChangeMessage(
+          currentTicketRef.current,
+          updatedTicket
+        );
+
+        if (message && showToasts) {
+          toast.ticketUpdated(ticketId, message);
+        }
+
+        const currentUserId = currentUser.current?.id; // добавь useRef на текущего пользователя
+        const isSpecialist = currentUser.current?.specialist || false;
+        const isAdmin = currentUser.current?.roles.every((role) => role === 'ADMIN')
+        const assignedToId = updatedTicket.assignedTo?.id;
+
+        const hasAccess = !assignedToId || assignedToId === currentUserId || !isSpecialist;
+
+      if (!hasAccess) {
+        if(!isAdmin) {
+          router.redirect("/dashboard/tickets");
+        }
+        if(currentUser?.current?.id === currentUserId) {
+          toast.warning("У вас больше нет доустпа к этому тикету") 
+        }
+        return;
       }
 
-      updateCallbackRef.current?.(updatedTicket);
-    });
+        updateCallbackRef.current?.(updatedTicket);
+      }
+    );
 
     const unsubscribeDeleted = subscribeToTicketDeleted(ticketId, () => {
       if (showToasts) {
         toast.warning(`Тикет #${ticketId} удалён`);
       }
       deleteCallbackRef.current?.();
+      router.redirect('/dashboard/tickets')
     });
 
     return () => {
@@ -105,6 +141,8 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     subscribeToTicketUpdates,
     subscribeToTicketDeleted,
     generateChangeMessage,
+    showToasts,
+    currentTicket?.assignedTo?.id,
   ]);
 
   return { isConnected };

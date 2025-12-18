@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi } from "@/lib/api/assignments";
@@ -20,7 +20,6 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const username = user?.username;
-  const queryClient = useQueryClient();
 
   const countsQuery = useQuery({
     queryKey: queryKeys.tickets.counts(),

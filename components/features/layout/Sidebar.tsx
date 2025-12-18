@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Box, VStack, Text, Flex, Icon } from '@chakra-ui/react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Box, VStack, Text, Flex, Icon } from "@chakra-ui/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LuTicket,
   LuLayoutDashboard,
@@ -11,9 +11,10 @@ import {
   LuBarcode,
   LuSettings,
   LuUsers,
-} from 'react-icons/lu';
-import type { IconType } from 'react-icons';
-import { useColorMode } from '@/components/ui/color-mode';
+} from "react-icons/lu";
+import type { IconType } from "react-icons";
+import { useColorMode } from "@/components/ui/color-mode";
+import { useAuthStore } from "@/stores";
 
 interface NavItem {
   label: string;
@@ -22,25 +23,34 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Дашборд', href: '/dashboard', icon: LuLayoutDashboard },
-  { label: 'Тикеты', href: '/dashboard/tickets', icon: LuTicket },
-  { label: 'Сообщения', href: '/dashboard/messages', icon: LuMessageSquare },
-  { label: 'Wiki', href: '/dashboard/wiki', icon: LuBook },
-  { label: 'Отчеты', href: '/dashboard/reports', icon: LuBarcode },
+  { label: "Дашборд", href: "/dashboard", icon: LuLayoutDashboard },
+  { label: "Тикеты", href: "/dashboard/tickets", icon: LuTicket },
+  { label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
+  { label: "Wiki", href: "/dashboard/wiki", icon: LuBook },
+  { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
 ];
 
 const adminItems: NavItem[] = [
-  { label: 'Пользователи', href: '/dashboard/users', icon: LuUsers },
-  { label: 'Настройки', href: '/dashboard/settings', icon: LuSettings },
+  { label: "Пользователи", href: "/dashboard/users", icon: LuUsers },
+  { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { colorMode } = useColorMode();
+  const { user } = useAuthStore();
+  const isAdmin = user?.roles?.includes("ADMIN") || false;
+
+  // Filter nav items based on role
+  const filteredNavItems = navItems.filter((item) => {
+    // Reports only for admins
+    if (item.href === "/dashboard/reports") return isAdmin;
+    return true;
+  });
 
   const isActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
+    if (href === "/dashboard") {
+      return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
   };
@@ -78,11 +88,18 @@ export function Sidebar() {
 
       {/* Main Navigation */}
       <VStack gap={1} px={3} align="stretch" flex={1}>
-        <Text px={2} py={2} fontSize="xs" fontWeight="medium" color="fg.muted" textTransform="uppercase">
+        <Text
+          px={2}
+          py={2}
+          fontSize="xs"
+          fontWeight="medium"
+          color="fg.muted"
+          textTransform="uppercase"
+        >
           Меню
         </Text>
-        
-        {navItems.map((item) => (
+
+        {filteredNavItems.map((item) => (
           <Link key={item.href} href={item.href}>
             <Flex
               px={3}
@@ -90,13 +107,19 @@ export function Sidebar() {
               borderRadius="lg"
               align="center"
               gap={3}
-              bg={isActive(item.href) ? 'bg.subtle' : 'transparent'}
-              color={isActive(item.href) ? colorMode === 'dark' ? 'accent.100' : 'accent.900' : 'fg.muted'}
-              fontWeight={isActive(item.href) ? 'medium' : 'normal'}
+              bg={isActive(item.href) ? "bg.subtle" : "transparent"}
+              color={
+                isActive(item.href)
+                  ? colorMode === "dark"
+                    ? "accent.100"
+                    : "accent.900"
+                  : "fg.muted"
+              }
+              fontWeight={isActive(item.href) ? "medium" : "normal"}
               transition="all 0.2s"
               _hover={{
-                bg: 'bg.subtle',
-                color: 'fg.default',
+                bg: "bg.subtle",
+                color: "fg.default",
               }}
             >
               <Icon as={item.icon} boxSize={5} />
@@ -105,33 +128,45 @@ export function Sidebar() {
           </Link>
         ))}
 
-        {/* Admin Section */}
-        <Text px={2} py={2} mt={4} fontSize="xs" fontWeight="medium" color="fg.muted" textTransform="uppercase">
-          Управление
-        </Text>
-        
-        {adminItems.map((item) => (
-          <Link key={item.href} href={item.href}>
-            <Flex
-              px={3}
-              py={2.5}
-              borderRadius="lg"
-              align="center"
-              gap={3}
-              bg={isActive(item.href) ? 'bg.subtle' : 'transparent'}
-              color={isActive(item.href) ? 'accent.600' : 'fg.muted'}
-              fontWeight={isActive(item.href) ? 'medium' : 'normal'}
-              transition="all 0.2s"
-              _hover={{
-                bg: 'bg.subtle',
-                color: 'fg.default',
-              }}
+        {/* Admin Section - only for admins */}
+        {isAdmin && (
+          <>
+            <Text
+              px={2}
+              py={2}
+              mt={4}
+              fontSize="xs"
+              fontWeight="medium"
+              color="fg.muted"
+              textTransform="uppercase"
             >
-              <Icon as={item.icon} boxSize={5} />
-              <Text fontSize="sm">{item.label}</Text>
-            </Flex>
-          </Link>
-        ))}
+              Управление
+            </Text>
+
+            {adminItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <Flex
+                  px={3}
+                  py={2.5}
+                  borderRadius="lg"
+                  align="center"
+                  gap={3}
+                  bg={isActive(item.href) ? "bg.subtle" : "transparent"}
+                  color={isActive(item.href) ? "accent.600" : "fg.muted"}
+                  fontWeight={isActive(item.href) ? "medium" : "normal"}
+                  transition="all 0.2s"
+                  _hover={{
+                    bg: "bg.subtle",
+                    color: "fg.default",
+                  }}
+                >
+                  <Icon as={item.icon} boxSize={5} />
+                  <Text fontSize="sm">{item.label}</Text>
+                </Flex>
+              </Link>
+            ))}
+          </>
+        )}
       </VStack>
     </Box>
   );
