@@ -20,7 +20,6 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const username = user?.username;
-  const queryClient = useQueryClient();
 
   const countsQuery = useQuery({
     queryKey: queryKeys.tickets.counts(),
