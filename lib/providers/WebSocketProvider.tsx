@@ -113,21 +113,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     client.onConnect = () => {
-      console.log("[WS] Connected");
+      console.log("[WS] Подключен");
       setIsConnected(true);
     };
 
     client.onDisconnect = () => {
-      console.log("[WS] Disconnected");
+      console.log("[WS] Отключен");
       setIsConnected(false);
     };
 
     client.onStompError = (frame) => {
-      console.error("[WS] STOMP error:", frame.headers["message"]);
+      console.error("[WS] STOMP ошибка:", frame.headers["message"]);
     };
 
     client.onWebSocketError = (event) => {
-      console.error("[WS] WebSocket error:", event);
+      console.error("[WS] WebSocket ошибка:", event);
     };
 
     client.activate();
@@ -151,7 +151,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
       // Check both ref and actual connection state
       if (!client || !client.connected) {
-        console.warn("[WS] Not connected, cannot subscribe to", destination);
+        console.warn("[WS] Нет подключения. Невозможно подписаться на: ", destination);
         return () => {};
       }
 
@@ -161,12 +161,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         subscriptionsRef.current.get(existingKey)?.unsubscribe();
       }
 
-      console.log("[WS] Subscribing to", destination);
+      console.log("[WS] Подписка на: ", destination);
       const subscription = client.subscribe(destination, callback);
       subscriptionsRef.current.set(existingKey, subscription);
 
       return () => {
-        console.log("[WS] Unsubscribing from", destination);
+        console.log("[WS] Отписка от: ", destination);
         subscription.unsubscribe();
         subscriptionsRef.current.delete(existingKey);
       };
@@ -183,7 +183,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const ticket: Ticket = JSON.parse(message.body);
           callback(ticket);
         } catch (e) {
-          console.error("[WS] Failed to parse new ticket:", e);
+          console.error("[WS] Ошибка подписки на новые тикеты: ", e);
         }
       });
     },
@@ -197,7 +197,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const ticket: Ticket = JSON.parse(message.body);
           callback(ticket);
         } catch (e) {
-          console.error("[WS] Failed to parse ticket update:", e);
+          console.error("[WS] Ошибка подписки на обновления тикетов: ", e);
         }
       });
     },
@@ -211,7 +211,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const data = JSON.parse(message.body);
           callback(data);
         } catch (e) {
-          console.error("[WS] Failed to parse ticket deleted:", e);
+          console.error("[WS] Ошибка подписки на событие удаления тикета: ", e);
         }
       });
     },
@@ -227,7 +227,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const chatMessage: ChatMessageWS = JSON.parse(message.body);
           callback(chatMessage);
         } catch (e) {
-          console.error("[WS] Failed to parse chat message:", e);
+          console.error("[WS] Ошибка подписки на тикет чат: ", e);
         }
       });
     },
@@ -241,7 +241,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const indicator: TypingIndicator = JSON.parse(message.body);
           callback(indicator);
         } catch (e) {
-          console.error("[WS] Failed to parse typing indicator:", e);
+          console.error("[WS] Ошибка подписки на индикатор печати: ", e);
         }
       });
     },
@@ -254,7 +254,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     (ticketId: number, content: string, internal = false): boolean => {
       const client = clientRef.current;
       if (!client?.connected) {
-        console.warn("[WS] Not connected, cannot send message");
+        console.warn("[WS] Ошибки broadcast отправки. Нет подключения");
         return false;
       }
 
