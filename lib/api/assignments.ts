@@ -1,4 +1,5 @@
 import api from './client';
+import type { ApiResponse } from '@/types/api';
 
 // Assignment types based on OpenAPI spec
 
@@ -50,12 +51,6 @@ export interface PagedAssignments {
   size: number;
   first: boolean;
   last: boolean;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
 }
 
 export const assignmentApi = {

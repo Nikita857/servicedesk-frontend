@@ -1,5 +1,6 @@
 import api from './client';
 import { API_BASE_URL, API_SERVER_URL } from '../config';
+import type { ApiResponse } from '@/types/api';
 
 export interface Attachment {
   id: number;
@@ -14,12 +15,6 @@ export interface Attachment {
     fio: string | null;
   };
   createdAt: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
 }
 
 /**

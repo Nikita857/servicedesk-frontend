@@ -29,7 +29,7 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
       }
 
       const [all, pending] = await Promise.all([
-        ticketApi.listAllDB(0, 9999),
+        ticketApi.listAll(),
         assignmentApi.getPendingCount(),
       ]);
 

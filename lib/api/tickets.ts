@@ -1,4 +1,5 @@
 import api from './client';
+import type { ApiResponse } from '@/types/api';
 import type {
   Ticket,
   PagedTicketList,
@@ -8,12 +9,6 @@ import type {
   TicketStatus,
 } from '@/types/ticket';
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
 export const ticketApi = {
   // List all tickets (paginated)
   list: async (page = 0, size = 20): Promise<PagedTicketList> => {
@@ -22,7 +17,12 @@ export const ticketApi = {
     });
     return response.data.data;
   },
-  listAllDB: async (page = 0, size = 9999): Promise<PagedTicketList> => {
+
+  /**
+   * List all tickets without pagination limit
+   * @deprecated Consider using a dedicated counts API endpoint for better performance
+   */
+  listAll: async (page = 0, size = 10000): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>('/tickets', {
       params: { page, size },
     });
