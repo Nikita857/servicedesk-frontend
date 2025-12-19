@@ -1,4 +1,5 @@
 import api from './client';
+import type { ApiResponse } from '@/types/api';
 
 export interface SupportLine {
   id: number;
@@ -18,12 +19,6 @@ export interface Specialist {
   fio: string | null;
   email: string | null;
   active: boolean;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
 }
 
 export const supportLineApi = {

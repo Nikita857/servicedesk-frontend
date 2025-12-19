@@ -1,16 +1,11 @@
 import api from './client';
+import type { ApiResponse } from '@/types/api';
 import type {
   Message,
   PagedMessages,
   SendMessageRequest,
   EditMessageRequest,
 } from '@/types/message';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
 
 export const messageApi = {
   // Get messages for a ticket (paginated)
