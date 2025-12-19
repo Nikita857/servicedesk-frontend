@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Box,
   Flex,
@@ -13,7 +13,6 @@ import {
   Spinner,
   Badge,
   SimpleGrid,
-  IconButton,
 } from "@chakra-ui/react";
 import {
   LuPlus,
@@ -24,113 +23,38 @@ import {
   LuUser,
   LuClock,
 } from "react-icons/lu";
-import { wikiApi, type WikiArticleListItem } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
-import { toaster } from "@/components/ui/toaster";
+import { useWikiArticlesQuery } from "@/lib/hooks";
+import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
 export default function WikiPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
 
-  const [articles, setArticles] = useState<WikiArticleListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  // Use TanStack Query for wiki articles
+  const {
+    articles,
+    isLoading,
+    page,
+    totalPages,
+    searchQuery,
+    setSearchQuery,
+    setPage,
+    handleSearch,
+    handleLike,
+    likingArticleId,
+  } = useWikiArticlesQuery();
+
   const [showFavorites, setShowFavorites] = useState(false);
-  const [likingArticleId, setLikingArticleId] = useState<number | null>(null);
 
-  const fetchArticles = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = searchQuery
-        ? await wikiApi.search(searchQuery, page, 12)
-        : await wikiApi.list(page, 12);
-      setArticles(response.content);
-      setTotalPages(response.totalPages);
-    } catch (error) {
-      console.error("Failed to load articles", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, searchQuery]);
-
-  useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(0);
+  // Reset favorites filter on search
+  const onSearch = (e: React.FormEvent) => {
     setShowFavorites(false);
-    fetchArticles();
+    handleSearch(e);
   };
 
-  const handleLike = async (e: React.MouseEvent, articleId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-      toaster.error({ title: "Войдите, чтобы лайкать статьи" });
-      return;
-    }
-
-    const article = articles.find((a) => a.id === articleId);
-    if (!article) return;
-
-    const isLiked = article.likedByCurrentUser;
-
-    setLikingArticleId(articleId);
-    try {
-      if (isLiked) {
-        // Unlike
-        await wikiApi.unlike(articleId);
-        setArticles((prev) =>
-          prev.map((a) =>
-            a.id === articleId
-              ? {
-                  ...a,
-                  likedByCurrentUser: false,
-                  likeCount: Math.max(0, a.likeCount - 1),
-                }
-              : a
-          )
-        );
-        toaster.success({ title: "Статья удалена из избранного" });
-      } else {
-        // Like
-        await wikiApi.like(articleId);
-        setArticles((prev) =>
-          prev.map((a) =>
-            a.id === articleId
-              ? {
-                  ...a,
-                  likedByCurrentUser: true,
-                  likeCount: a.likeCount + 1,
-                }
-              : a
-          )
-        );
-        toaster.success({ title: "Статья добавлена в избранное" });
-      }
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Не удалось обновить лайк";
-      toaster.error({ title: errorMessage });
-    } finally {
-      setLikingArticleId(null);
-    }
-  };
-
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("ru-RU", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-
-  // Фильтруем статьи для показа избранного
+  // Filter articles for favorites display
   const displayedArticles = showFavorites
     ? articles.filter((a) => a.likedByCurrentUser)
     : articles;
@@ -172,7 +96,7 @@ export default function WikiPage() {
 
       {/* Search */}
       <Box mb={6}>
-        <form onSubmit={handleSearch}>
+        <form onSubmit={onSearch}>
           <Flex gap={2}>
             <Input
               placeholder="Поиск по статьям..."
@@ -375,7 +299,7 @@ export default function WikiPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
               >
                 Назад
@@ -386,7 +310,7 @@ export default function WikiPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
               >
                 Вперёд

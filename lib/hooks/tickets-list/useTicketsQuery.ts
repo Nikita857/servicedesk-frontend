@@ -53,7 +53,7 @@ export function useTicketsQuery(
 
   // Query for regular tickets
   const ticketsQuery = useQuery({
-    queryKey: queryKeys.tickets.list(filter, page),
+    queryKey: queryKeys.tickets.list({ filter, page }),
     queryFn: async (): Promise<PagedTicketList> => {
       switch (filter) {
         case "my":
@@ -87,7 +87,7 @@ export function useTicketsQuery(
   const addTicket = useCallback(
     (ticket: TicketListItem) => {
       queryClient.setQueryData<PagedTicketList>(
-        queryKeys.tickets.list(filter, page),
+        queryKeys.tickets.list({ filter, page }),
         (old) => {
           if (!old) return old;
           return {
@@ -104,7 +104,7 @@ export function useTicketsQuery(
   const updateTicketInList = useCallback(
     (updatedTicket: TicketListItem) => {
       queryClient.setQueryData<PagedTicketList>(
-        queryKeys.tickets.list(filter, page),
+        queryKeys.tickets.list({ filter, page }),
         (old) => {
           if (!old) return old;
           return {
@@ -122,7 +122,7 @@ export function useTicketsQuery(
   const removeTicket = useCallback(
     (ticketId: number) => {
       queryClient.setQueryData<PagedTicketList>(
-        queryKeys.tickets.list(filter, page),
+        queryKeys.tickets.list({ filter, page }),
         (old) => {
           if (!old) return old;
           return {
