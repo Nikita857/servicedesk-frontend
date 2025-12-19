@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -19,10 +19,10 @@ import { LuArrowLeft } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
+import { useCategoriesQuery } from "@/lib/hooks";
 import { toaster } from "@/components/ui/toaster";
 import axios from "axios";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
-import api from "@/lib/api/client";
 
 interface Category {
   id: number;
@@ -41,7 +41,9 @@ const priorityCollection = createListCollection({
 export default function NewTicketPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Fetch categories using TanStack Query
+  const { data: categories = [] } = useCategoriesQuery();
 
   const [formData, setFormData] = useState<CreateTicketRequest>({
     title: "",
@@ -49,20 +51,6 @@ export default function NewTicketPage() {
     link1c: "",
     priority: "MEDIUM",
   });
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const catRes = await api.get<{ data: Category[] }>(
-          "/categories/user-selectable"
-        );
-        setCategories(catRes.data.data);
-      } catch (error) {
-        console.error("Failed to load categories", error);
-      }
-    };
-    loadData();
-  }, []);
 
   // Dynamic collection for categories
   const categoryCollection = useMemo(
