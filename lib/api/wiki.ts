@@ -1,4 +1,5 @@
 import api from './client';
+import type { ApiResponse } from '@/types/api';
 
 // Types based on OpenAPI spec
 export interface WikiArticle {
@@ -66,12 +67,6 @@ export interface PagedWikiArticleList {
   first: boolean;
   last: boolean;
   empty: boolean;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
 }
 
 export const wikiApi = {

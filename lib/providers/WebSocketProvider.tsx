@@ -13,6 +13,18 @@ import SockJS from "sockjs-client";
 import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
 import { Ticket } from "@/types/ticket";
+import type {
+  ChatMessageWS,
+  TypingIndicator,
+  AttachmentWS,
+} from "@/types/websocket";
+
+// Re-export types for convenience
+export type {
+  ChatMessageWS,
+  TypingIndicator,
+  AttachmentWS,
+} from "@/types/websocket";
 
 // ==================== Types ====================
 
@@ -54,27 +66,13 @@ interface WebSocketContextValue {
     ticketId: number,
     callback: (indicator: TypingIndicator) => void
   ) => () => void;
+  subscribeToAttachments: (
+    ticketId: number,
+    callback: (attachment: AttachmentWS) => void
+  ) => () => void;
 }
 
-export interface ChatMessageWS {
-  id: number;
-  ticketId: number;
-  content: string;
-  senderId: number;
-  senderUsername: string;
-  senderFio: string | null;
-  senderType: string;
-  internal: boolean;
-  createdAt: string;
-}
-
-export interface TypingIndicator {
-  ticketId: number;
-  userId: number;
-  username: string;
-  fio: string | null;
-  typing: boolean;
-}
+// ==================== Context ====================
 
 // ==================== Context ====================
 
@@ -151,7 +149,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
       // Check both ref and actual connection state
       if (!client || !client.connected) {
-        console.warn("[WS] Нет подключения. Невозможно подписаться на: ", destination);
+        console.warn(
+          "[WS] Нет подключения. Невозможно подписаться на: ",
+          destination
+        );
         return () => {};
       }
 
@@ -248,6 +249,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     [subscribe]
   );
 
+  const subscribeToAttachments = useCallback(
+    (ticketId: number, callback: (attachment: AttachmentWS) => void) => {
+      return subscribe(`/topic/ticket/${ticketId}/attachment`, (message) => {
+        try {
+          const attachment: AttachmentWS = JSON.parse(message.body);
+          callback(attachment);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на вложения: ", e);
+        }
+      });
+    },
+    [subscribe]
+  );
+
   // ==================== Send Methods ====================
 
   const sendMessage = useCallback(
@@ -289,6 +304,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     sendTyping,
     subscribeToChatMessages,
     subscribeToTyping,
+    subscribeToAttachments,
   };
 
   return (

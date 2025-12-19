@@ -15,15 +15,11 @@ import {
 import { LuArrowLeft, LuSave } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  wikiApi,
-  type WikiArticle,
-  type UpdateWikiArticleRequest,
-} from "@/lib/api/wiki";
+import { wikiApi, type UpdateWikiArticleRequest } from "@/lib/api/wiki";
+import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
 import { AxiosError } from "axios";
-import { CustomEmojiPicker } from "@/components/features/ticket-chat/CustomEmojiPicker";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -35,8 +31,9 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
 
-  const [article, setArticle] = useState<WikiArticle | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use TanStack Query for article data
+  const { article, isLoading, error } = useWikiArticleQuery(slug);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<UpdateWikiArticleRequest>({
     title: "",
@@ -44,35 +41,32 @@ export default function EditWikiArticlePage({ params }: PageProps) {
     excerpt: "",
   });
   const [tagsInput, setTagsInput] = useState("");
+  const [formInitialized, setFormInitialized] = useState(false);
 
+  // Initialize form when article loads
   useEffect(() => {
-    const fetchArticle = async () => {
-      try {
-        const data = await wikiApi.getBySlug(slug);
-        setArticle(data);
-        setFormData({
-          title: data.title,
-          content: data.content,
-          excerpt: data.excerpt || "",
-          categoryId: data.categoryId || undefined,
-        });
-        setTagsInput(data.tags.join(", "));
-      } catch (error) {
-        console.error("Failed to load article", error);
-        if (error instanceof AxiosError) {
-          toaster.error({
-            title: "Ошибка",
-            description: error.response?.data.message,
-            closable: true,
-          });
-        }
-        router.push("/dashboard/wiki");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchArticle();
-  }, [slug, router]);
+    if (article && !formInitialized) {
+      setFormData({
+        title: article.title,
+        content: article.content,
+        excerpt: article.excerpt || "",
+        categoryId: article.categoryId || undefined,
+      });
+      setTagsInput(article.tags.join(", "));
+      setFormInitialized(true);
+    }
+  }, [article, formInitialized]);
+
+  // Error handling
+  if (error) {
+    toaster.error({
+      title: "Ошибка",
+      description: "Статья не найдена",
+      closable: true,
+    });
+    router.push("/dashboard/wiki");
+    return null;
+  }
 
   // Check access
   useEffect(() => {
@@ -83,7 +77,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         toaster.error({
           title: "Доступ запрещён",
           description: "Вы можете редактировать только свои статьи",
-          closable: true
+          closable: true,
         });
         router.push(`/dashboard/wiki/${slug}`);
       }
@@ -91,7 +85,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         toaster.error({
           title: "Доступ запрещён",
           description: "Вы не являетесь специалистом",
-          closable: true
+          closable: true,
         });
         router.push(`/dashboard/wiki/${slug}`);
       }

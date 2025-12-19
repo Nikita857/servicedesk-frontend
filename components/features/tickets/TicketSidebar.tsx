@@ -1,5 +1,6 @@
 import { Assignment } from "@/lib/api";
 import { Ticket } from "@/types";
+import { formatDate, formatDuration } from "@/lib/utils";
 import {
   Badge,
   Box,
@@ -37,22 +38,6 @@ export default function TicketSidebar({
   showHistory,
   setShowHistory,
 }: TicketSidebarProps) {
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("ru-RU", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}ч ${minutes}м`;
-  };
-
   return (
     <VStack gap={4} align="stretch">
       {/* Rejection Alert - shown when last assignment was rejected */}

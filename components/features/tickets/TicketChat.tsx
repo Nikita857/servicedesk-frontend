@@ -10,8 +10,8 @@ import {
 } from "react-icons/lu";
 import { messageApi } from "@/lib/api/messages";
 import { attachmentApi } from "@/lib/api/attachments";
-import { ticketWebSocket } from "@/lib/websocket/ticketWebSocket";
 import { toaster } from "@/components/ui/toaster";
+import { formatFileSize, validateFile, isImageType } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
 import type { Message } from "@/types/message";
@@ -25,26 +25,10 @@ interface TicketChatProps {
   ticketStatus: TicketStatus;
 }
 
-// File validation constants - only block executable files
-const BLOCKED_EXTENSIONS = [
-  ".exe",
-  ".bat",
-  ".cmd",
-  ".sh",
-  ".ps1",
-  ".msi",
-  ".dll",
-  ".scr",
-  ".vbs",
-  ".com",
-  ".pif",
-];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
 export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const { user } = useAuthStore();
 
-  // Use custom hook for WebSocket and messages (no longer fetches ticketStatus)
+  // Use custom hook for WebSocket and messages
   const {
     messages,
     setMessages,
@@ -52,6 +36,7 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     isConnected,
     typingUser,
     sendTypingIndicator,
+    sendMessage: wsSendMessage,
   } = useChatWebSocket(ticketId);
 
   // Local state for file handling
@@ -61,16 +46,6 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const [isSending, setIsSending] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // File validation
-  const validateFile = (file: File): string | null => {
-    if (file.size > MAX_FILE_SIZE) return "Файл слишком большой (макс. 10MB)";
-    const fileName = file.name.toLowerCase();
-    for (const ext of BLOCKED_EXTENSIONS) {
-      if (fileName.endsWith(ext)) return `Тип файла не разрешён: ${ext}`;
-    }
-    return null;
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -153,8 +128,8 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
         setIsUploading(false);
       }
     } else if (content) {
-      // Send message without file
-      if (isConnected && ticketWebSocket.sendMessage(content)) return;
+      // Send message without file via WebSocket
+      if (isConnected && wsSendMessage(content)) return;
 
       setIsSending(true);
       try {
@@ -194,12 +169,6 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
 
   const isTicketActive = (status: TicketStatus): boolean => {
     return status !== "CLOSED" && status !== "CANCELLED";
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const isImageType = (mimeType: string) => mimeType?.startsWith("image/");

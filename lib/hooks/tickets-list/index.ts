@@ -1,9 +1,10 @@
-// Legacy hooks (useState-based)
-export { useTicketsList, type FilterType } from "./useTicketsList";
-export { useTicketsCounts } from "./useTicketsCounts";
+// Actions and WebSocket hooks
 export { useAssignmentsActions } from "./useAssignmentsActions";
 export { useTicketsWebSocket } from "./useTicketsWebSocket";
 
-// React Query hooks (recommended)
-export { useTicketsQuery } from "./useTicketsQuery";
+// React Query hooks
+export { useTicketsQuery, type FilterType } from "./useTicketsQuery";
 export { useTicketsCountsQuery } from "./useTicketsCountsQuery";
+
+// Legacy hooks - deprecated, will be removed
+// TODO: Delete useTicketsList.ts and useTicketsCounts.ts
