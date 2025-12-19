@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import {
   Box,
   Grid,
@@ -22,12 +22,10 @@ import {
 } from "react-icons/lu";
 import Link from "next/link";
 import type { IconType } from "react-icons";
-import { ticketApi } from "@/lib/api/tickets";
-import { assignmentApi } from "@/lib/api/assignments";
 import { useAuthStore } from "@/stores";
 import type { TicketListItem } from "@/types/ticket";
 import { TicketCard } from "@/components/features/tickets";
-import { useTicketsWebSocket } from "@/lib/hooks";
+import { useTicketsWebSocket, useDashboardQuery } from "@/lib/hooks";
 
 interface StatCardProps {
   label: string;
@@ -100,67 +98,20 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
 
-  const [recentTickets, setRecentTickets] = useState<TicketListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    open: 0,
-    resolved: 0,
-    overdue: 0,
-  });
-  const [pendingCount, setPendingCount] = useState(0);
+  // Use TanStack Query for dashboard data
+  const { stats, recentTickets, isLoading, refetch } = useDashboardQuery();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch recent tickets - load more to have unassigned available
-        const ticketsResponse = await ticketApi.list(0, 20);
+  // Extract pendingCount from stats for convenience
+  const pendingCount = stats.pendingCount;
 
-        // Filter to only unassigned tickets for dashboard display
-        const unassignedTickets = ticketsResponse.content.filter(
-          (t) =>
-            !t.assignedToUsername &&
-            (t.status === "NEW" || t.status === "PENDING")
-        );
-        setRecentTickets(unassignedTickets.slice(0, 5)); // Show max 5
-
-        setStats({
-          open: ticketsResponse.content.filter((t) =>
-            ["NEW", "OPEN", "PENDING"].includes(t.status)
-          ).length,
-          resolved: ticketsResponse.content.filter(
-            (t) => t.status === "RESOLVED"
-          ).length,
-          overdue: ticketsResponse.content.filter(
-            (t) => t.slaDeadline && new Date(t.slaDeadline) < new Date()
-          ).length,
-        });
-
-        // Fetch pending assignments count for specialists
-        if (isSpecialist) {
-          const count = await assignmentApi.getPendingCount();
-          setPendingCount(count);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [isSpecialist]);
-
-  // Handle new ticket from WebSocket
-  const handleNewTicket = useCallback((ticket: TicketListItem) => {
-    // Add to list if unassigned
-    if (!ticket.assignedToUsername && ticket.status === "NEW") {
-      setRecentTickets((prev) => [ticket, ...prev].slice(0, 5));
-    }
-    // Update stats
-    setStats((prev) => ({
-      ...prev,
-      open: prev.open + 1,
-    }));
-  }, []);
+  // Handle new ticket from WebSocket - refetch to update stats
+  const handleNewTicket = useCallback(
+    (_ticket: TicketListItem) => {
+      // Refetch to update stats and recent tickets from server
+      refetch();
+    },
+    [refetch]
+  );
 
   // WebSocket for real-time new tickets
   useTicketsWebSocket({
