@@ -50,16 +50,23 @@ export interface PagedMessages {
 
 // Sender type labels and colors
 // Role hierarchy: USER < SYSADMIN (1 line) < DEV1C (2 line) < DEVELOPER (3 line + admin)
-export const senderTypeConfig: Record<string, { label: string; color: string; line?: number }> = {
+export interface SenderTypeConfig {
+  label: string;
+  color: string;
+  line?: number;
+}
+
+export const senderTypeConfig: Record<SenderType, SenderTypeConfig> = {
   USER: { label: 'Пользователь', color: 'blue' },
   SYSADMIN: { label: 'Сисадмин', color: 'green', line: 1 },
   DEV1C: { label: 'Разработчик 1С', color: 'orange', line: 2 },
   DEVELOPER: { label: 'Разработчик', color: 'purple', line: 3 },
+  ADMIN: { label: 'Администратор', color: 'red' },
 };
 
 // Get sender config with fallback for unknown types
-export const getSenderConfig = (senderType: string) => {
-  return senderTypeConfig[senderType] || { label: senderType, color: 'gray' };
+export const getSenderConfig = (senderType: SenderType | string): SenderTypeConfig => {
+  return senderTypeConfig[senderType as SenderType] || { label: senderType, color: 'gray' };
 };
 
 // Check if role is a specialist (all except USER)
