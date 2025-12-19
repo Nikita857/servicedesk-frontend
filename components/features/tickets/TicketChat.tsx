@@ -10,7 +10,6 @@ import {
 } from "react-icons/lu";
 import { messageApi } from "@/lib/api/messages";
 import { attachmentApi } from "@/lib/api/attachments";
-import { ticketWebSocket } from "@/lib/websocket/ticketWebSocket";
 import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
@@ -44,7 +43,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const { user } = useAuthStore();
 
-  // Use custom hook for WebSocket and messages (no longer fetches ticketStatus)
+  // Use custom hook for WebSocket and messages
   const {
     messages,
     setMessages,
@@ -52,6 +51,7 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     isConnected,
     typingUser,
     sendTypingIndicator,
+    sendMessage: wsSendMessage,
   } = useChatWebSocket(ticketId);
 
   // Local state for file handling
@@ -153,8 +153,8 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
         setIsUploading(false);
       }
     } else if (content) {
-      // Send message without file
-      if (isConnected && ticketWebSocket.sendMessage(content)) return;
+      // Send message without file via WebSocket
+      if (isConnected && wsSendMessage(content)) return;
 
       setIsSending(true);
       try {

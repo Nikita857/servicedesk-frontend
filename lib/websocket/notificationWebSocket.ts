@@ -1,8 +1,7 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Notification } from '@/types/notification';
-
-const WS_URL = 'http://192.168.14.9:8080/ws';
+import { WS_URL } from '@/lib/config';
 
 let stompClient: Client | null = null;
 let notificationSubscription: { unsubscribe: () => void } | null = null;
