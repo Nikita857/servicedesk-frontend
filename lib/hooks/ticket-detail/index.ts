@@ -1,9 +1,10 @@
-// Legacy hooks (useState-based)
-export { useTicketDetail } from "./useTicketDetail";
+// Action hooks
 export { useEscalation } from "./useEscalation";
-export { useSupportLines } from "./useSupportLines";
 export { useTicketWebSocket } from "./useTicketWebSocket";
 
-// React Query hooks (recommended)
+// React Query hooks
 export { useTicketQuery } from "./useTicketQuery";
 export { useSupportLinesQuery } from "./useSupportLinesQuery";
+
+// Legacy hooks - deprecated, will be removed
+// TODO: Delete useTicketDetail.ts and useSupportLines.ts

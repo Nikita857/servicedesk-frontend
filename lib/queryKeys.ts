@@ -8,8 +8,8 @@ export const queryKeys = {
   tickets: {
     all: ["tickets"] as const,
     lists: () => [...queryKeys.tickets.all, "list"] as const,
-    list: (filter: string, page: number) =>
-      [...queryKeys.tickets.lists(), { filter, page }] as const,
+    list: (filter: Record<string, unknown>) =>
+      [...queryKeys.tickets.lists(), filter] as const,
     details: () => [...queryKeys.tickets.all, "detail"] as const,
     detail: (id: number) => [...queryKeys.tickets.details(), id] as const,
     counts: () => [...queryKeys.tickets.all, "counts"] as const,
@@ -55,5 +55,15 @@ export const queryKeys = {
   categories: {
     all: ["categories"] as const,
     list: () => [...queryKeys.categories.all, "list"] as const,
+    userSelectable: () => [...queryKeys.categories.all, "user-selectable"] as const,
+  },
+
+  // Reports
+  reports: {
+    all: ["reports"] as const,
+    ticketsByStatus: () => [...queryKeys.reports.all, "tickets-by-status"] as const,
+    ticketsByCategory: () => [...queryKeys.reports.all, "tickets-by-category"] as const,
+    specialistWorkload: () => [...queryKeys.reports.all, "specialist-workload"] as const,
   },
 } as const;
+
