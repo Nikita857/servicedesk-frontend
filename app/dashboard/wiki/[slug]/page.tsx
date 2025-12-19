@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, use } from "react";
 import {
   Box,
   Flex,
@@ -24,9 +24,11 @@ import {
 } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { wikiApi, type WikiArticle } from "@/lib/api/wiki";
+import { wikiApi } from "@/lib/api/wiki";
+import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
+import { formatDate } from "@/lib/utils";
 import { API_BASE_URL } from "@/lib/config";
 
 interface PageProps {
@@ -39,73 +41,21 @@ export default function WikiArticlePage({ params }: PageProps) {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
 
-  const [article, setArticle] = useState<WikiArticle | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLiking, setIsLiking] = useState(false);
+  // Use TanStack Query for article data
+  const { article, isLoading, isLiking, handleLike, error } =
+    useWikiArticleQuery(slug);
+
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    const fetchArticle = async () => {
-      try {
-        const data = await wikiApi.getBySlug(slug);
-        setArticle(data);
-      } catch (error) {
-        console.error("Failed to load article", error);
-        toaster.error({
-          title: "Ошибка",
-          description: "Статья не найдена",
-        });
-        router.push("/dashboard/wiki");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchArticle();
-  }, [slug, router]);
-
-  const handleLike = async () => {
-    if (!article) return;
-
-    const isLiked = article.likedByCurrentUser;
-
-    setIsLiking(true);
-    try {
-      if (isLiked) {
-        // Unlike
-        await wikiApi.unlike(article.id);
-        setArticle((prev) =>
-          prev
-            ? {
-                ...prev,
-                likeCount: Math.max(0, prev.likeCount - 1),
-                likedByCurrentUser: false,
-              }
-            : null
-        );
-        toaster.success({ title: "Статья удалена из избранного" });
-      } else {
-        // Like
-        await wikiApi.like(article.id);
-        setArticle((prev) =>
-          prev
-            ? {
-                ...prev,
-                likeCount: prev.likeCount + 1,
-                likedByCurrentUser: true,
-              }
-            : null
-        );
-        toaster.success({ title: "Статья добавлена в избранное!" });
-      }
-    } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось обновить лайк",
-      });
-    } finally {
-      setIsLiking(false);
-    }
-  };
+  // Redirect on error
+  if (error) {
+    toaster.error({
+      title: "Ошибка",
+      description: "Статья не найдена",
+    });
+    router.push("/dashboard/wiki");
+    return null;
+  }
 
   const handleDelete = async () => {
     if (!article) return;
@@ -116,7 +66,7 @@ export default function WikiArticlePage({ params }: PageProps) {
       await wikiApi.delete(article.id);
       toaster.success({ title: "Статья удалена" });
       router.push("/dashboard/wiki");
-    } catch (error) {
+    } catch {
       toaster.error({
         title: "Ошибка",
         description: "Не удалось удалить статью",
@@ -125,15 +75,6 @@ export default function WikiArticlePage({ params }: PageProps) {
       setIsDeleting(false);
     }
   };
-
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("ru-RU", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
   if (isLoading) {
     return (

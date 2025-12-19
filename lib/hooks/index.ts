@@ -6,6 +6,7 @@ export { useDashboardQuery } from "./useDashboardQuery";
 
 // Wiki
 export { useWikiArticlesQuery } from "./useWikiArticlesQuery";
+export { useWikiArticleQuery } from "./useWikiArticleQuery";
 
 // Categories
 export { useCategoriesQuery } from "./useCategoriesQuery";
@@ -15,5 +16,6 @@ export * from "./tickets-list";
 
 // Ticket Detail Page
 export * from "./ticket-detail";
+
 
 
