@@ -11,6 +11,7 @@ import {
 import { messageApi } from "@/lib/api/messages";
 import { attachmentApi } from "@/lib/api/attachments";
 import { toaster } from "@/components/ui/toaster";
+import { formatFileSize } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
 import type { Message } from "@/types/message";
@@ -194,12 +195,6 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
 
   const isTicketActive = (status: TicketStatus): boolean => {
     return status !== "CLOSED" && status !== "CANCELLED";
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const isImageType = (mimeType: string) => mimeType?.startsWith("image/");
