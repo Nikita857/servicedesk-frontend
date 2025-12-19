@@ -26,7 +26,7 @@ export function useTicketsCounts(): UseTicketsCountsReturn {
 
     setIsLoading(true);
     try {
-      const all = await ticketApi.listAllDB(0, 9999);
+      const all = await ticketApi.listAll();
 
       const assigned = all.content.filter(
         (t) => t.assignedToUsername && t.assignedToUsername === username
