@@ -12,7 +12,10 @@ import {
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
-import { TicketChat } from "@/components/features/tickets";
+import {
+  TicketChat,
+  ClosureConfirmationBanner,
+} from "@/components/features/tickets";
 import TicketHeader from "@/components/features/tickets/TicketHeader";
 import EscalationPanel from "@/components/features/tickets/EscalationPanel";
 import TicketSidebar from "@/components/features/tickets/TicketSidebar";
@@ -132,6 +135,12 @@ export default function TicketDetailPage({ params }: PageProps) {
       <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
         {/* Main content */}
         <GridItem>
+          {/* Closure confirmation banner for ticket creator */}
+          <ClosureConfirmationBanner
+            ticket={ticket}
+            onTicketUpdate={updateTicket}
+          />
+
           <Box
             bg="bg.surface"
             borderRadius="xl"

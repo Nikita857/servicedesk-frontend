@@ -12,9 +12,28 @@ import {
   Select,
   Portal,
   createListCollection,
+  Badge,
+  Circle,
 } from "@chakra-ui/react";
 import { useMemo } from "react";
-import { LuForward, LuUserPlus } from "react-icons/lu";
+import { LuForward, LuUserPlus, LuTriangleAlert } from "react-icons/lu";
+
+// Status config for color indicators
+const statusColors: Record<string, string> = {
+  AVAILABLE: "green",
+  BUSY: "orange",
+  UNAVAILABLE: "gray",
+  TECHNICAL_ISSUE: "red",
+  OFFLINE: "gray",
+};
+
+const statusLabels: Record<string, string> = {
+  AVAILABLE: "Доступен",
+  BUSY: "Занят",
+  UNAVAILABLE: "Недоступен",
+  TECHNICAL_ISSUE: "Тех. проблемы",
+  OFFLINE: "Оффлайн",
+};
 
 interface EscalationPanelProps {
   supportLines: SupportLine[];
@@ -58,13 +77,34 @@ export default function EscalationPanel({
     [supportLines]
   );
 
+  // Get selected specialist for warning
+  const selectedSpecialist = useMemo(
+    () => specialists.find((s) => s.id === selectedSpecialistId),
+    [specialists, selectedSpecialistId]
+  );
+
+  const isSelectedBusy = selectedSpecialist?.activityStatus === "BUSY";
+  const isSelectedUnavailable =
+    selectedSpecialist?.activityStatus === "UNAVAILABLE" ||
+    selectedSpecialist?.activityStatus === "TECHNICAL_ISSUE" ||
+    selectedSpecialist?.activityStatus === "OFFLINE";
+
   const specialistCollection = useMemo(
     () =>
       createListCollection({
-        items: specialists.map((s) => ({
-          label: s.fio || s.username,
-          value: String(s.id),
-        })),
+        items: specialists.map((s) => {
+          const status = s.activityStatus || "AVAILABLE";
+          const statusColor = statusColors[status] || "gray";
+          const statusLabel = statusLabels[status] || status;
+          const displayName = s.fio || s.username;
+
+          return {
+            label: `${displayName} (${statusLabel})`,
+            value: String(s.id),
+            status,
+            statusColor,
+          };
+        }),
       }),
     [specialists]
   );
@@ -152,6 +192,46 @@ export default function EscalationPanel({
                 </Select.Positioner>
               </Portal>
             </Select.Root>
+
+            {/* Warning for busy/unavailable specialist */}
+            {isSelectedBusy && (
+              <HStack
+                mt={2}
+                p={2}
+                bg="orange.100"
+                borderRadius="md"
+                _dark={{ bg: "orange.900/30" }}
+              >
+                <LuTriangleAlert color="var(--chakra-colors-orange-500)" />
+                <Text
+                  fontSize="sm"
+                  color="orange.700"
+                  _dark={{ color: "orange.300" }}
+                >
+                  Специалист сейчас занят. Назначение возможно, но обработка
+                  может занять больше времени.
+                </Text>
+              </HStack>
+            )}
+            {isSelectedUnavailable && (
+              <HStack
+                mt={2}
+                p={2}
+                bg="red.100"
+                borderRadius="md"
+                _dark={{ bg: "red.900/30" }}
+              >
+                <LuTriangleAlert color="var(--chakra-colors-red-500)" />
+                <Text
+                  fontSize="sm"
+                  color="red.700"
+                  _dark={{ color: "red.300" }}
+                >
+                  Специалист недоступен. Рекомендуется выбрать другого
+                  специалиста.
+                </Text>
+              </HStack>
+            )}
           </Box>
         )}
 

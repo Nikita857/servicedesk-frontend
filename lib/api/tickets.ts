@@ -111,5 +111,63 @@ export const ticketApi = {
   delete: async (id: number): Promise<void> => {
     await api.delete(`/tickets/${id}`);
   },
+
+  // ============ Two-factor closure ============
+
+  /**
+   * Confirm ticket closure (user endpoint)
+   * Moves ticket from PENDING_CLOSURE to CLOSED
+   */
+  confirmClosure: async (id: number): Promise<Ticket> => {
+    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/confirm-closure`);
+    return response.data.data;
+  },
+
+  /**
+   * Reject ticket closure (user endpoint)
+   * Moves ticket from PENDING_CLOSURE to REOPENED
+   */
+  rejectClosure: async (id: number, reason?: string): Promise<Ticket> => {
+    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/reject-closure`, null, {
+      params: reason ? { reason } : undefined,
+    });
+    return response.data.data;
+  },
+
+  /**
+   * Get status history for a ticket
+   */
+  getStatusHistory: async (id: number): Promise<TicketStatusHistory[]> => {
+    const response = await api.get<ApiResponse<TicketStatusHistory[]>>(`/tickets/${id}/status-history`);
+    return response.data.data;
+  },
+
+  /**
+   * Rate a closed ticket (only ticket creator can rate, once)
+   */
+  rateTicket: async (id: number, request: RateTicketRequest): Promise<Ticket> => {
+    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/rate`, request);
+    return response.data.data;
+  },
 };
+
+// Request type for rating
+export interface RateTicketRequest {
+  rating: number; // 1-5
+  feedback?: string;
+}
+
+// Status history response type
+export interface TicketStatusHistory {
+  id: number;
+  status: string;
+  enteredAt: string;
+  exitedAt: string | null;
+  durationSeconds: number | null;
+  durationFormatted: string | null;
+  changedByUsername: string | null;
+  changedByFio: string | null;
+  comment: string | null;
+}
+
 

@@ -13,13 +13,14 @@ import {
   VStack,
   Portal,
   createListCollection,
+  Stack,
 } from "@chakra-ui/react";
 import { Select } from "@chakra-ui/react";
-import { LuArrowLeft } from "react-icons/lu";
+import { LuArrowLeft, LuInfo } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
-import { useCategoriesQuery } from "@/lib/hooks";
+import { useCategoriesQuery, useAllSupportLinesQuery } from "@/lib/hooks";
 import { toaster } from "@/components/ui/toaster";
 import axios from "axios";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
@@ -29,6 +30,11 @@ interface Category {
   name: string;
 }
 
+interface SupportLineItem {
+  label: string;
+  value: string;
+  description: string | null;
+}
 const priorityCollection = createListCollection({
   items: [
     { label: "Низкий", value: "LOW" },
@@ -42,8 +48,9 @@ export default function NewTicketPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch categories using TanStack Query
+  // Fetch categories and support lines using TanStack Query
   const { data: categories = [] } = useCategoriesQuery();
+  const { supportLines, isLoading: isLoadingLines } = useAllSupportLinesQuery();
 
   const [formData, setFormData] = useState<CreateTicketRequest>({
     title: "",
@@ -59,6 +66,26 @@ export default function NewTicketPage() {
         items: categories.map((c) => ({ label: c.name, value: String(c.id) })),
       }),
     [categories]
+  );
+
+  // Dynamic collection for support lines (only user-selectable ones: Sysadmins and 1C Support)
+  const supportLineCollection = useMemo(
+    () =>
+      createListCollection<SupportLineItem>({
+        items: supportLines
+          .filter(
+            (line) =>
+              // Filter to lines users can select (first two lines typically)
+              line.displayOrder <= 2
+          )
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((line) => ({
+            label: line.name,
+            value: String(line.id),
+            description: line.description,
+          })),
+      }),
+    [supportLines]
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -250,6 +277,54 @@ export default function NewTicketPage() {
             )}
           </HStack>
 
+          {/* Support Line Selection */}
+          <Box>
+            <HStack mb={1} gap={1}>
+              <Text fontSize="sm" fontWeight="medium" color="fg.default">
+                Линия поддержки
+              </Text>
+              <LuInfo size={14} color="var(--chakra-colors-fg-muted)" />
+            </HStack>
+            <Text fontSize="xs" color="fg.muted" mb={2}>
+              Выберите линию поддержки в зависимости от типа проблемы
+            </Text>
+            <Select.Root
+              collection={supportLineCollection}
+              value={
+                formData.supportLineId ? [String(formData.supportLineId)] : []
+              }
+              onValueChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  supportLineId: Number(e.value[0]) || undefined,
+                }))
+              }
+              disabled={isLoadingLines}
+            >
+              <Select.Trigger>
+                <Select.ValueText placeholder="Выберите линию поддержки (опционально)" />
+              </Select.Trigger>
+              <Portal>
+                <Select.Positioner>
+                  <Select.Content>
+                    {supportLineCollection.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        <VStack align="start" gap={0}>
+                          <Text>{item.label}</Text>
+                          {item.description && (
+                            <Text fontSize="xs" color="fg.muted">
+                              {item.description}
+                            </Text>
+                          )}
+                        </VStack>
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Portal>
+            </Select.Root>
+          </Box>
+
           {/* Link 1C */}
           {/* TODO проверить логику, может можно сделать более надженый способ, например получать категории отдельным маршрутом */}
           {formData.categoryUserId ===
@@ -271,7 +346,9 @@ export default function NewTicketPage() {
           )}
           {/* Info text */}
           <Text fontSize="xs" color="fg.muted">
-            Тикет будет направлен в службу поддержки автоматически
+            {formData.supportLineId
+              ? "Тикет будет направлен на выбранную линию поддержки"
+              : "Тикет будет направлен на первую линию поддержки автоматически"}
           </Text>
 
           {/* Submit */}

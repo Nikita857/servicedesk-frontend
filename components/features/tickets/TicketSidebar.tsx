@@ -1,4 +1,3 @@
-import { Assignment } from "@/lib/api";
 import { Ticket } from "@/types";
 import { formatDate, formatDuration } from "@/lib/utils";
 import {
@@ -20,6 +19,7 @@ import {
   LuPaperclip,
   LuUser,
 } from "react-icons/lu";
+import { Assignment } from "@/lib/api/assignments";
 
 interface TicketSidebarProps {
   ticket: Ticket;
