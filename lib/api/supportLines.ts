@@ -17,8 +17,9 @@ export interface Specialist {
   id: number;
   username: string;
   fio: string | null;
-  email: string | null;
   active: boolean;
+  activityStatus?: 'AVAILABLE' | 'UNAVAILABLE' | 'BUSY' | 'TECHNICAL_ISSUE' | 'OFFLINE';
+  availableForAssignment?: boolean;
 }
 
 export const supportLineApi = {
@@ -49,6 +50,18 @@ export const supportLineApi = {
   // Get my lines (for specialists)
   getMyLines: async (): Promise<SupportLine[]> => {
     const response = await api.get<ApiResponse<SupportLine[]>>('/support-lines/my-lines');
+    return response.data.data;
+  },
+};
+
+// Assignment API - forwarding related
+export const assignmentApi = {
+  /**
+   * Get available lines for forwarding based on user role
+   * Respects forwarding rules: SYSADMIN → 1CSUPPORT, etc.
+   */
+  getAvailableForwardingLines: async (): Promise<SupportLine[]> => {
+    const response = await api.get<ApiResponse<SupportLine[]>>('/assignments/available-lines');
     return response.data.data;
   },
 };

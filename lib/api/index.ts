@@ -4,6 +4,5 @@ export * from './tickets';
 export * from './messages';
 export * from './supportLines';
 export * from './attachments';
-export * from './assignments';
 export * from './wiki';
 export * from './reports';
