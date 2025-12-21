@@ -156,6 +156,7 @@ function getStatusLabel(status: string): string {
     PENDING: "В ожидании",
     ESCALATED: "Эскалирован",
     RESOLVED: "Решён",
+    PENDING_CLOSURE: "Ожидает закрытия",
     CLOSED: "Закрыт",
     REOPENED: "Переоткрыт",
     REJECTED: "Отклонён",
