@@ -48,6 +48,8 @@ export const queryKeys = {
   users: {
     all: ["users"] as const,
     current: () => [...queryKeys.users.all, "current"] as const,
+    myStatus: () => [...queryKeys.users.all, "my-status"] as const,
+    status: (userId: number) => [...queryKeys.users.all, "status", userId] as const,
     search: (query: string) => [...queryKeys.users.all, "search", query] as const,
   },
 
