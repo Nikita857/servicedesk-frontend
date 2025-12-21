@@ -6,6 +6,7 @@ export type TicketStatus =
   | 'PENDING' 
   | 'ESCALATED' 
   | 'RESOLVED' 
+  | 'PENDING_CLOSURE'
   | 'CLOSED' 
   | 'REOPENED' 
   | 'REJECTED' 
@@ -133,6 +134,7 @@ export const ticketStatusConfig: Record<TicketStatus, { label: string; color: st
   PENDING: { label: 'Ожидание', color: 'yellow' },
   ESCALATED: { label: 'Эскалирован', color: 'orange' },
   RESOLVED: { label: 'Решён', color: 'teal' },
+  PENDING_CLOSURE: { label: 'Ожидает закрытия', color: 'cyan' },
   CLOSED: { label: 'Закрыт', color: 'gray' },
   REOPENED: { label: 'Переоткрыт', color: 'purple' },
   REJECTED: { label: 'Отклонён', color: 'red' },
@@ -152,7 +154,8 @@ export const statusTransitions: Record<TicketStatus, TicketStatus[]> = {
   OPEN: ['PENDING', 'ESCALATED', 'RESOLVED', 'CANCELLED'],
   PENDING: ['OPEN', 'RESOLVED', 'CANCELLED'],
   ESCALATED: ['OPEN', 'PENDING', 'RESOLVED'],
-  RESOLVED: ['CLOSED', 'REOPENED'],
+  RESOLVED: ['PENDING_CLOSURE', 'REOPENED'], // Специалист запрашивает закрытие
+  PENDING_CLOSURE: ['CLOSED', 'REOPENED'], // Пользователь подтверждает или отклоняет
   CLOSED: ['REOPENED'],
   REOPENED: ['OPEN', 'PENDING', 'RESOLVED', 'CANCELLED'],
   REJECTED: [],
@@ -166,6 +169,7 @@ export const userStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
   PENDING: ['CANCELLED'],
   ESCALATED: [],
   RESOLVED: ['REOPENED'],
+  PENDING_CLOSURE: ['CLOSED', 'REOPENED'], // Пользователь может подтвердить закрытие или переоткрыть
   CLOSED: ['REOPENED'],
   REOPENED: ['CANCELLED'],
   REJECTED: [],
