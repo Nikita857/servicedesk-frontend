@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { supportLineApi, SupportLine, Specialist } from "@/lib/api/supportLines";
+import { supportLineApi, assignmentApi, SupportLine, Specialist } from "@/lib/api/supportLines";
 import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 import type { Ticket } from "@/types/ticket";
@@ -27,13 +27,30 @@ export function useSupportLinesQuery(
   const isAdmin = user?.roles?.includes("ADMIN") || false;
   const [selectedLineId, setSelectedLineId] = useState<number | undefined>();
 
-  // Support lines query
-  const linesQuery = useQuery({
-    queryKey: queryKeys.supportLines.list(),
-    queryFn: () => supportLineApi.getAll(),
-    staleTime: 5 * 60 * 1000, // 5 minutes - rarely changes
+  // Try available-lines first (role-based filtering)
+  const availableLinesQuery = useQuery({
+    queryKey: [...queryKeys.supportLines.list(), "available-for-forwarding"],
+    queryFn: () => assignmentApi.getAvailableForwardingLines(),
+    staleTime: 5 * 60 * 1000,
     enabled: !!ticket,
   });
+
+  // Fallback to all lines (for admin or if available-lines returns empty)
+  const allLinesQuery = useQuery({
+    queryKey: queryKeys.supportLines.list(),
+    queryFn: () => supportLineApi.getAll(),
+    staleTime: 5 * 60 * 1000,
+    // Only run if available-lines returned empty or we're admin
+    enabled: !!ticket && (isAdmin || (availableLinesQuery.isSuccess && availableLinesQuery.data?.length === 0)),
+  });
+
+  // Use available lines if they exist, otherwise fall back to all lines
+  const supportLines = (availableLinesQuery.data?.length ?? 0) > 0 
+    ? availableLinesQuery.data ?? []
+    : allLinesQuery.data ?? [];
+
+  const isLoadingLines = availableLinesQuery.isLoading || 
+    ((availableLinesQuery.data?.length ?? 0) === 0 && allLinesQuery.isLoading);
 
   // Specialists query - only when line is selected
   const specialistsQuery = useQuery({
@@ -45,7 +62,7 @@ export function useSupportLinesQuery(
 
   // Determine if ticket is on last line
   const isOnLastLine = (() => {
-    if (!ticket?.supportLine || !linesQuery.data?.length) return false;
+    if (!ticket?.supportLine || supportLines.length === 0) return false;
     if (isAdmin) return false; // Admin can always escalate
 
     const ticketLineName = ticket.supportLine.name?.toLowerCase() || "";
@@ -58,7 +75,7 @@ export function useSupportLinesQuery(
     if (isDeveloperLine) return true;
 
     const maxDisplayOrder = Math.max(
-      ...linesQuery.data.map((l) => l.displayOrder || 0)
+      ...supportLines.map((l: SupportLine) => l.displayOrder || 0)
     );
     const ticketLineOrder = ticket.supportLine.displayOrder || 0;
     return ticketLineOrder > 0 && ticketLineOrder >= maxDisplayOrder;
@@ -69,12 +86,13 @@ export function useSupportLinesQuery(
   }, []);
 
   return {
-    supportLines: linesQuery.data ?? [],
+    supportLines,
     specialists: specialistsQuery.data ?? [],
-    isLoadingLines: linesQuery.isLoading,
+    isLoadingLines,
     isLoadingSpecialists: specialistsQuery.isLoading,
     isOnLastLine,
     selectedLineId,
     setSelectedLineId: handleSetSelectedLineId,
   };
 }
+

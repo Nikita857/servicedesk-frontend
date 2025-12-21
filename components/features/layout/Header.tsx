@@ -1,26 +1,46 @@
-'use client';
+"use client";
 
-import { Box, Flex, Text, Menu, Avatar, IconButton, HStack, Badge } from '@chakra-ui/react';
-import { LuBell, LuLogOut, LuSettings, LuUser, LuChevronDown } from 'react-icons/lu';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { useAuthStore } from '@/stores';
-import { SenderType, userRolesBadges } from '@/types';
-import { ThemeSwitcher } from './ThemeSwitcher';
+import {
+  Box,
+  Flex,
+  Text,
+  Menu,
+  Avatar,
+  IconButton,
+  HStack,
+  Badge,
+} from "@chakra-ui/react";
+import {
+  LuBell,
+  LuLogOut,
+  LuSettings,
+  LuUser,
+  LuChevronDown,
+} from "react-icons/lu";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { useAuthStore } from "@/stores";
+import { SenderType, userRolesBadges } from "@/types";
+import { ThemeSwitcher } from "./ThemeSwitcher";
+import { ActivityStatusDropdown } from "./ActivityStatusDropdown";
 
 export function Header() {
   const { logout } = useAuth();
   const { user } = useAuthStore();
 
-  
+  const rolePriority = [
+    "USER",
+    "SYSADMIN",
+    "DEV1C",
+    "DEVELOPER",
+    "ADMIN",
+  ] as const;
 
-  const rolePriority = ['USER', 'SYSADMIN', 'DEV1C', 'DEVELOPER', 'ADMIN'] as const;
-
-  const highestRole = user?.roles
-  ?.reduce<SenderType | null>((top, role) => {
-    const currentIdx = rolePriority.indexOf(role as SenderType);
-    const topIdx = top ? rolePriority.indexOf(top) : -1;
-    return currentIdx > topIdx ? (role as SenderType) : top;
-  }, null) ?? 'USER';
+  const highestRole =
+    user?.roles?.reduce<SenderType | null>((top, role) => {
+      const currentIdx = rolePriority.indexOf(role as SenderType);
+      const topIdx = top ? rolePriority.indexOf(top) : -1;
+      return currentIdx > topIdx ? (role as SenderType) : top;
+    }, null) ?? "USER";
 
   const roleBadgeInfo = userRolesBadges[highestRole];
 
@@ -36,16 +56,20 @@ export function Header() {
         {/* Search or breadcrumb area */}
         <Box>
           <Text color="fg.muted" fontSize="sm">
-            Добро пожаловать. Ваша роль: <Badge colorPalette={roleBadgeInfo.color}>{roleBadgeInfo.name}</Badge>
+            Добро пожаловать. Ваша роль:{" "}
+            <Badge colorPalette={roleBadgeInfo.color}>
+              {roleBadgeInfo.name}
+            </Badge>
           </Text>
         </Box>
 
-        {/* Right side: notifications & profile */}
+        {/* Right side: activity status, notifications & profile */}
         <HStack gap={3}>
+          {/* Activity Status Dropdown (specialists only) */}
+          <ActivityStatusDropdown />
 
           {/* Theme switcher */}
-
-          <ThemeSwitcher/>
+          <ThemeSwitcher />
 
           {/* Notifications */}
           <IconButton
@@ -53,7 +77,7 @@ export function Header() {
             variant="ghost"
             size="sm"
             color="fg.muted"
-            _hover={{ bg: 'bg.subtle', color: 'fg.default' }}
+            _hover={{ bg: "bg.subtle", color: "fg.default" }}
           >
             <LuBell size={20} />
           </IconButton>
@@ -69,15 +93,23 @@ export function Header() {
                 borderRadius="lg"
                 cursor="pointer"
                 transition="all 0.2s"
-                _hover={{ bg: 'bg.subtle' }}
+                _hover={{ bg: "bg.subtle" }}
               >
                 <Avatar.Root size="sm">
                   <Avatar.Fallback name={user?.fio || user?.username} />
                 </Avatar.Root>
-                <Text fontSize="sm" fontWeight="medium" color="fg.default" display={{ base: 'none', md: 'block' }}>
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="fg.default"
+                  display={{ base: "none", md: "block" }}
+                >
                   {user?.fio || user?.username}
                 </Text>
-                <LuChevronDown size={16} color="var(--chakra-colors-fg-muted)" />
+                <LuChevronDown
+                  size={16}
+                  color="var(--chakra-colors-fg-muted)"
+                />
               </Flex>
             </Menu.Trigger>
             <Menu.Positioner>

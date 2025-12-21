@@ -15,6 +15,7 @@ import { ticketApi } from "@/lib/api/tickets";
 import { toaster } from "@/components/ui/toaster";
 import type { Ticket } from "@/types/ticket";
 import { useAuthStore } from "@/stores";
+import { RatingToast } from "./RatingToast";
 
 interface ClosureConfirmationBannerProps {
   ticket: Ticket;
@@ -34,13 +35,26 @@ export function ClosureConfirmationBanner({
   const [isRejecting, setIsRejecting] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showRatingToast, setShowRatingToast] = useState(false);
 
-  // Only show for ticket creator and when status is PENDING_CLOSURE
+  // Only show banner for ticket creator and when status is PENDING_CLOSURE
   const isTicketCreator = user?.id === ticket.createdBy.id;
   const isPendingClosure = ticket.status === "PENDING_CLOSURE";
+  const shouldShowBanner = isPendingClosure && isTicketCreator;
 
-  if (!isPendingClosure || !isTicketCreator) {
+  // If not showing banner and no rating toast, return null
+  if (!shouldShowBanner && !showRatingToast) {
     return null;
+  }
+
+  // If only rating toast is showing (after closure), render just the toast
+  if (!shouldShowBanner && showRatingToast) {
+    return (
+      <RatingToast
+        ticketId={ticket.id}
+        onClose={() => setShowRatingToast(false)}
+      />
+    );
   }
 
   const handleConfirm = async () => {
@@ -50,8 +64,10 @@ export function ClosureConfirmationBanner({
       onTicketUpdate(updatedTicket);
       toaster.success({
         title: "Тикет закрыт",
-        description: "Спасибо за подтверждение закрытия!",
+        description: "Спасибо за подтверждение!",
       });
+      // Show rating toast after successful closure
+      setShowRatingToast(true);
     } catch (error) {
       toaster.error({
         title: "Ошибка",
@@ -86,7 +102,7 @@ export function ClosureConfirmationBanner({
     }
   };
 
-  return (
+  const bannerContent = (
     <Box
       bg="cyan.50"
       _dark={{ bg: "cyan.900/30", borderColor: "cyan.700" }}
@@ -172,5 +188,18 @@ export function ClosureConfirmationBanner({
         </VStack>
       </Flex>
     </Box>
+  );
+
+  // Wrap in fragment to render rating toast separately (fixed position)
+  return (
+    <>
+      {bannerContent}
+      {showRatingToast && (
+        <RatingToast
+          ticketId={ticket.id}
+          onClose={() => setShowRatingToast(false)}
+        />
+      )}
+    </>
   );
 }

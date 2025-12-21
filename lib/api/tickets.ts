@@ -141,7 +141,21 @@ export const ticketApi = {
     const response = await api.get<ApiResponse<TicketStatusHistory[]>>(`/tickets/${id}/status-history`);
     return response.data.data;
   },
+
+  /**
+   * Rate a closed ticket (only ticket creator can rate, once)
+   */
+  rateTicket: async (id: number, request: RateTicketRequest): Promise<Ticket> => {
+    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/rate`, request);
+    return response.data.data;
+  },
 };
+
+// Request type for rating
+export interface RateTicketRequest {
+  rating: number; // 1-5
+  feedback?: string;
+}
 
 // Status history response type
 export interface TicketStatusHistory {
@@ -155,4 +169,5 @@ export interface TicketStatusHistory {
   changedByFio: string | null;
   comment: string | null;
 }
+
 
