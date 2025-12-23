@@ -57,7 +57,7 @@ export function useSupportLinesQuery(
     queryKey: queryKeys.supportLines.specialists(selectedLineId ?? 0),
     queryFn: () => supportLineApi.getSpecialists(selectedLineId!),
     enabled: !!selectedLineId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 1 * 60 * 1000, // 1 minutes
   });
 
   // Determine if ticket is on last line

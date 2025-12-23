@@ -13,6 +13,7 @@ import SockJS from "sockjs-client";
 import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
 import { Ticket } from "@/types/ticket";
+import { Notification } from "@/types/notification";
 import type {
   ChatMessageWS,
   TypingIndicator,
@@ -51,6 +52,7 @@ interface WebSocketContextValue {
     ticketId: number,
     callback: (data: { id: number }) => void
   ) => () => void;
+  subscribeToSlaBreach: (callback: (ticket: Ticket) => void) => () => void;
   // Chat (for tickets)
   sendMessage: (
     ticketId: number,
@@ -62,6 +64,10 @@ interface WebSocketContextValue {
     ticketId: number,
     callback: (message: ChatMessageWS) => void
   ) => () => void;
+  subscribeToInternalComments: (
+    ticketId: number,
+    callback: (message: ChatMessageWS) => void
+  ) => () => void;
   subscribeToTyping: (
     ticketId: number,
     callback: (indicator: TypingIndicator) => void
@@ -69,6 +75,11 @@ interface WebSocketContextValue {
   subscribeToAttachments: (
     ticketId: number,
     callback: (attachment: AttachmentWS) => void
+  ) => () => void;
+  // User subscriptions
+  subscribeToUserNotifications: (
+    userId: number,
+    callback: (notification: Notification) => void
   ) => () => void;
 }
 
@@ -219,6 +230,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     [subscribe]
   );
 
+  const subscribeToSlaBreach = useCallback(
+    (callback: (ticket: Ticket) => void) => {
+      return subscribe("/topic/sla/breach", (message) => {
+        try {
+          const ticket: Ticket = JSON.parse(message.body);
+          callback(ticket);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на SLA breach: ", e);
+        }
+      });
+    },
+    [subscribe]
+  );
+
   // ==================== Chat Subscriptions ====================
 
   const subscribeToChatMessages = useCallback(
@@ -229,6 +254,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           callback(chatMessage);
         } catch (e) {
           console.error("[WS] Ошибка подписки на тикет чат: ", e);
+        }
+      });
+    },
+    [subscribe]
+  );
+
+  const subscribeToInternalComments = useCallback(
+    (ticketId: number, callback: (message: ChatMessageWS) => void) => {
+      return subscribe(`/topic/ticket/${ticketId}/internal`, (message) => {
+        try {
+          const chatMessage: ChatMessageWS = JSON.parse(message.body);
+          callback(chatMessage);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на внутренние комментарии: ", e);
         }
       });
     },
@@ -251,12 +290,28 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   const subscribeToAttachments = useCallback(
     (ticketId: number, callback: (attachment: AttachmentWS) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/attachment`, (message) => {
+      return subscribe(`/topic/ticket/${ticketId}/attachments`, (message) => {
         try {
           const attachment: AttachmentWS = JSON.parse(message.body);
           callback(attachment);
         } catch (e) {
           console.error("[WS] Ошибка подписки на вложения: ", e);
+        }
+      });
+    },
+    [subscribe]
+  );
+
+  // ==================== User Subscriptions ====================
+
+  const subscribeToUserNotifications = useCallback(
+    (userId: number, callback: (notification: Notification) => void) => {
+      return subscribe(`/topic/user/${userId}/notifications`, (message) => {
+        try {
+          const notification: Notification = JSON.parse(message.body);
+          callback(notification);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на уведомления пользователя: ", e);
         }
       });
     },
@@ -300,9 +355,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     subscribeToNewTickets,
     subscribeToTicketUpdates,
     subscribeToTicketDeleted,
+    subscribeToSlaBreach,
+    subscribeToUserNotifications,
     sendMessage,
     sendTyping,
     subscribeToChatMessages,
+    subscribeToInternalComments,
     subscribeToTyping,
     subscribeToAttachments,
   };

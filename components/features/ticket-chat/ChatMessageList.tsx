@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -10,26 +10,18 @@ import {
   Spinner,
   Avatar,
   Badge,
-  Image,
-  Link,
   Menu,
   Portal,
 } from "@chakra-ui/react";
 import {
-  LuFile,
-  LuFileText,
-  LuFileVideo,
-  LuDownload,
   LuPencil,
   LuTrash2,
 } from "react-icons/lu";
 import {
   getSenderConfig,
   type Message,
-  type MessageAttachment,
-  type SenderType,
 } from "@/types/message";
-import { getAttachmentUrl } from "@/lib/api";
+import { AttachmentItem } from "./AttachmentItem";
 
 interface ChatMessageListProps {
   messages: Message[];
@@ -65,22 +57,6 @@ const getInitials = (
       .toUpperCase();
   if (username) return username.slice(0, 2).toUpperCase();
   return "??";
-};
-
-const formatFileSize = (bytes: number) => {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-};
-
-const isImageType = (mimeType: string) => mimeType.startsWith("image/");
-const isVideoType = (mimeType: string) => mimeType.startsWith("video/");
-
-const getFileIcon = (mimeType: string) => {
-  if (mimeType.includes("pdf") || mimeType.includes("document"))
-    return LuFileText;
-  if (isVideoType(mimeType)) return LuFileVideo;
-  return LuFile;
 };
 
 export function ChatMessageList({
@@ -195,70 +171,11 @@ export function ChatMessageList({
                     {msg.attachments && msg.attachments.length > 0 && (
                       <VStack gap={2} mt={2} align="stretch">
                         {msg.attachments.map((att) => (
-                          <Box key={att.id}>
-                            {isImageType(att.mimeType) ? (
-                              // Image attachment - show inline
-                              <Link
-                                href={getAttachmentUrl(att.url)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Image
-                                  src={getAttachmentUrl(att.url)}
-                                  alt={att.filename}
-                                  maxH="200px"
-                                  borderRadius="md"
-                                  objectFit="cover"
-                                  cursor="pointer"
-                                  _hover={{ opacity: 0.9 }}
-                                />
-                              </Link>
-                            ) : (
-                              // File attachment - show as download card
-                              <Link
-                                href={getAttachmentUrl(att.url)}
-                                download={att.filename}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                _hover={{ textDecoration: "none" }}
-                              >
-                                <HStack
-                                  p={2}
-                                  bg={isOwn ? "whiteAlpha.200" : "bg.muted"}
-                                  borderRadius="md"
-                                  gap={2}
-                                  cursor="pointer"
-                                  _hover={{
-                                    bg: isOwn ? "whiteAlpha.300" : "bg.subtle",
-                                  }}
-                                >
-                                  <Box
-                                    as={getFileIcon(att.mimeType)}
-                                    boxSize={5}
-                                    color={isOwn ? "white" : "fg.muted"}
-                                  />
-                                  <VStack gap={0} align="start" flex={1}>
-                                    <Text
-                                      fontSize="xs"
-                                      fontWeight="medium"
-                                      truncate
-                                      maxW="150px"
-                                    >
-                                      {att.filename}
-                                    </Text>
-                                    <Text fontSize="xs" opacity={0.7}>
-                                      {formatFileSize(att.fileSize)}
-                                    </Text>
-                                  </VStack>
-                                  <Box
-                                    as={LuDownload}
-                                    boxSize={4}
-                                    color={isOwn ? "white" : "fg.muted"}
-                                  />
-                                </HStack>
-                              </Link>
-                            )}
-                          </Box>
+                          <AttachmentItem 
+                            key={att.id} 
+                            attachment={att} 
+                            isOwn={isOwn} 
+                          />
                         ))}
                       </VStack>
                     )}
