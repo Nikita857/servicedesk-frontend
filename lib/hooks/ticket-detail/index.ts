@@ -6,5 +6,3 @@ export { useTicketWebSocket } from "./useTicketWebSocket";
 export { useTicketQuery } from "./useTicketQuery";
 export { useSupportLinesQuery } from "./useSupportLinesQuery";
 
-// Legacy hooks - deprecated, will be removed
-// TODO: Delete useTicketDetail.ts and useSupportLines.ts

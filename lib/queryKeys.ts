@@ -67,5 +67,14 @@ export const queryKeys = {
     ticketsByCategory: () => [...queryKeys.reports.all, "tickets-by-category"] as const,
     specialistWorkload: () => [...queryKeys.reports.all, "specialist-workload"] as const,
   },
+
+  // Stats (Ticket Statistics)
+  stats: {
+    all: ["stats"] as const,
+    my: () => [...queryKeys.stats.all, "my"] as const,
+    byAllLines: () => [...queryKeys.stats.all, "by-all-lines"] as const,
+    byLine: (lineId: number) => [...queryKeys.stats.all, "by-line", lineId] as const,
+    global: () => [...queryKeys.stats.all, "global"] as const,
+  },
 } as const;
 

@@ -6,3 +6,4 @@ export * from './supportLines';
 export * from './attachments';
 export * from './wiki';
 export * from './reports';
+export * from './stats';
