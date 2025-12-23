@@ -62,10 +62,7 @@ export function ClosureConfirmationBanner({
     try {
       const updatedTicket = await ticketApi.confirmClosure(ticket.id);
       onTicketUpdate(updatedTicket);
-      toaster.success({
-        title: "Тикет закрыт",
-        description: "Спасибо за подтверждение!",
-      });
+      // WebSocket will send notification about status update
       // Show rating toast after successful closure
       setShowRatingToast(true);
     } catch (error) {
@@ -86,10 +83,7 @@ export function ClosureConfirmationBanner({
         rejectReason || undefined
       );
       onTicketUpdate(updatedTicket);
-      toaster.success({
-        title: "Тикет переоткрыт",
-        description: "Специалист получит уведомление",
-      });
+      // WebSocket will send notification about status update
       setShowRejectForm(false);
       setRejectReason("");
     } catch (error) {

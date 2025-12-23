@@ -3,6 +3,8 @@
  * Используются в WebSocketProvider и всех WebSocket хуках
  */
 
+import { UserShort } from "./ticket";
+
 // ==================== Chat Types ====================
 
 /**
@@ -12,9 +14,10 @@ export interface ChatMessageWS {
   id: number;
   ticketId: number;
   content: string;
-  senderId: number;
-  senderUsername: string;
-  senderFio: string | null;
+  sender?: UserShort;
+  senderId?: number;
+  senderUsername?: string;
+  senderFio?: string | null;
   senderType: string;
   internal: boolean;
   createdAt: string;

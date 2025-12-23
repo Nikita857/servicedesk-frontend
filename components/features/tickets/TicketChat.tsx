@@ -4,14 +4,12 @@ import {
   LuWifi,
   LuWifiOff,
   LuPaperclip,
-  LuX,
-  LuFile,
-  LuDownload,
+  LuX
 } from "react-icons/lu";
 import { messageApi } from "@/lib/api/messages";
 import { attachmentApi } from "@/lib/api/attachments";
 import { toaster } from "@/components/ui/toaster";
-import { formatFileSize, validateFile, isImageType } from "@/lib/utils";
+import { formatFileSize, validateFile } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
 import type { Message } from "@/types/message";
@@ -98,29 +96,49 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     // If we have a file, we need to create a message first then attach the file
     if (fileToUpload) {
       setIsUploading(true);
+      let messageId: number | null = null;
+      
       try {
         // Create message with content or placeholder
         const messageContent = content || `📎 ${fileToUpload.name}`;
         const message = await messageApi.send(ticketId, {
           content: messageContent,
         });
-        setMessages((prev) => [...prev, message]);
+        messageId = message.id;
+
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) {
+            return prev.map((m) => (m.id === message.id ? message : m));
+          }
+          return [...prev, message];
+        });
 
         // Upload file to this message
         await attachmentApi.uploadToMessage(message.id, fileToUpload);
         // WebSocket will update the message with attachment for all users
       } catch (error) {
+        // Rollback: try to delete the message if upload failed AND we have a messageId
+        if (messageId) {
+            try {
+                await messageApi.delete(messageId);
+                setMessages(prev => prev.filter(m => m.id !== messageId));
+                console.log("Rolled back message due to upload failure");
+            } catch (rollbackError) {
+                console.error("Failed to rollback message", rollbackError);
+            }
+        }
+
         if (axios.isAxiosError(error) && error.response) {
           toaster.error({
-            title: "Ошибка",
+            title: "Ошибка загрузки файла",
             description:
-              error.response.data.message || "Не удалось загрузить файл",
+              error.response.data.message || "Не удалось отправить файл",
             closable: true,
           });
         } else {
           toaster.error({
             title: "Ошибка",
-            description: "Не удалось загрузить файл",
+            description: "Не удалось отправить файл",
             closable: true,
           });
         }
@@ -134,7 +152,12 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
       setIsSending(true);
       try {
         const message = await messageApi.send(ticketId, { content });
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) {
+            return prev.map((m) => (m.id === message.id ? message : m));
+          }
+          return [...prev, message];
+        });
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
           toaster.error({
