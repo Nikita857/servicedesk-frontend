@@ -40,18 +40,14 @@ export function useTicketsQuery(
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(0);
-  const [filter, setFilter] = useState<FilterType>(
+  const [rawFilter, setRawFilter] = useState<FilterType>(
     options.initialFilter ?? (isSpecialist ? "unprocessed" : "my")
   );
 
-  // Auto-switch filter for non-specialists
-  useEffect(() => {
-    if (!isSpecialist && filter !== "my") {
-      setFilter("my");
-    }
-  }, [isSpecialist, filter]);
+  // Derived state: non-specialists are forced to "my" filter
+  const filter = isSpecialist ? rawFilter : "my";
 
-  // Query for regular tickets
+  // Use effective filter for queries
   const ticketsQuery = useQuery({
     queryKey: queryKeys.tickets.list({ filter, page }),
     queryFn: async (): Promise<PagedTicketList> => {
@@ -137,9 +133,11 @@ export function useTicketsQuery(
   );
 
   const handleSetFilter = useCallback((newFilter: FilterType) => {
-    setFilter(newFilter);
-    setPage(0);
-  }, []);
+    if (isSpecialist) {
+      setRawFilter(newFilter);
+      setPage(0);
+    }
+  }, [isSpecialist]);
 
   const refetch = useCallback(() => {
     if (filter === "pending") {
