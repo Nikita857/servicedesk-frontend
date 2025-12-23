@@ -80,7 +80,16 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         return `Приоритет изменён: ${newTicket.priority}`;
       }
 
-      return "Тикет обновлён";
+      // Title/Description changed
+      if (oldTicket.title !== newTicket.title) {
+        return "Заголовок тикета обновлён";
+      }
+      if (oldTicket.description !== newTicket.description) {
+        return "Описание тикета обновлено";
+      }
+
+      // If nothing significant changed (or we already have the update locally), don't show toast
+      return null;
     },
     []
   );

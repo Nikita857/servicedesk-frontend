@@ -111,16 +111,14 @@ export const useAuthStore = create<AuthState>()(
         // Refresh 5 minutes before expiration
         const REFRESH_THRESHOLD = 5 * 60 * 1000; 
         
-        // If token expires in less than 5 mins, refresh immediately (next tick)
-        // Otherwise wait until 5 mins before
+        // If token expires in less than 5 mins, refresh immediately
         let delay = timeUntilExpire - REFRESH_THRESHOLD;
         
         if (delay < 0) {
             delay = 0; 
         }
 
-        // Safety: max delay for setTimeout is 32-bit int (~24 days). 
-        // JWTs usually shorter, but good to know.
+        // Safety: max delay for setTimeout is 32-bit int (~24 days)
         if (delay > 2147483647) delay = 2147483647;
 
         const newTimeoutId = setTimeout(() => {
