@@ -4,14 +4,12 @@ import {
   LuWifi,
   LuWifiOff,
   LuPaperclip,
-  LuX,
-  LuFile,
-  LuDownload,
+  LuX
 } from "react-icons/lu";
 import { messageApi } from "@/lib/api/messages";
 import { attachmentApi } from "@/lib/api/attachments";
 import { toaster } from "@/components/ui/toaster";
-import { formatFileSize, validateFile, isImageType } from "@/lib/utils";
+import { formatFileSize, validateFile } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
 import type { Message } from "@/types/message";

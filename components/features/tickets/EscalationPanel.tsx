@@ -1,6 +1,4 @@
-import { toaster } from "@/components/ui/toaster";
 import { Specialist, SupportLine } from "@/lib/api";
-import { Ticket } from "@/types";
 import {
   Box,
   Button,
@@ -12,8 +10,6 @@ import {
   Select,
   Portal,
   createListCollection,
-  Badge,
-  Circle,
 } from "@chakra-ui/react";
 import { useMemo } from "react";
 import { LuForward, LuUserPlus, LuTriangleAlert } from "react-icons/lu";

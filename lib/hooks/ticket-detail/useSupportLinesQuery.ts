@@ -25,23 +25,25 @@ export function useSupportLinesQuery(
   const { ticket } = options;
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const isSpecialist = user?.specialist || false;
   const [selectedLineId, setSelectedLineId] = useState<number | undefined>();
 
-  // Try available-lines first (role-based filtering)
+  // Try available-lines first (role-based filtering) - ONLY for specialists
   const availableLinesQuery = useQuery({
     queryKey: [...queryKeys.supportLines.list(), "available-for-forwarding"],
     queryFn: () => assignmentApi.getAvailableForwardingLines(),
     staleTime: 5 * 60 * 1000,
-    enabled: !!ticket,
+    enabled: !!ticket && isSpecialist,
   });
 
   // Fallback to all lines (for admin or if available-lines returns empty)
+  // Also only relevant if user is specialist/admin, regular users don't see escalation panel
   const allLinesQuery = useQuery({
     queryKey: queryKeys.supportLines.list(),
     queryFn: () => supportLineApi.getAll(),
     staleTime: 5 * 60 * 1000,
     // Only run if available-lines returned empty or we're admin
-    enabled: !!ticket && (isAdmin || (availableLinesQuery.isSuccess && availableLinesQuery.data?.length === 0)),
+    enabled: !!ticket && isSpecialist && (isAdmin || (availableLinesQuery.isSuccess && availableLinesQuery.data?.length === 0)),
   });
 
   // Use available lines if they exist, otherwise fall back to all lines
