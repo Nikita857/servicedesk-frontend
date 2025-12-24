@@ -1,13 +1,6 @@
-import {
-  Box,
-  HStack,
-  Image,
-  Link,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, HStack, Image, Link, Text, VStack } from "@chakra-ui/react";
 import { LuDownload, LuFile, LuFileText, LuFileVideo } from "react-icons/lu";
-import { getAttachmentUrl } from "@/lib/api";
+import { getAttachmentDownloadUrl } from "@/lib/api";
 import { formatFileSize } from "@/lib/utils/formatters";
 import { isImageType } from "@/lib/utils/fileValidation";
 import type { MessageAttachment } from "@/types/message";
@@ -26,17 +19,20 @@ const getFileIcon = (mimeType: string) => {
   return LuFile;
 };
 
-export function AttachmentItem({ attachment, isOwn = false }: AttachmentItemProps) {
+export function AttachmentItem({
+  attachment,
+  isOwn = false,
+}: AttachmentItemProps) {
   if (isImageType(attachment.mimeType)) {
     return (
       <Link
-        href={getAttachmentUrl(attachment.url)}
+        href={getAttachmentDownloadUrl(attachment.id)}
         target="_blank"
         rel="noopener noreferrer"
         display="block"
       >
         <Image
-          src={getAttachmentUrl(attachment.url)}
+          src={getAttachmentDownloadUrl(attachment.id)}
           alt={attachment.filename}
           maxH="200px"
           maxW="300px"
@@ -53,7 +49,7 @@ export function AttachmentItem({ attachment, isOwn = false }: AttachmentItemProp
 
   return (
     <Link
-      href={getAttachmentUrl(attachment.url)}
+      href={getAttachmentDownloadUrl(attachment.id)}
       download={attachment.filename}
       target="_blank"
       rel="noopener noreferrer"
@@ -91,9 +87,9 @@ export function AttachmentItem({ attachment, isOwn = false }: AttachmentItemProp
           >
             {attachment.filename}
           </Text>
-          <Text 
-            fontSize="xs" 
-            opacity={0.8} 
+          <Text
+            fontSize="xs"
+            opacity={0.8}
             color={isOwn ? "whiteAlpha.800" : "fg.muted"}
           >
             {formatFileSize(attachment.fileSize)}

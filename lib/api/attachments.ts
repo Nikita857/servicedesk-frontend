@@ -18,9 +18,16 @@ export interface Attachment {
 }
 
 /**
- * Get full URL for attachment file
- * If url starts with http, return as is
- * Otherwise prepend API base URL
+ * Get download URL for attachment by ID (new API)
+ * Uses GET /api/v1/attachments/{attachmentId}/download
+ */
+export const getAttachmentDownloadUrl = (attachmentId: number): string => {
+  return `${API_BASE_URL}/attachments/${attachmentId}/download`;
+};
+
+/**
+ * Get full URL for attachment file (legacy - uses url field)
+ * @deprecated Use getAttachmentDownloadUrl(attachmentId) instead
  */
 export const getAttachmentUrl = (url: string): string => {
   return `${API_SERVER_URL}${url}`;
