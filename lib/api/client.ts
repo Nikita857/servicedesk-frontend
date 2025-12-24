@@ -6,7 +6,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // 30 seconds - increased to handle slow connections
 });
 
 // ==================== Token Refresh Logic ====================
@@ -49,8 +49,11 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null;
 
   try {
+    // Use separate axios instance with its own timeout for refresh
     const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
       refreshToken,
+    }, {
+      timeout: 15000, // 15 second timeout for refresh
     });
 
     const { accessToken, refreshToken: newRefreshToken } = response.data.data;
@@ -59,9 +62,11 @@ async function refreshAccessToken(): Promise<string | null> {
 
     return accessToken;
   } catch (error) {
-    // Refresh failed - clear tokens
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    // Only clear tokens on auth errors, not on network/timeout errors
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+    }
     return null;
   }
 }
@@ -109,18 +114,19 @@ api.interceptors.request.use(
           onTokenRefreshed(newToken);
           token = newToken;
         } else {
-          // No token - redirect to login
-          if (typeof window !== 'undefined') {
+          // Refresh returned null - could be network error or auth error
+          // Only redirect to login if we have no valid tokens at all
+          const hasTokens = localStorage.getItem('accessToken') || localStorage.getItem('refreshToken');
+          if (!hasTokens && typeof window !== 'undefined') {
             window.location.href = '/login';
           }
-          return Promise.reject(new Error('Token refresh failed'));
+          // If we still have tokens, let the request proceed and fail naturally
+          // This allows retry on network issues
         }
       } catch (error) {
         isRefreshing = false;
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-        return Promise.reject(error);
+        // Don't redirect on network errors - let the request fail and show error
+        console.error('[Auth] Token refresh failed:', error);
       }
     }
 
