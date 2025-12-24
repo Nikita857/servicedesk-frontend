@@ -33,8 +33,7 @@ import { wikiApi, WikiAttachment } from "@/lib/api/wiki";
 import { attachmentApi } from "@/lib/api/attachments";
 import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
-import { toaster } from "@/components/ui/toaster";
-import { formatDate } from "@/lib/utils";
+import { formatDate, toast } from "@/lib/utils";
 import { API_BASE_URL } from "@/lib/config";
 
 interface PageProps {
@@ -93,10 +92,7 @@ export default function WikiArticlePage({ params }: PageProps) {
 
   // Redirect on error
   if (error) {
-    toaster.error({
-      title: "Ошибка",
-      description: "Статья не найдена",
-    });
+    toast.error("Ошибка", "Статья не найдена");
     router.push("/dashboard/wiki");
     return null;
   }
@@ -108,13 +104,10 @@ export default function WikiArticlePage({ params }: PageProps) {
     setIsDeleting(true);
     try {
       await wikiApi.delete(article.id);
-      toaster.success({ title: "Статья удалена" });
+      toast.success("Статья удалена");
       router.push("/dashboard/wiki");
     } catch {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось удалить статью",
-      });
+      toast.error("Ошибка", "Не удалось удалить статью");
     } finally {
       setIsDeleting(false);
     }
@@ -254,10 +247,7 @@ export default function WikiArticlePage({ params }: PageProps) {
                             );
                             window.open(downloadUrl, "_blank");
                           } catch {
-                            toaster.error({
-                              title: "Ошибка",
-                              description: "Не удалось скачать файл",
-                            });
+                            toast.error("Ошибка", "Не удалось скачать файл");
                           }
                         }}
                       >

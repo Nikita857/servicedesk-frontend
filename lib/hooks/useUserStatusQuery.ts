@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi, type UserActivityStatus, type UserStatusResponse } from "@/lib/api/users";
 import { queryKeys } from "@/lib/queryKeys";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 
 interface UseUserStatusQueryReturn {
   status: UserActivityStatus | null;
@@ -32,16 +32,10 @@ export function useUserStatusQuery(): UseUserStatusQueryReturn {
     mutationFn: (newStatus: UserActivityStatus) => userApi.updateMyStatus(newStatus),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.users.myStatus(), data);
-      toaster.success({
-        title: "Статус обновлён",
-        description: `Ваш статус: ${getStatusLabel(data.status)}`,
-      });
+      toast.success("Статус обновлён", `Ваш статус: ${getStatusLabel(data.status)}`);
     },
     onError: () => {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось обновить статус",
-      });
+      toast.error("Ошибка", "Не удалось обновить статус");
     },
   });
 

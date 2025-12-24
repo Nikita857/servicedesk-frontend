@@ -1,6 +1,6 @@
 // Action hooks
 export { useEscalation } from "./useEscalation";
-export { useTicketWebSocket } from "./useTicketWebSocket";
+export { useTicketWebSocket, suppressTicketToast } from "./useTicketWebSocket";
 
 // React Query hooks
 export { useTicketQuery } from "./useTicketQuery";

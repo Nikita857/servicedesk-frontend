@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { wikiApi, type WikiArticle } from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import { useState } from "react";
 
 interface UseWikiArticleQueryReturn {
@@ -71,11 +71,7 @@ export function useWikiArticleQuery(slug: string): UseWikiArticleQueryReturn {
       return { previousArticle };
     },
     onSuccess: (_, { isLiked }) => {
-      toaster.success({
-        title: isLiked
-          ? "Статья удалена из избранного"
-          : "Статья добавлена в избранное!",
-      });
+      toast.success(isLiked ? "Статья удалена из избранного" : "Статья добавлена в избранное!");
     },
     onError: (error, _, context) => {
       // Rollback on error
@@ -85,10 +81,7 @@ export function useWikiArticleQuery(slug: string): UseWikiArticleQueryReturn {
           context.previousArticle
         );
       }
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось обновить лайк",
-      });
+      toast.error("Ошибка", "Не удалось обновить лайк");
     },
     onSettled: () => {
       setIsLiking(false);

@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
 import { useFileUpload } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import { CustomEmojiPicker } from "@/components/features/ticket-chat/CustomEmojiPicker";
 import { AxiosError } from "axios";
 
@@ -50,11 +50,10 @@ export default function NewWikiArticlePage() {
   // Redirect non-specialists
   useEffect(() => {
     if (!isSpecialist) {
-      toaster.error({
-        title: "Доступ запрещён",
-        description: "Только специалисты могут создавать статьи",
-        closable: true,
-      });
+      toast.error(
+        "Доступ запрещён",
+        "Только специалисты могут создавать статьи"
+      );
       router.push("/dashboard/wiki");
     }
   }, [isSpecialist, router]);
@@ -79,20 +78,12 @@ export default function NewWikiArticlePage() {
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Введите заголовок статьи",
-        closable: true,
-      });
+      toast.error("Ошибка", "Введите заголовок статьи");
       return;
     }
 
     if (!formData.content.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Введите содержимое статьи",
-        closable: true,
-      });
+      toast.error("Ошибка", "Введите содержимое статьи");
       return;
     }
 
@@ -118,34 +109,26 @@ export default function NewWikiArticlePage() {
 
         try {
           await Promise.all(uploadPromises);
-          toaster.success({
-            title: "Статья опубликована!",
-            description: `Загружено ${selectedFiles.length} вложений`,
-          });
+          toast.success(
+            "Статья опубликована!",
+            `Загружено ${selectedFiles.length} вложений`
+          );
         } catch (uploadError) {
-          toaster.warning({
-            title: "Статья создана",
-            description: "Некоторые файлы не удалось загрузить",
-          });
+          toast.warning(
+            "Статья создана",
+            "Некоторые файлы не удалось загрузить"
+          );
         }
       } else {
-        toaster.success({ title: "Статья опубликована!" });
+        toast.success("Статья опубликована!");
       }
 
       router.push(`/dashboard/wiki/${article.slug}`);
     } catch (error) {
       if (error instanceof AxiosError) {
-        toaster.error({
-          title: "Ошибка",
-          description: error.response?.data.message,
-          closable: true,
-        });
+        toast.error("Ошибка", error.response?.data.message);
       } else {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось создать статью",
-          closable: true,
-        });
+        toast.error("Ошибка", "Не удалось создать статью");
       }
     } finally {
       setIsSubmitting(false);

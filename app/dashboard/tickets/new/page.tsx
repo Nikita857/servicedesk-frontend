@@ -21,7 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
 import { useCategoriesQuery, useAllSupportLinesQuery } from "@/lib/hooks";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import axios from "axios";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
 
@@ -92,11 +92,7 @@ export default function NewTicketPage() {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.description.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Заполните заголовок и описание",
-        closable: true,
-      });
+      toast.error("Ошибка", "Заполните заголовок и описание");
       return;
     }
 
@@ -104,26 +100,16 @@ export default function NewTicketPage() {
     try {
       // Тикет автоматически направляется на первую линию на бэке
       const ticket = await ticketApi.create(formData);
-      toaster.success({
-        title: "Тикет создан",
-        description: `Тикет #${ticket.id} успешно создан`,
-        closable: true,
-      });
+      toast.success("Тикет создан", `Тикет #${ticket.id} успешно создан`);
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        toaster.error({
-          title: "Ошибка",
-          description:
-            error.response.data.message || "Не удалось создать тикет",
-          closable: true,
-        });
+        toast.error(
+          "Ошибка",
+          error.response.data.message || "Не удалось создать тикет"
+        );
       } else {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось создать тикет",
-          closable: true,
-        });
+        toast.error("Ошибка", "Не удалось создать тикет");
       }
     } finally {
       setIsSubmitting(false);

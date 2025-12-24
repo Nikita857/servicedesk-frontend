@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { handleApiError } from "@/lib/utils";
 import { ticketApi } from "@/lib/api";
+import { suppressTicketToast } from "@/lib/hooks";
 import {
   statusTransitions,
   specialistStatusTransitions,
@@ -95,6 +96,8 @@ export default function TicketHeader({
 
   const handleStatusChange = async (newStatus: TicketStatus) => {
     if (!ticket) return;
+    // Подавляем дублирующий toast от WebSocket
+    suppressTicketToast(ticket.id);
     try {
       const updated = await ticketApi.changeStatus(ticket.id, {
         status: newStatus,
@@ -107,6 +110,8 @@ export default function TicketHeader({
 
   const handleCancelTicket = async () => {
     setIsCancelling(true);
+    // Подавляем дублирующий toast от WebSocket
+    suppressTicketToast(ticket.id);
     try {
       const updated = await ticketApi.cancelTicket(
         ticket.id,
