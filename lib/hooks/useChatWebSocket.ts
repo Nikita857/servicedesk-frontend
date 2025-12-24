@@ -25,7 +25,7 @@ interface UseChatWebSocketReturn {
 }
 
 /**
- * Hook для управления чатом тикета через WebSocket
+ * Хук для управления чатом тикета через WebSocket
  * Использует централизованный WebSocketProvider
  */
 export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
@@ -45,26 +45,27 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const [typingUser, setTypingUser] = useState<TypingUser | null>(null);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  // Buffer for attachments that arrive before their messages
+  
+  // Буфер для вложений, которые пришли раньше своих сообщений
   const pendingAttachmentsRef = useRef<Map<number, MessageAttachment[]>>(new Map());
-  // Store timeouts for cleaning up orphaned attachments
+  // Храним таймауты для очистки осиротевших вложений
   const pendingTimeoutsRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const lastTypingSentRef = useRef<number>(0);
 
-  // Fetch initial messages
+  // Получение начальных сообщений
   const fetchMessages = useCallback(async () => {
     try {
       const response = await messageApi.list(ticketId, 0, 100);
       setMessages(response.content.reverse());
       await messageApi.markAsRead(ticketId);
     } catch (error) {
-      console.error("Failed to load messages", error);
+      console.error("Не удалось загрузить сообщения", error);
     } finally {
       setIsLoading(false);
     }
   }, [ticketId]);
 
-  // Send typing indicator (debounced)
+  // Отправка индикатора печати (с задержкой)
   const sendTypingIndicator = useCallback(
     (typing: boolean) => {
       const now = Date.now();
@@ -76,7 +77,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     [ticketId, sendTyping]
   );
 
-  // Send message via WebSocket
+  // Отправка сообщения через WebSocket
   const sendMessage = useCallback(
     (content: string, internal = false): boolean => {
       return wsSendMessage(ticketId, content, internal);
@@ -84,23 +85,23 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     [ticketId, wsSendMessage]
   );
 
-  // Fetch messages on mount
+  // Получаем сообщения при монтировании
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Handle incoming message (both regular and internal)
+  // Обработка входящего сообщения (обычное и внутреннее)
   const handleIncomingMessage = useCallback((wsMessage: ChatMessageWS) => {
-    console.log("[WS] Incoming message payload:", wsMessage);
+    console.log("[WS] Входящее сообщение (payload):", wsMessage);
     
-    // Construct sender if missing (flat structure vs nested)
+    // Формируем отправителя, если не хватает данных (плоская структура vs вложенная)
     const sender = wsMessage.sender || {
       id: wsMessage.senderId!,
       username: wsMessage.senderUsername || "unknown",
       fio: wsMessage.senderFio || null,
     };
 
-    // Helper to convert WS attachment to MessageAttachment
+    // Хелпер для конвертации вложений из WS в тип MessageAttachment
     const convertWsAttachments = (
       wsAttachments?: AttachmentWS[]
     ): MessageAttachment[] | undefined => {
@@ -133,44 +134,36 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     setMessages((prev) => {
       const existingIndex = prev.findIndex((m) => m.id === newMsg.id);
 
-      // If message already exists, update it (e.g. attachments might have arrived)
+      // Если сообщение уже существует, обновляем его (например, могли прийти вложения)
       if (existingIndex !== -1) {
         const updated = [...prev];
         const existingMsg = updated[existingIndex];
         
-        // Merge attachments: use new ones if present, otherwise keep existing
-        // Check if newMsg has more attachments than existingMsg
+        // Объединение вложений: используем новые, если есть
         const newAttachments = newMsg.attachments;
         const existingAttachments = existingMsg.attachments;
         
-        // If we have new attachments in the payload, use them.
-        // If the payload has NO attachments, but we have some locally (e.g. from optimistic update), keep local ones?
-        // Risk: what if backend sends 0 attachments (update cleared them)?
-        // But usually WS event with 0 attachments simply means "no change" to attachments if it's a content update.
-        // However, if it's an "Attachment Added" event disguised as "Message Update", it will have them.
-        
-        // Strategy: If incoming message has attachments, overwrite. 
-        // If incoming has none, keep existing (to preserve optimistic updates potentially).
-        // But if it's a REAL update clearing attachments, this is wrong. 
-        // Given MinIO flow, attachments are additive usually.
+        // Стратегия: 
+        // Если пришедшее сообщение имеет вложения - используем их.
+        // Если нет - оставляем старые (чтобы не затереть оптимистично добавленные).
         
         if (newAttachments && newAttachments.length > 0) {
             updated[existingIndex] = { ...existingMsg, ...newMsg, attachments: newAttachments };
         } else {
-            // Keep existing attachments if incoming has none
+            // Оставляем существующие
             updated[existingIndex] = { ...existingMsg, ...newMsg, attachments: existingAttachments || [] };
         }
         
         return updated;
       }
 
-      // Check if there are pending attachments for this NEW message
+      // Проверяем, есть ли буферизированные вложения для этого НОВОГО сообщения
       const pendingAttachments = pendingAttachmentsRef.current.get(newMsg.id);
       if (pendingAttachments) {
         newMsg.attachments = [...(newMsg.attachments || []), ...pendingAttachments];
         pendingAttachmentsRef.current.delete(newMsg.id);
         
-        // Clear cleanup timeout
+        // Очищаем таймаут очистки
         const timeoutId = pendingTimeoutsRef.current.get(newMsg.id);
         if (timeoutId) {
           clearTimeout(timeoutId);
@@ -182,7 +175,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     });
   }, []);
 
-  // Subscribe to chat messages and internal comments
+  // Подписка на сообщения и внутренние комментарии
   useEffect(() => {
     if (!isConnected) return;
 
@@ -195,7 +188,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     };
   }, [isConnected, ticketId, subscribeToChatMessages, subscribeToInternalComments, handleIncomingMessage]);
 
-  // Subscribe to typing indicators
+  // Подписка на индикатор набора текста
   useEffect(() => {
     if (!isConnected) return;
 
@@ -214,14 +207,14 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     return unsubscribe;
   }, [isConnected, ticketId, subscribeToTyping, user?.id]);
 
-  // Subscribe to attachments
+  // Подписка на вложения
   useEffect(() => {
     if (!isConnected) return;
 
     const unsubscribe = subscribeToAttachments(ticketId, (attachment: AttachmentWS) => {
-      console.log("[WS] Attachment event received:", attachment);
+      console.log("[WS] Получено событие вложения:", attachment);
       
-      // Convert AttachmentWS to MessageAttachment
+      // Конвертация AttachmentWS в MessageAttachment
       const newAttachment: MessageAttachment = {
         id: attachment.id,
         filename: attachment.filename,
@@ -237,18 +230,18 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           const messageExists = prev.some((m) => m.id === messageId);
 
           if (!messageExists) {
-            console.log(`[WS] Message ${messageId} for attachment not found locally. Buffer it.`);
-            // Message hasn't arrived yet, buffer the attachment
+            console.log(`[WS] Сообщение ${messageId} для вложения не найдено локально. Буферизируем.`);
+            // Сообщение еще не пришло, буферизируем вложение
             const existing = pendingAttachmentsRef.current.get(messageId) || [];
             pendingAttachmentsRef.current.set(messageId, [...existing, newAttachment]);
 
-            // Set cleanup timeout (60 seconds) to avoid memory leaks
-            // If message doesn't arrive in 60s, discard these attachments
+            // Устанавливаем таймаут очистки (60 секунд) чтобы избежать утечек памяти
+            // Если сообщение не придет за 60 сек, удаляем буфер
             if (!pendingTimeoutsRef.current.has(messageId)) {
               const timeoutId = setTimeout(() => {
                 pendingAttachmentsRef.current.delete(messageId);
                 pendingTimeoutsRef.current.delete(messageId);
-                console.warn(`Cleaned up orphaned attachments for message ${messageId}`);
+                console.warn(`Очищены осиротевшие вложения для сообщения ${messageId}`);
               }, 60000);
               pendingTimeoutsRef.current.set(messageId, timeoutId);
             }
@@ -256,7 +249,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
             return prev;
           }
 
-          console.log(`[WS] Message ${messageId} found. Updating with attachment.`);
+          console.log(`[WS] Сообщение ${messageId} найдено. Обновляем вложения.`);
           return prev.map((msg) =>
             msg.id === messageId
               ? {
@@ -267,10 +260,10 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           );
         });
         
-        // Force refresh messages to ensure consistency (failsafe)
-        // Add distinct delay to allow backend transaction to commit
+        // Принудительное обновление сообщений для гарантии консистентности (fail-safe)
+        // Добавляем задержку, чтобы транзакция на бэке успела закоммититься
         setTimeout(() => {
-            console.log("[WS] Force fetching messages after attachment event");
+            console.log("[WS] Принудительное обновление сообщений после события вложения");
             fetchMessages();
         }, 1000);
       }
