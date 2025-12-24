@@ -65,6 +65,7 @@ export default function TicketsPage() {
   const {
     pendingCount,
     assignedToMeCount,
+    closedCount,
     unprocessedCount,
     refetch: refreshCounts,
   } = useTicketsCountsQuery();
@@ -100,21 +101,31 @@ export default function TicketsPage() {
       return createListCollection({
         items: [
           {
-            label: `Необработанные: (${unprocessedCount})`,
+            label: `Необработанные (${unprocessedCount})`,
             value: "unprocessed",
           },
           {
-            label: `Назначенные мне: (${assignedToMeCount})`,
+            label: `Назначенные мне (${assignedToMeCount})`,
             value: "assigned",
           },
-          { label: `Ожидающие: (${pendingCount})`, value: "pending" },
+          { label: `Ожидающие (${pendingCount})`, value: "pending" },
+          {
+            label: `Закрытые (${closedCount})`,
+            value: "closed",
+          },
         ],
       });
     }
     return createListCollection({
       items: [{ label: "Мои тикеты", value: "my" }],
     });
-  }, [isSpecialist, unprocessedCount, assignedToMeCount, pendingCount]);
+  }, [
+    isSpecialist,
+    unprocessedCount,
+    assignedToMeCount,
+    pendingCount,
+    closedCount,
+  ]);
 
   // ==================== UI ====================
   return (

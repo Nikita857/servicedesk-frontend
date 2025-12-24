@@ -6,7 +6,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 import type { TicketListItem, PagedTicketList } from "@/types/ticket";
 
-export type FilterType = "unprocessed" | "my" | "assigned" | "pending";
+export type FilterType = "unprocessed" | "my" | "assigned" | "pending" | "closed";
 
 interface UseTicketsQueryOptions {
   initialFilter?: FilterType;
@@ -54,8 +54,24 @@ export function useTicketsQuery(
       switch (filter) {
         case "my":
           return ticketApi.listMy(page, pageSize);
-        case "assigned":
-          return ticketApi.listAssigned(page, pageSize);
+        case "assigned": {
+          // Get assigned tickets, exclude CLOSED and CANCELLED
+          const response = await ticketApi.listAssigned(page, pageSize);
+          return {
+            ...response,
+            content: response.content.filter(
+              (t) => t.status !== "CLOSED" && t.status !== "CANCELLED"
+            ),
+          };
+        }
+        case "closed": {
+          // Get assigned tickets that are CLOSED
+          const response = await ticketApi.listAssigned(page, pageSize);
+          return {
+            ...response,
+            content: response.content.filter((t) => t.status === "CLOSED"),
+          };
+        }
         case "unprocessed": {
           const response = await ticketApi.list(page, pageSize);
           return {
