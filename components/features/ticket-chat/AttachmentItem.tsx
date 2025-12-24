@@ -13,7 +13,7 @@ import { attachmentApi } from "@/lib/api/attachments"; // Fixed import
 import { formatFileSize } from "@/lib/utils/formatters";
 import { isImageType } from "@/lib/utils/fileValidation";
 import type { MessageAttachment } from "@/types/message";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 
 interface AttachmentItemProps {
   attachment: MessageAttachment;
@@ -73,10 +73,7 @@ export function AttachmentItem({
       const { downloadUrl: url } = await attachmentApi.getUrl(attachment.id);
       window.open(url, "_blank");
     } catch {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось скачать файл",
-      });
+      toast.error("Ошибка", "Не удалось скачать файл");
     }
   };
 

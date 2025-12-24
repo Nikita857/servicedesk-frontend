@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { wikiApi, type UpdateWikiArticleRequest } from "@/lib/api/wiki";
 import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import { AxiosError } from "axios";
 
 interface PageProps {
@@ -59,11 +59,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
 
   // Error handling
   if (error) {
-    toaster.error({
-      title: "Ошибка",
-      description: "Статья не найдена",
-      closable: true,
-    });
+    toast.error("Ошибка", "Статья не найдена");
     router.push("/dashboard/wiki");
     return null;
   }
@@ -74,19 +70,14 @@ export default function EditWikiArticlePage({ params }: PageProps) {
       const isAuthor = user?.id === article.createdBy.id;
       const isAdmin = user?.roles.every((role) => role === "ADMIN");
       if (!isSpecialist) {
-        toaster.error({
-          title: "Доступ запрещён",
-          description: "Вы можете редактировать только свои статьи",
-          closable: true,
-        });
+        toast.error(
+          "Доступ запрещён",
+          "Вы можете редактировать только свои статьи"
+        );
         router.push(`/dashboard/wiki/${slug}`);
       }
       if (!isAuthor && !isAdmin) {
-        toaster.error({
-          title: "Доступ запрещён",
-          description: "Вы не являетесь специалистом",
-          closable: true,
-        });
+        toast.error("Доступ запрещён", "Вы не являетесь специалистом");
         router.push(`/dashboard/wiki/${slug}`);
       }
     }
@@ -97,20 +88,12 @@ export default function EditWikiArticlePage({ params }: PageProps) {
     if (!article) return;
 
     if (!formData.title?.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Введите заголовок статьи",
-        closable: true,
-      });
+      toast.error("Ошибка", "Введите заголовок статьи");
       return;
     }
 
     if (!formData.content?.trim()) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Введите содержимое статьи",
-        closable: true,
-      });
+      toast.error("Ошибка", "Введите содержимое статьи");
       return;
     }
 
@@ -126,15 +109,11 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         tags,
       });
 
-      toaster.success({ title: "Статья обновлена!" });
+      toast.success("Статья обновлена!");
       router.push(`/dashboard/wiki/${updated.slug}`);
     } catch (error) {
       if (error instanceof AxiosError) {
-        toaster.error({
-          title: "Ошибка",
-          description: error.response?.data.message,
-          closable: true,
-        });
+        toast.error("Ошибка", error.response?.data.message);
       }
     } finally {
       setIsSubmitting(false);

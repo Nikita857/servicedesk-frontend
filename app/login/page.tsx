@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent } from "react";
 import {
   Box,
   Button,
@@ -11,24 +11,21 @@ import {
   Stack,
   Text,
   VStack,
-} from '@chakra-ui/react';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { toaster } from '@/components/ui/toaster';
+} from "@chakra-ui/react";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { toast } from "@/lib/utils";
 
 export default function LoginPage() {
   const { login, isLoading } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!username.trim() || !password.trim()) {
-      toaster.error({
-        title: 'Ошибка',
-        description: 'Введите имя пользователя и пароль',
-      });
+      toast.error("Ошибка", "Введите имя пользователя и пароль");
       return;
     }
 
@@ -60,10 +57,15 @@ export default function LoginPage() {
             </VStack>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+            <form onSubmit={handleSubmit} style={{ width: "100%" }}>
               <Stack gap={4} w="full">
                 <Box>
-                  <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
+                  <Text
+                    mb={1}
+                    fontSize="sm"
+                    fontWeight="medium"
+                    color="fg.default"
+                  >
                     Имя пользователя
                   </Text>
                   <Input
@@ -75,14 +77,19 @@ export default function LoginPage() {
                     bg="bg.subtle"
                     borderColor="border.default"
                     _focus={{
-                      borderColor: 'gray.600',
-                      boxShadow: '0 0 0 1px var(--chakra-colors-gray-600)',
+                      borderColor: "gray.600",
+                      boxShadow: "0 0 0 1px var(--chakra-colors-gray-600)",
                     }}
                   />
                 </Box>
 
                 <Box>
-                  <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
+                  <Text
+                    mb={1}
+                    fontSize="sm"
+                    fontWeight="medium"
+                    color="fg.default"
+                  >
                     Пароль
                   </Text>
                   <Input
@@ -94,8 +101,8 @@ export default function LoginPage() {
                     bg="bg.subtle"
                     borderColor="border.default"
                     _focus={{
-                      borderColor: 'gray.600',
-                      boxShadow: '0 0 0 1px var(--chakra-colors-gray-600)',
+                      borderColor: "gray.600",
+                      boxShadow: "0 0 0 1px var(--chakra-colors-gray-600)",
                     }}
                   />
                 </Box>
@@ -109,8 +116,8 @@ export default function LoginPage() {
                   mt={2}
                   loading={isSubmitting || isLoading}
                   loadingText="Вход..."
-                  _hover={{ bg: 'gray.800' }}
-                  _active={{ bg: 'gray.700' }}
+                  _hover={{ bg: "gray.800" }}
+                  _active={{ bg: "gray.700" }}
                 >
                   Войти
                 </Button>

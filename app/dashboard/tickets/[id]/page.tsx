@@ -12,10 +12,6 @@ import {
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
-import {
-  TicketChat,
-  ClosureConfirmationBanner,
-} from "@/components/features/tickets";
 import TicketHeader from "@/components/features/tickets/TicketHeader";
 import EscalationPanel from "@/components/features/tickets/EscalationPanel";
 import TicketSidebar from "@/components/features/tickets/TicketSidebar";
@@ -25,6 +21,10 @@ import {
   useEscalation,
   useTicketWebSocket,
 } from "@/lib/hooks";
+import {
+  ClosureConfirmationDialog,
+  TicketChat,
+} from "@/components/features/tickets";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -137,8 +137,8 @@ export default function TicketDetailPage({ params }: PageProps) {
       <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
         {/* Main content */}
         <GridItem>
-          {/* Closure confirmation banner for ticket creator */}
-          <ClosureConfirmationBanner
+          {/* Диалог подтверждения закрытия для автора тикета */}
+          <ClosureConfirmationDialog
             ticket={ticket}
             onTicketUpdate={updateTicket}
           />

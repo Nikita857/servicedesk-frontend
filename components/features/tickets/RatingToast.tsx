@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { LuX, LuSend, LuStar } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 
 interface RatingToastProps {
   ticketId: number;
@@ -32,10 +32,7 @@ export function RatingToast({ ticketId, onClose }: RatingToastProps) {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toaster.error({
-        title: "Выберите оценку",
-        description: "Пожалуйста, выберите количество звёзд",
-      });
+      toast.error("Выберите оценку", "Пожалуйста, выберите количество звёзд");
       return;
     }
 
@@ -45,16 +42,13 @@ export function RatingToast({ ticketId, onClose }: RatingToastProps) {
         rating,
         feedback: feedback.trim() || undefined,
       });
-      toaster.success({
-        title: "Спасибо за отзыв!",
-        description: "Ваша оценка помогает нам улучшать качество обслуживания",
-      });
+      toast.success(
+        "Спасибо за отзыв!",
+        "Ваша оценка помогает нам улучшать качество обслуживания"
+      );
       onClose();
     } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось отправить оценку",
-      });
+      toast.error("Ошибка", "Не удалось отправить оценку");
     } finally {
       setIsSubmitting(false);
     }

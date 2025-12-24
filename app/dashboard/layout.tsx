@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, ReactNode, useCallback, useState } from "react";
+import { useEffect, ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -11,16 +11,11 @@ import {
   Portal,
   CloseButton,
 } from "@chakra-ui/react";
-import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
 import { Sidebar } from "@/components/features/layout/Sidebar";
 import { Header } from "@/components/features/layout/Header";
-import {
-  connectNotifications,
-  disconnectNotifications,
-} from "@/lib/websocket/notificationWebSocket";
 import { WebSocketProvider } from "@/lib/providers";
-import type { Notification } from "@/types/notification";
+import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -28,47 +23,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isAuthenticated, isHydrated, user, accessToken } = useAuthStore();
+  const { isAuthenticated, isHydrated } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Handle incoming notifications
-  const handleNotification = useCallback((notification: Notification) => {
-    const toastType =
-      notification.type === "MESSAGE"
-        ? "info"
-        : notification.type === "STATUS_CHANGE"
-        ? "info"
-        : notification.type === "ASSIGNMENT"
-        ? "success"
-        : "info";
-
-    toaster.create({
-      title: notification.title,
-      description: notification.body,
-      type: toastType,
-      duration: 5000,
-      meta: {
-        closable: true,
-      },
-    });
-  }, []);
-
-  // Connect to notification WebSocket when authenticated
-  useEffect(() => {
-    if (isHydrated && isAuthenticated && user?.id && accessToken) {
-      connectNotifications(
-        user.id,
-        accessToken,
-        handleNotification,
-        () => console.log("[Dashboard] Notifications connected"),
-        () => console.log("[Dashboard] Notifications disconnected")
-      );
-
-      return () => {
-        disconnectNotifications();
-      };
-    }
-  }, [isHydrated, isAuthenticated, user?.id, accessToken, handleNotification]);
 
   useEffect(() => {
     // Wait for hydration, then check auth
@@ -96,6 +52,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <WebSocketProvider>
+      {/* Подписка на уведомления через централизованный WebSocket */}
+      <NotificationSubscriber />
+
       <Flex h="100vh" bg="bg.canvas">
         {/* Desktop Sidebar - hidden on mobile */}
         <Box display={{ base: "none", lg: "block" }}>
