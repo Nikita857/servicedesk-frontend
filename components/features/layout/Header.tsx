@@ -16,6 +16,7 @@ import {
   LuSettings,
   LuUser,
   LuChevronDown,
+  LuMenu,
 } from "react-icons/lu";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/stores";
@@ -23,7 +24,11 @@ import { SenderType, userRolesBadges } from "@/types";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { ActivityStatusDropdown } from "./ActivityStatusDropdown";
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const { logout } = useAuth();
   const { user } = useAuthStore();
 
@@ -50,21 +55,37 @@ export function Header() {
       bg="bg.surface"
       borderBottomWidth="1px"
       borderColor="border.default"
-      px={6}
+      px={{ base: 3, md: 6 }}
     >
       <Flex h="full" align="center" justify="space-between">
-        {/* Search or breadcrumb area */}
-        <Box>
-          <Text color="fg.muted" fontSize="sm">
-            Добро пожаловать. Ваша роль:{" "}
-            <Badge colorPalette={roleBadgeInfo.color}>
-              {roleBadgeInfo.name}
-            </Badge>
-          </Text>
-        </Box>
+        {/* Left side: burger menu (mobile) + breadcrumb */}
+        <HStack gap={3}>
+          {/* Burger menu - only on mobile */}
+          <IconButton
+            aria-label="Открыть меню"
+            variant="ghost"
+            size="sm"
+            display={{ base: "flex", lg: "none" }}
+            onClick={onMenuClick}
+            color="fg.muted"
+            _hover={{ bg: "bg.subtle", color: "fg.default" }}
+          >
+            <LuMenu size={20} />
+          </IconButton>
+
+          {/* Role badge */}
+          <Box display={{ base: "none", sm: "block" }}>
+            <Text color="fg.muted" fontSize="sm">
+              Добро пожаловать. Ваша роль:{" "}
+              <Badge colorPalette={roleBadgeInfo.color}>
+                {roleBadgeInfo.name}
+              </Badge>
+            </Text>
+          </Box>
+        </HStack>
 
         {/* Right side: activity status, notifications & profile */}
-        <HStack gap={3}>
+        <HStack gap={{ base: 1, md: 3 }}>
           {/* Activity Status Dropdown (specialists only) */}
           <ActivityStatusDropdown />
 

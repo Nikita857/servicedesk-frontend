@@ -33,7 +33,10 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
         </Text>
       </Flex>
 
-      <Grid templateColumns="repeat(4, 1fr)" gap={3}>
+      <Grid
+        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
+        gap={3}
+      >
         <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
           <Text fontSize="2xl" fontWeight="bold" color="blue.500">
             {line.newTickets}

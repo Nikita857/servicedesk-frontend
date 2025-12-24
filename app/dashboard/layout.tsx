@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, ReactNode, useCallback } from "react";
+import { useEffect, ReactNode, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Flex, Spinner, Center } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Spinner,
+  Center,
+  Drawer,
+  Portal,
+  CloseButton,
+} from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { useAuthStore } from "@/stores";
 import { Sidebar } from "@/components/features/layout/Sidebar";
@@ -21,6 +29,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { isAuthenticated, isHydrated, user, accessToken } = useAuthStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Handle incoming notifications
   const handleNotification = useCallback((notification: Notification) => {
@@ -82,19 +91,49 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return null;
   }
 
+  const handleCloseSidebar = () => setIsSidebarOpen(false);
+  const handleOpenSidebar = () => setIsSidebarOpen(true);
+
   return (
     <WebSocketProvider>
       <Flex h="100vh" bg="bg.canvas">
-        {/* Sidebar */}
-        <Sidebar />
+        {/* Desktop Sidebar - hidden on mobile */}
+        <Box display={{ base: "none", lg: "block" }}>
+          <Sidebar />
+        </Box>
+
+        {/* Mobile Sidebar Drawer */}
+        <Drawer.Root
+          open={isSidebarOpen}
+          onOpenChange={(e) => setIsSidebarOpen(e.open)}
+          placement="start"
+        >
+          <Portal>
+            <Drawer.Backdrop />
+            <Drawer.Positioner>
+              <Drawer.Content bg="bg.surface" maxW="280px">
+                <Drawer.CloseTrigger asChild>
+                  <CloseButton
+                    size="sm"
+                    position="absolute"
+                    top="3"
+                    right="3"
+                    zIndex={10}
+                  />
+                </Drawer.CloseTrigger>
+                <Sidebar onClose={handleCloseSidebar} />
+              </Drawer.Content>
+            </Drawer.Positioner>
+          </Portal>
+        </Drawer.Root>
 
         {/* Main Content */}
         <Flex flex={1} direction="column" overflow="hidden">
-          {/* Header */}
-          <Header />
+          {/* Header with burger menu */}
+          <Header onMenuClick={handleOpenSidebar} />
 
           {/* Page Content */}
-          <Box flex={1} overflow="auto" p={6} bg="bg.canvas">
+          <Box flex={1} overflow="auto" p={{ base: 4, md: 6 }} bg="bg.canvas">
             {children}
           </Box>
         </Flex>

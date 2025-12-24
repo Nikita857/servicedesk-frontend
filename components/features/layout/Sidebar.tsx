@@ -22,6 +22,10 @@ interface NavItem {
   icon: IconType;
 }
 
+interface SidebarProps {
+  onClose?: () => void;
+}
+
 const navItems: NavItem[] = [
   { label: "Дашборд", href: "/dashboard", icon: LuLayoutDashboard },
   { label: "Тикеты", href: "/dashboard/tickets", icon: LuTicket },
@@ -35,7 +39,7 @@ const adminItems: NavItem[] = [
   { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const { colorMode } = useColorMode();
   const { user } = useAuthStore();
@@ -55,12 +59,17 @@ export function Sidebar() {
     return pathname.startsWith(href);
   };
 
+  const handleLinkClick = () => {
+    // Close mobile drawer when clicking a link
+    onClose?.();
+  };
+
   return (
     <Box
-      w="260px"
+      w={{ base: "full", lg: "260px" }}
       h="100vh"
       bg="bg.surface"
-      borderRightWidth="1px"
+      borderRightWidth={{ base: 0, lg: "1px" }}
       borderColor="border.default"
       py={4}
       display="flex"
@@ -100,7 +109,7 @@ export function Sidebar() {
         </Text>
 
         {filteredNavItems.map((item) => (
-          <Link key={item.href} href={item.href}>
+          <Link key={item.href} href={item.href} onClick={handleLinkClick}>
             <Flex
               px={3}
               py={2.5}
@@ -144,7 +153,7 @@ export function Sidebar() {
             </Text>
 
             {adminItems.map((item) => (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} onClick={handleLinkClick}>
                 <Flex
                   px={3}
                   py={2.5}

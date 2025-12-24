@@ -33,7 +33,10 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
         </Text>
       </Flex>
 
-      <Grid templateColumns="repeat(5, 1fr)" gap={3}>
+      <Grid
+        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }}
+        gap={3}
+      >
         <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
           <Text fontSize="xl" fontWeight="bold" color="blue.500">
             {line.newTickets}
@@ -126,7 +129,10 @@ export function AdminStatsDashboard() {
             </Text>
           </HStack>
 
-          <Grid templateColumns="repeat(5, 1fr)" gap={4}>
+          <Grid
+            templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }}
+            gap={4}
+          >
             <Box
               textAlign="center"
               p={4}
