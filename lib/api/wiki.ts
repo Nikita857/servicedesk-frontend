@@ -134,4 +134,39 @@ export const wikiApi = {
     });
     return response.data.data;
   },
+
+  // ============ Attachments ============
+
+  // Get attachments for article
+  getAttachments: async (articleId: number): Promise<WikiAttachment[]> => {
+    const response = await api.get<ApiResponse<WikiAttachment[]>>(`/wiki/${articleId}/attachments`);
+    return response.data.data;
+  },
+
+  // Upload attachment to article
+  uploadAttachment: async (articleId: number, file: File): Promise<WikiAttachment> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post<ApiResponse<WikiAttachment>>(`/wiki/${articleId}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  },
 };
+
+// Attachment type
+export interface WikiAttachment {
+  id: number;
+  filename: string;
+  url: string;
+  fileSize: number;
+  mimeType: string;
+  type: 'PHOTO' | 'SCREENSHOT' | 'DOCUMENT' | 'VIDEO';
+  uploadedById: number;
+  uploadedByUsername: string;
+  createdAt: string;
+}
+
