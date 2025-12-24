@@ -142,19 +142,6 @@ export const wikiApi = {
     const response = await api.get<ApiResponse<WikiAttachment[]>>(`/wiki/${articleId}/attachments`);
     return response.data.data;
   },
-
-  // Upload attachment to article
-  uploadAttachment: async (articleId: number, file: File): Promise<WikiAttachment> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await api.post<ApiResponse<WikiAttachment>>(`/wiki/${articleId}/attachments`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data.data;
-  },
 };
 
 // Attachment type

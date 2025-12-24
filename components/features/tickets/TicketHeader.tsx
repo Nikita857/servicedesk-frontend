@@ -270,16 +270,23 @@ export default function TicketHeader({
 
             {/* Cancel button - for ticket creator or admin */}
             {canCancel && (
-              <IconButton
-                aria-label="Отменить тикет"
+              <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 colorPalette="red"
                 onClick={() => setShowCancelDialog(true)}
-                title="Отменить тикет"
+                disabled={!!ticket.assignedTo && ticket.status !== "NEW"}
+                title={
+                  !!ticket.assignedTo && ticket.status !== "NEW"
+                    ? "Нельзя отменить тикет, который уже взяли в работу"
+                    : "Отменить тикет"
+                }
               >
+                <Text display={{ base: "none", md: "inline" }}>
+                  Отменить тикет
+                </Text>
                 <LuX />
-              </IconButton>
+              </Button>
             )}
           </HStack>
         </VStack>

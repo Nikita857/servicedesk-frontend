@@ -21,6 +21,7 @@ export interface ChatMessageWS {
   senderType: string;
   internal: boolean;
   createdAt: string;
+  attachments?: AttachmentWS[]; // Support for attachments in message payload
 }
 
 /**

@@ -1,11 +1,6 @@
 import { useState, useRef } from "react";
 import { Box, Flex, Text, Button, VStack, HStack } from "@chakra-ui/react";
-import {
-  LuWifi,
-  LuWifiOff,
-  LuPaperclip,
-  LuX
-} from "react-icons/lu";
+import { LuWifi, LuWifiOff, LuPaperclip, LuX } from "react-icons/lu";
 import { messageApi } from "@/lib/api/messages";
 import { attachmentApi } from "@/lib/api/attachments";
 import { toaster } from "@/components/ui/toaster";
@@ -17,6 +12,7 @@ import axios from "axios";
 import { useChatWebSocket } from "@/lib/hooks/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
 import ChatInput from "../ticket-chat/ChatInput";
+import { useFileUpload } from "@/lib/hooks";
 
 interface TicketChatProps {
   ticketId: number;
@@ -25,6 +21,7 @@ interface TicketChatProps {
 
 export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const { user } = useAuthStore();
+  const { upload } = useFileUpload();
 
   // Use custom hook for WebSocket and messages
   const {
@@ -97,7 +94,7 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     if (fileToUpload) {
       setIsUploading(true);
       let messageId: number | null = null;
-      
+
       try {
         // Create message with content or placeholder
         const messageContent = content || `📎 ${fileToUpload.name}`;
@@ -113,22 +110,42 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
           return [...prev, message];
         });
 
-        // Upload file to this message
-        await attachmentApi.uploadToMessage(message.id, fileToUpload);
+        // Upload file to this message using MinIO hook
+        const result = await upload(fileToUpload, "MESSAGE", message.id);
+
+        if (!result) {
+          throw new Error("Upload failed");
+        }
+
+        // Optimistically update message with new attachment because MinIO/WebSocket might have latency
+        setMessages((prev) => {
+          return prev.map((m) => {
+            if (m.id === message.id) {
+              return {
+                ...m,
+                attachments: [...(m.attachments || []), result],
+              };
+            }
+            return m;
+          });
+        });
+
         // WebSocket will update the message with attachment for all users
       } catch (error) {
         // Rollback: try to delete the message if upload failed AND we have a messageId
         if (messageId) {
-            try {
-                await messageApi.delete(messageId);
-                setMessages(prev => prev.filter(m => m.id !== messageId));
-                console.log("Rolled back message due to upload failure");
-            } catch (rollbackError) {
-                console.error("Failed to rollback message", rollbackError);
-            }
+          try {
+            await messageApi.delete(messageId);
+            setMessages((prev) => prev.filter((m) => m.id !== messageId));
+            console.log("Rolled back message due to upload failure");
+          } catch (rollbackError) {
+            console.error("Failed to rollback message", rollbackError);
+          }
         }
 
-        if (axios.isAxiosError(error) && error.response) {
+        if (error instanceof Error && error.message === "Upload failed") {
+          // Already handled by hook
+        } else if (axios.isAxiosError(error) && error.response) {
           toaster.error({
             title: "Ошибка загрузки файла",
             description:

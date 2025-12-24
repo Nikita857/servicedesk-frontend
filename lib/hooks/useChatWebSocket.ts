@@ -26,7 +26,7 @@ interface UseChatWebSocketReturn {
 
 /**
  * Hook для управления чатом тикета через WebSocket
- * Использует централизованный WebSocketProvider вместо singleton
+ * Использует централизованный WebSocketProvider
  */
 export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const { user } = useAuthStore();
@@ -91,11 +91,28 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
 
   // Handle incoming message (both regular and internal)
   const handleIncomingMessage = useCallback((wsMessage: ChatMessageWS) => {
+    console.log("[WS] Incoming message payload:", wsMessage);
+    
     // Construct sender if missing (flat structure vs nested)
     const sender = wsMessage.sender || {
       id: wsMessage.senderId!,
       username: wsMessage.senderUsername || "unknown",
       fio: wsMessage.senderFio || null,
+    };
+
+    // Helper to convert WS attachment to MessageAttachment
+    const convertWsAttachments = (
+      wsAttachments?: AttachmentWS[]
+    ): MessageAttachment[] | undefined => {
+      if (!wsAttachments || wsAttachments.length === 0) return undefined;
+      return wsAttachments.map((att) => ({
+        id: att.id,
+        filename: att.filename,
+        url: att.url,
+        fileSize: att.fileSize,
+        mimeType: att.mimeType,
+        type: att.type,
+      }));
     };
 
     const newMsg: Message = {
@@ -110,15 +127,47 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
       edited: false,
       createdAt: wsMessage.createdAt,
       updatedAt: wsMessage.createdAt,
+      attachments: convertWsAttachments(wsMessage.attachments),
     };
 
     setMessages((prev) => {
-      if (prev.find((m) => m.id === newMsg.id)) return prev;
+      const existingIndex = prev.findIndex((m) => m.id === newMsg.id);
 
-      // Check if there are pending attachments for this message
+      // If message already exists, update it (e.g. attachments might have arrived)
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        const existingMsg = updated[existingIndex];
+        
+        // Merge attachments: use new ones if present, otherwise keep existing
+        // Check if newMsg has more attachments than existingMsg
+        const newAttachments = newMsg.attachments;
+        const existingAttachments = existingMsg.attachments;
+        
+        // If we have new attachments in the payload, use them.
+        // If the payload has NO attachments, but we have some locally (e.g. from optimistic update), keep local ones?
+        // Risk: what if backend sends 0 attachments (update cleared them)?
+        // But usually WS event with 0 attachments simply means "no change" to attachments if it's a content update.
+        // However, if it's an "Attachment Added" event disguised as "Message Update", it will have them.
+        
+        // Strategy: If incoming message has attachments, overwrite. 
+        // If incoming has none, keep existing (to preserve optimistic updates potentially).
+        // But if it's a REAL update clearing attachments, this is wrong. 
+        // Given MinIO flow, attachments are additive usually.
+        
+        if (newAttachments && newAttachments.length > 0) {
+            updated[existingIndex] = { ...existingMsg, ...newMsg, attachments: newAttachments };
+        } else {
+            // Keep existing attachments if incoming has none
+            updated[existingIndex] = { ...existingMsg, ...newMsg, attachments: existingAttachments || [] };
+        }
+        
+        return updated;
+      }
+
+      // Check if there are pending attachments for this NEW message
       const pendingAttachments = pendingAttachmentsRef.current.get(newMsg.id);
       if (pendingAttachments) {
-        newMsg.attachments = pendingAttachments;
+        newMsg.attachments = [...(newMsg.attachments || []), ...pendingAttachments];
         pendingAttachmentsRef.current.delete(newMsg.id);
         
         // Clear cleanup timeout
@@ -170,6 +219,8 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     if (!isConnected) return;
 
     const unsubscribe = subscribeToAttachments(ticketId, (attachment: AttachmentWS) => {
+      console.log("[WS] Attachment event received:", attachment);
+      
       // Convert AttachmentWS to MessageAttachment
       const newAttachment: MessageAttachment = {
         id: attachment.id,
@@ -186,6 +237,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           const messageExists = prev.some((m) => m.id === messageId);
 
           if (!messageExists) {
+            console.log(`[WS] Message ${messageId} for attachment not found locally. Buffer it.`);
             // Message hasn't arrived yet, buffer the attachment
             const existing = pendingAttachmentsRef.current.get(messageId) || [];
             pendingAttachmentsRef.current.set(messageId, [...existing, newAttachment]);
@@ -204,6 +256,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
             return prev;
           }
 
+          console.log(`[WS] Message ${messageId} found. Updating with attachment.`);
           return prev.map((msg) =>
             msg.id === messageId
               ? {
@@ -213,6 +266,13 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
               : msg
           );
         });
+        
+        // Force refresh messages to ensure consistency (failsafe)
+        // Add distinct delay to allow backend transaction to commit
+        setTimeout(() => {
+            console.log("[WS] Force fetching messages after attachment event");
+            fetchMessages();
+        }, 1000);
       }
     });
 
