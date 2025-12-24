@@ -15,6 +15,33 @@ interface UseTicketWebSocketOptions {
   showToasts?: boolean;
 }
 
+// Глобальный Map для отслеживания подавления тостов
+// Ключ = ticketId, значение = timestamp до которого подавляем тосты
+const suppressedToastsMap = new Map<number, number>();
+
+/**
+ * Подавить следующий toast для указанного тикета на указанное время (мс)
+ * Вызывается из UI перед выполнением действия
+ */
+export function suppressTicketToast(ticketId: number, durationMs: number = 2000) {
+  suppressedToastsMap.set(ticketId, Date.now() + durationMs);
+}
+
+/**
+ * Проверить, нужно ли подавить toast для тикета
+ */
+function shouldSuppressToast(ticketId: number): boolean {
+  const suppressUntil = suppressedToastsMap.get(ticketId);
+  if (suppressUntil && Date.now() < suppressUntil) {
+    return true;
+  }
+  // Очистить устаревшую запись
+  if (suppressUntil) {
+    suppressedToastsMap.delete(ticketId);
+  }
+  return false;
+}
+
 /**
  * Hook для подписки на обновления конкретного тикета через WebSocket
  * Показывает toast при изменениях тикета
@@ -137,8 +164,9 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         }
 
         // Show toast for changes (if we're staying on the page)
+        // Проверяем, нужно ли подавить toast (пользователь только что сам сделал это действие)
         const message = generateChangeMessage(oldTicket, updatedTicket);
-        if (message && showToasts) {
+        if (message && showToasts && !shouldSuppressToast(ticketId)) {
           toast.ticketUpdated(ticketId, message);
         }
 
@@ -148,7 +176,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     );
 
     const unsubscribeDeleted = subscribeToTicketDeleted(ticketId, () => {
-      if (showToasts) {
+      if (showToasts && !shouldSuppressToast(ticketId)) {
         toast.warning(`Тикет #${ticketId} удалён`);
       }
       deleteCallbackRef.current?.();
@@ -189,4 +217,3 @@ function getStatusLabel(status: string): string {
   };
   return labels[status] || status;
 }
-

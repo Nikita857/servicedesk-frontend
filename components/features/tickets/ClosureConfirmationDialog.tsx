@@ -15,6 +15,7 @@ import {
 import { LuCheck, LuRotateCcw, LuCircleAlert } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
 import { toaster } from "@/components/ui/toaster";
+import { suppressTicketToast } from "@/lib/hooks";
 import type { Ticket } from "@/types/ticket";
 import { useAuthStore } from "@/stores";
 import { RatingToast } from "./RatingToast";
@@ -71,6 +72,8 @@ export function ClosureConfirmationDialog({
 
   const handleConfirm = async () => {
     setIsConfirming(true);
+    // Подавляем дублирующий toast от WebSocket
+    suppressTicketToast(ticket.id);
     try {
       const updatedTicket = await ticketApi.confirmClosure(ticket.id);
       onTicketUpdate(updatedTicket);
@@ -89,6 +92,8 @@ export function ClosureConfirmationDialog({
 
   const handleReject = async () => {
     setIsRejecting(true);
+    // Подавляем дублирующий toast от WebSocket
+    suppressTicketToast(ticket.id);
     try {
       const updatedTicket = await ticketApi.rejectClosure(
         ticket.id,
