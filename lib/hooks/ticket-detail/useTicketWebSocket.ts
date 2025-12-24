@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useWebSocket } from "@/lib/providers";
 import { toast } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
-import router from "next/navigation";
 import { User } from "@/types";
 
 interface UseTicketWebSocketOptions {
@@ -12,12 +12,13 @@ interface UseTicketWebSocketOptions {
   onTicketDeleted?: () => void;
   user: User | null;
   enabled?: boolean;
-  showToasts?: boolean; // Whether to show toast notifications for updates (default: true)
+  showToasts?: boolean;
 }
 
 /**
  * Hook для подписки на обновления конкретного тикета через WebSocket
  * Показывает toast при изменениях тикета
+ * При смене исполнителя — выкидывает предыдущего специалиста
  */
 export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
   const {
@@ -30,19 +31,21 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     showToasts = true,
   } = options;
 
-  const { isConnected, subscribeToTicketUpdates, subscribeToTicketDeleted } = useWebSocket();
+  const router = useRouter();
+  const { isConnected, subscribeToTicketUpdates, subscribeToTicketDeleted } =
+    useWebSocket();
 
   const updateCallbackRef = useRef(onTicketUpdate);
   const deleteCallbackRef = useRef(onTicketDeleted);
   const currentTicketRef = useRef(currentTicket);
-  const currentUser = useRef(user);
+  const currentUserRef = useRef(user);
 
   // Keep refs updated
   useEffect(() => {
     updateCallbackRef.current = onTicketUpdate;
     deleteCallbackRef.current = onTicketDeleted;
     currentTicketRef.current = currentTicket;
-    currentUser.current = user;
+    currentUserRef.current = user;
   }, [onTicketUpdate, onTicketDeleted, currentTicket, user]);
 
   // Generate toast message based on what changed
@@ -50,17 +53,16 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     (oldTicket: Ticket | null, newTicket: Ticket): string | null => {
       if (!oldTicket) return null;
 
-      // Check assignedTo first - "Ticket taken" is more specific than "status changed"
-      // When specialist takes ticket, both assignedTo AND status change
+      // Check assignedTo first
       if (
-        oldTicket.assignedTo?.username !== newTicket.assignedTo?.username &&
+        oldTicket.assignedTo?.id !== newTicket.assignedTo?.id &&
         newTicket.assignedTo
       ) {
         const name = newTicket.assignedTo.fio || newTicket.assignedTo.username;
-        return `Тикет взят в работу: ${name}`;
+        return `Тикет принял специалист: ${name}`;
       }
 
-      // Status changed (only if not taken by someone)
+      // Status changed
       if (oldTicket.status !== newTicket.status) {
         return `Статус изменён: ${getStatusLabel(
           oldTicket.status
@@ -88,7 +90,6 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         return "Описание тикета обновлено";
       }
 
-      // If nothing significant changed (or we already have the update locally), don't show toast
       return null;
     },
     []
@@ -101,32 +102,47 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     const unsubscribeUpdate = subscribeToTicketUpdates(
       ticketId,
       (updatedTicket: Ticket) => {
-        const message = generateChangeMessage(
-          currentTicketRef.current,
-          updatedTicket
-        );
+        const currentUser = currentUserRef.current;
+        const oldTicket = currentTicketRef.current;
 
+        // Check if current user is a specialist (not admin, not just user)
+        const isSpecialist = currentUser?.specialist || false;
+        const isAdmin = currentUser?.roles?.includes("ADMIN") || false;
+        const isTicketCreator =
+          currentUser?.id === updatedTicket.createdBy?.id;
+
+        // If specialist and assignee changed to someone else — kick them out
+        if (isSpecialist && !isAdmin && !isTicketCreator) {
+          const wasAssignedToMe = oldTicket?.assignedTo?.id === currentUser?.id;
+          const nowAssignedToMe =
+            updatedTicket.assignedTo?.id === currentUser?.id;
+          const assigneeChanged =
+            oldTicket?.assignedTo?.id !== updatedTicket.assignedTo?.id;
+
+          // Case 1: Was assigned to me, now assigned to someone else
+          // Case 2: I was viewing unassigned ticket, now someone else took it
+          if (assigneeChanged && !nowAssignedToMe && updatedTicket.assignedTo) {
+            const newAssigneeName =
+              updatedTicket.assignedTo.fio || updatedTicket.assignedTo.username;
+
+            toast.warning(
+              wasAssignedToMe
+                ? `Тикет передан специалисту ${newAssigneeName}. Вы больше не имеете доступа.`
+                : `Тикет принял специалист ${newAssigneeName}. Вы больше не имеете доступа.`
+            );
+
+            router.push("/dashboard/tickets");
+            return; // Don't update state — we're leaving
+          }
+        }
+
+        // Show toast for changes (if we're staying on the page)
+        const message = generateChangeMessage(oldTicket, updatedTicket);
         if (message && showToasts) {
           toast.ticketUpdated(ticketId, message);
         }
 
-        const currentUserId = currentUser.current?.id; // добавь useRef на текущего пользователя
-        const isSpecialist = currentUser.current?.specialist || false;
-        const isAdmin = currentUser.current?.roles.every((role) => role === 'ADMIN')
-        const assignedToId = updatedTicket.assignedTo?.id;
-
-        const hasAccess = !assignedToId || assignedToId === currentUserId || !isSpecialist;
-
-      if (!hasAccess) {
-        if(!isAdmin) {
-          router.redirect("/dashboard/tickets");
-        }
-        if(currentUser?.current?.id === currentUserId) {
-          toast.warning("У вас больше нет доустпа к этому тикету") 
-        }
-        return;
-      }
-
+        // Update ticket state
         updateCallbackRef.current?.(updatedTicket);
       }
     );
@@ -136,7 +152,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         toast.warning(`Тикет #${ticketId} удалён`);
       }
       deleteCallbackRef.current?.();
-      router.redirect('/dashboard/tickets')
+      router.push("/dashboard/tickets");
     });
 
     return () => {
@@ -151,7 +167,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     subscribeToTicketDeleted,
     generateChangeMessage,
     showToasts,
-    currentTicket?.assignedTo?.id,
+    router,
   ]);
 
   return { isConnected };
@@ -173,3 +189,4 @@ function getStatusLabel(status: string): string {
   };
   return labels[status] || status;
 }
+

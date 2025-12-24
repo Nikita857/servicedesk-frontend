@@ -111,6 +111,8 @@ export default function TicketDetailPage({ params }: PageProps) {
         showEscalation={escalation.showEscalation}
         setShowEscalation={escalation.setShowEscalation}
         isOnLastLine={isOnLastLine}
+        hasPendingAssignment={currentAssignment?.status === "PENDING"}
+        user={user}
       />
 
       {/* Escalation Panel */}

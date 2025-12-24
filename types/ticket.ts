@@ -148,16 +148,16 @@ export const ticketPriorityConfig: Record<TicketPriority, { label: string; color
   URGENT: { label: 'Срочный', color: 'red' },
 };
 
-// Status transition rules - which statuses can transition to which
+// Status transition rules - which statuses can transition to which (FULL - for admin)
 export const statusTransitions: Record<TicketStatus, TicketStatus[]> = {
   NEW: ['OPEN', 'REJECTED', 'CANCELLED'],
-  OPEN: ['PENDING', 'ESCALATED', 'RESOLVED', 'CANCELLED'],
-  PENDING: ['OPEN', 'RESOLVED', 'CANCELLED'],
+  OPEN: ['PENDING', 'RESOLVED', 'ESCALATED'],
+  PENDING: ['OPEN'],
   ESCALATED: ['OPEN', 'PENDING', 'RESOLVED'],
-  RESOLVED: ['PENDING_CLOSURE', 'REOPENED'], // Специалист запрашивает закрытие
-  PENDING_CLOSURE: ['CLOSED', 'REOPENED'], // Пользователь подтверждает или отклоняет
+  RESOLVED: ['PENDING_CLOSURE', 'REOPENED'],
+  PENDING_CLOSURE: ['CLOSED', 'REOPENED'],
   CLOSED: ['REOPENED'],
-  REOPENED: ['OPEN', 'PENDING', 'RESOLVED', 'CANCELLED'],
+  REOPENED: ['OPEN', 'RESOLVED', 'PENDING', 'ESCALATED', 'CANCELLED'],
   REJECTED: [],
   CANCELLED: [],
 };
@@ -169,10 +169,24 @@ export const userStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
   PENDING: ['CANCELLED'],
   ESCALATED: [],
   RESOLVED: ['REOPENED'],
-  PENDING_CLOSURE: ['CLOSED', 'REOPENED'], // Пользователь может подтвердить закрытие или переоткрыть
+  PENDING_CLOSURE: ['CLOSED', 'REOPENED'],
   CLOSED: ['REOPENED'],
   REOPENED: ['CANCELLED'],
   REJECTED: [],
   CANCELLED: [],
 };
 
+// Specialist-allowed transitions (specialists except admin) - NO CANCELLED
+// Specialists should use cancel button instead
+export const specialistStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
+  NEW: ['OPEN', 'REJECTED'],
+  OPEN: ['PENDING', 'RESOLVED', 'ESCALATED'],
+  PENDING: ['OPEN'],
+  ESCALATED: ['OPEN', 'PENDING', 'RESOLVED'],
+  RESOLVED: ['PENDING_CLOSURE', 'REOPENED'],
+  PENDING_CLOSURE: ['CLOSED', 'REOPENED'],
+  CLOSED: ['REOPENED'],
+  REOPENED: ['OPEN', 'RESOLVED', 'PENDING', 'ESCALATED'],
+  REJECTED: [],
+  CANCELLED: [],
+};

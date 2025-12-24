@@ -149,6 +149,17 @@ export const ticketApi = {
     const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/rate`, request);
     return response.data.data;
   },
+
+  /**
+   * Cancel ticket (only ticket creator or admin can cancel)
+   * Ticket will be marked as CANCELLED and soft deleted
+   */
+  cancelTicket: async (id: number, reason?: string): Promise<Ticket> => {
+    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/cancel`, null, {
+      params: reason ? { reason } : undefined,
+    });
+    return response.data.data;
+  },
 };
 
 // Request type for rating
