@@ -29,6 +29,9 @@ export * from "./useStatsQuery";
 // File Upload
 export { useFileUpload } from "./useFileUpload";
 
+// Ticket Chat
+export * from "./ticket-chat/useChatActions";
+
 
 
 

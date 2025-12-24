@@ -1,4 +1,4 @@
-import { Button, Flex, Input } from "@chakra-ui/react";
+import { Button, Flex, Input, Text } from "@chakra-ui/react";
 import { RefObject } from "react";
 import { LuPaperclip, LuSend } from "react-icons/lu";
 import { CustomEmojiPicker } from "./CustomEmojiPicker";
@@ -13,6 +13,7 @@ interface ChatInputProps {
   fileInputRef: RefObject<HTMLInputElement | null>;
   selectedFile: File | null;
   isChatInactive: boolean;
+  isEditing?: boolean;
 }
 
 export default function ChatInput({
@@ -24,6 +25,7 @@ export default function ChatInput({
   fileInputRef,
   isSending,
   isChatInactive,
+  isEditing,
 }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -66,7 +68,7 @@ export default function ChatInput({
         color="white"
         _hover={{ bg: "gray.800" }}
       >
-        <LuSend />
+        {isEditing ? <Text fontSize="sm">Сохранить</Text> : <LuSend />}
       </Button>
     </Flex>
   ) : (
@@ -96,7 +98,7 @@ export default function ChatInput({
         color="white"
         _hover={{ bg: "gray.800" }}
       >
-        <LuSend />
+        {isEditing ? <Text fontSize="sm">Сохранить</Text> : <LuSend />}
       </Button>
     </Flex>
   );

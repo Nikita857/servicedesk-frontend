@@ -1,18 +1,12 @@
-import { useState, useRef } from "react";
 import { Box, Flex, Text, Button, VStack, HStack } from "@chakra-ui/react";
 import { LuWifi, LuWifiOff, LuPaperclip, LuX } from "react-icons/lu";
-import { messageApi } from "@/lib/api/messages";
-import { attachmentApi } from "@/lib/api/attachments";
-import { toaster } from "@/components/ui/toaster";
-import { formatFileSize, validateFile } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
-import type { Message } from "@/types/message";
-import axios from "axios";
 import { useChatWebSocket } from "@/lib/hooks/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
 import ChatInput from "../ticket-chat/ChatInput";
-import { useFileUpload } from "@/lib/hooks";
+import { useChatActions } from "@/lib/hooks";
+import { formatFileSize } from "@/lib/utils";
 
 interface TicketChatProps {
   ticketId: number;
@@ -21,7 +15,6 @@ interface TicketChatProps {
 
 export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const { user } = useAuthStore();
-  const { upload } = useFileUpload();
 
   // Use custom hook for WebSocket and messages
   const {
@@ -34,167 +27,24 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     sendMessage: wsSendMessage,
   } = useChatWebSocket(ticketId);
 
-  // Local state for file handling
-  const [newMessage, setNewMessage] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Use custom hook for handling chat actions (sending, editing, files)
+  const {
+    newMessage,
+    setNewMessage,
+    selectedFile,
+    isUploading,
+    isSending,
+    editingMessage,
+    fileInputRef,
+    handleFileSelect,
+    handleRemoveFile,
+    handleEditMessage,
+    handleDeleteMessage,
+    sendMessage,
+  } = useChatActions(ticketId, setMessages, wsSendMessage, isConnected);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const error = validateFile(file);
-    if (error) {
-      toaster.error({ title: "Ошибка", description: error });
-      return;
-    }
-    setSelectedFile(file);
-  };
-
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleSend = async () => {
-    if (!newMessage.trim() && !selectedFile) return;
-
-    const content = newMessage.trim();
-    const fileToUpload = selectedFile;
-
-    setNewMessage("");
-    setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-
-    // Handle edit mode
-    if (editingMessage) {
-      try {
-        const updatedMessage = await messageApi.edit(editingMessage.id, {
-          content,
-        });
-        setMessages((prev) =>
-          prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m))
-        );
-        toaster.success({ title: "Сообщение обновлено" });
-      } catch (error) {
-        toaster.error({
-          title: "Ошибка",
-          description: "Не удалось обновить сообщение",
-        });
-        setNewMessage(content);
-      } finally {
-        setEditingMessage(null);
-      }
-      return;
-    }
-
-    // If we have a file, we need to create a message first then attach the file
-    if (fileToUpload) {
-      setIsUploading(true);
-      let messageId: number | null = null;
-
-      try {
-        // Create message with content or placeholder
-        const messageContent = content || `📎 ${fileToUpload.name}`;
-        const message = await messageApi.send(ticketId, {
-          content: messageContent,
-        });
-        messageId = message.id;
-
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) {
-            return prev.map((m) => (m.id === message.id ? message : m));
-          }
-          return [...prev, message];
-        });
-
-        // Upload file to this message using MinIO hook
-        const result = await upload(fileToUpload, "MESSAGE", message.id);
-
-        if (!result) {
-          throw new Error("Upload failed");
-        }
-
-        // Optimistically update message with new attachment because MinIO/WebSocket might have latency
-        setMessages((prev) => {
-          return prev.map((m) => {
-            if (m.id === message.id) {
-              return {
-                ...m,
-                attachments: [...(m.attachments || []), result],
-              };
-            }
-            return m;
-          });
-        });
-
-        // WebSocket will update the message with attachment for all users
-      } catch (error) {
-        // Rollback: try to delete the message if upload failed AND we have a messageId
-        if (messageId) {
-          try {
-            await messageApi.delete(messageId);
-            setMessages((prev) => prev.filter((m) => m.id !== messageId));
-            console.log("Rolled back message due to upload failure");
-          } catch (rollbackError) {
-            console.error("Failed to rollback message", rollbackError);
-          }
-        }
-
-        if (error instanceof Error && error.message === "Upload failed") {
-          // Already handled by hook
-        } else if (axios.isAxiosError(error) && error.response) {
-          toaster.error({
-            title: "Ошибка загрузки файла",
-            description:
-              error.response.data.message || "Не удалось отправить файл",
-            closable: true,
-          });
-        } else {
-          toaster.error({
-            title: "Ошибка",
-            description: "Не удалось отправить файл",
-            closable: true,
-          });
-        }
-      } finally {
-        setIsUploading(false);
-      }
-    } else if (content) {
-      // Send message without file via WebSocket
-      if (isConnected && wsSendMessage(content)) return;
-
-      setIsSending(true);
-      try {
-        const message = await messageApi.send(ticketId, { content });
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) {
-            return prev.map((m) => (m.id === message.id ? message : m));
-          }
-          return [...prev, message];
-        });
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          toaster.error({
-            title: "Ошибка",
-            description:
-              error.response.data.message || "Не удалось отправить сообщение",
-            closable: true,
-          });
-        } else {
-          toaster.error({
-            title: "Ошибка",
-            description: "Не удалось отправить сообщение",
-            closable: true,
-          });
-        }
-        setNewMessage(content);
-      } finally {
-        setIsSending(false);
-      }
-    }
+  const handleSend = () => {
+    sendMessage(newMessage, selectedFile);
   };
 
   const handleInputChange = (value: string) => {
@@ -210,8 +60,6 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
   const isTicketActive = (status: TicketStatus): boolean => {
     return status !== "CLOSED" && status !== "CANCELLED";
   };
-
-  const isImageType = (mimeType: string) => mimeType?.startsWith("image/");
 
   return (
     <VStack gap={4} align="stretch">
@@ -260,22 +108,8 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
             messages={messages}
             currentUserId={user?.id}
             isLoading={isLoading}
-            onEditMessage={(msg) => {
-              setEditingMessage(msg);
-              setNewMessage(msg.content);
-            }}
-            onDeleteMessage={async (msgId) => {
-              try {
-                await messageApi.delete(msgId);
-                setMessages((prev) => prev.filter((m) => m.id !== msgId));
-                toaster.success({ title: "Сообщение удалено" });
-              } catch (error) {
-                toaster.error({
-                  title: "Ошибка",
-                  description: "Не удалось удалить сообщение",
-                });
-              }
-            }}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
           />
         </Box>
 
@@ -353,6 +187,7 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
               isSending={isSending}
               selectedFile={selectedFile}
               isChatInactive={false}
+              isEditing={!!editingMessage}
             />
           ) : (
             <ChatInput
@@ -365,6 +200,7 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
               isSending={isSending}
               selectedFile={selectedFile}
               isChatInactive={true}
+              isEditing={!!editingMessage}
             />
           )}
         </Box>
