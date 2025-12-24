@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useWebSocket } from "@/lib/providers";
 import { useAuthStore } from "@/stores";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import type { Notification } from "@/types/notification";
 
 /**
@@ -24,22 +24,11 @@ export function useNotifications() {
         return;
       }
 
-      const toastType =
-        notification.type === "MESSAGE"
-          ? "info"
-          : notification.type === "ASSIGNMENT"
-          ? "success"
-          : "info";
-
-      toaster.create({
-        title: notification.title,
-        description: notification.body,
-        type: toastType,
-        duration: 5000,
-        meta: {
-          closable: true,
-        },
-      });
+      if (notification.type === "ASSIGNMENT") {
+        toast.success(notification.title, notification.body);
+      } else {
+        toast.info(notification.title, notification.body);
+      }
     });
 
     console.log("[Notifications] Subscribed to user notifications");

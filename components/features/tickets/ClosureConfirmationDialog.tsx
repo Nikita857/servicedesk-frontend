@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { LuCheck, LuRotateCcw, LuCircleAlert } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
-import { toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/utils";
 import { suppressTicketToast } from "@/lib/hooks";
 import type { Ticket } from "@/types/ticket";
 import { useAuthStore } from "@/stores";
@@ -81,10 +81,7 @@ export function ClosureConfirmationDialog({
       // Показываем окно оценки после успешного закрытия
       setShowRatingToast(true);
     } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось закрыть тикет",
-      });
+      toast.error("Ошибка", "Не удалось закрыть тикет");
     } finally {
       setIsConfirming(false);
     }
@@ -104,10 +101,7 @@ export function ClosureConfirmationDialog({
       setShowRejectForm(false);
       setRejectReason("");
     } catch (error) {
-      toaster.error({
-        title: "Ошибка",
-        description: "Не удалось переоткрыть тикет",
-      });
+      toast.error("Ошибка", "Не удалось переоткрыть тикет");
     } finally {
       setIsRejecting(false);
     }

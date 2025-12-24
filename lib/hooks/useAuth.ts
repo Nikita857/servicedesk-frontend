@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores';
 import { authApi } from '@/lib/api/auth';
-import { toaster } from '@/components/ui/toaster';
+import { toast } from '@/lib/utils';
 import type { AuthRequest } from '@/types/auth';
 import { AxiosError } from 'axios';
 
@@ -20,10 +20,7 @@ export function useAuth() {
       const user = response.userAuthResponse;
       setAuth(user, response.accessToken, response.refreshToken);
       
-      toaster.success({
-        title: 'Добро пожаловать!',
-        description: `Вы вошли как ${user.fio || user.username}`,
-      });
+      toast.success('Добро пожаловать!', `Вы вошли как ${user.fio || user.username}`);
       
       router.push('/dashboard');
       return { success: true };
@@ -35,10 +32,7 @@ export function useAuth() {
         message = error.response?.data.message;
       }
       
-      toaster.error({
-        title: 'Ошибка входа',
-        description: message,
-      });
+      toast.error('Ошибка входа', message);
       
       return { success: false, error: message };
     }
@@ -47,10 +41,7 @@ export function useAuth() {
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
-      toaster.success({
-        title: 'До свидания!',
-        description: 'Вы успешно вышли из системы',
-      });
+      toast.success('До свидания!', 'Вы успешно вышли из системы');
     } catch {
       // Ignore logout errors
     } finally {

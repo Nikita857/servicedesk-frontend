@@ -2,8 +2,7 @@ import { useState, useRef } from 'react';
 import axios from 'axios';
 import { messageApi } from '@/lib/api/messages';
 import { useFileUpload } from '@/lib/hooks';
-import { toaster } from '@/components/ui/toaster';
-import { validateFile } from '@/lib/utils';
+import { toast, validateFile } from '@/lib/utils';
 import type { Message } from '@/types/message';
 
 interface UseChatActionsReturn {
@@ -46,7 +45,7 @@ export const useChatActions = (
     
     const error = validateFile(file);
     if (error) {
-      toaster.error({ title: 'Ошибка', description: error });
+      toast.error('Ошибка', error);
       return;
     }
     setSelectedFile(file);
@@ -69,12 +68,9 @@ export const useChatActions = (
     try {
       await messageApi.delete(msgId);
       setMessages((prev) => prev.filter((m) => m.id !== msgId));
-      toaster.success({ title: 'Сообщение удалено' });
+      toast.success('Сообщение удалено');
     } catch (error) {
-      toaster.error({
-        title: 'Ошибка',
-        description: 'Не удалось удалить сообщение',
-      });
+      toast.error('Ошибка', 'Не удалось удалить сообщение');
     }
   };
 
@@ -95,12 +91,9 @@ export const useChatActions = (
         setMessages((prev) =>
           prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m))
         );
-        toaster.success({ title: 'Сообщение обновлено' });
+        toast.success('Сообщение обновлено');
       } catch (error) {
-        toaster.error({
-          title: 'Ошибка',
-          description: 'Не удалось обновить сообщение',
-        });
+        toast.error('Ошибка', 'Не удалось обновить сообщение');
         setNewMessage(content);
       } finally {
         setEditingMessage(null);
@@ -165,18 +158,9 @@ export const useChatActions = (
         if (error instanceof Error && error.message === 'Upload failed') {
             // Ошибка уже обработана в хуке useFileUpload
         } else if (axios.isAxiosError(error) && error.response) {
-          toaster.error({
-            title: 'Ошибка загрузки файла',
-            description:
-              error.response.data.message || 'Не удалось отправить файл',
-            closable: true,
-          });
+          toast.error('Ошибка загрузки файла', error.response.data.message || 'Не удалось отправить файл');
         } else {
-          toaster.error({
-            title: 'Ошибка',
-            description: 'Не удалось отправить файл',
-            closable: true,
-          });
+          toast.error('Ошибка', 'Не удалось отправить файл');
         }
       } finally {
         setIsUploading(false);
@@ -198,18 +182,9 @@ export const useChatActions = (
         });
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-          toaster.error({
-            title: 'Ошибка',
-            description:
-              error.response.data.message || 'Не удалось отправить сообщение',
-            closable: true,
-          });
+          toast.error('Ошибка', error.response.data.message || 'Не удалось отправить сообщение');
         } else {
-          toaster.error({
-            title: 'Ошибка',
-            description: 'Не удалось отправить сообщение',
-            closable: true,
-          });
+          toast.error('Ошибка', 'Не удалось отправить сообщение');
         }
         setNewMessage(content);
       } finally {

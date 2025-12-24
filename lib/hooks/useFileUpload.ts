@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { attachmentApi, Attachment } from '@/lib/api/attachments';
-import { toaster } from '@/components/ui/toaster';
+import { toast } from '@/lib/utils';
 
 interface UseFileUploadReturn {
   upload: (
@@ -57,10 +57,7 @@ export const useFileUpload = (): UseFileUploadReturn => {
       console.error('File upload failed:', err);
       const errorMessage = err.response?.data?.message || 'Не удалось загрузить файл';
       setError(errorMessage);
-      toaster.error({
-        title: 'Ошибка загрузки',
-        description: errorMessage,
-      });
+      toast.error('Ошибка загрузки', errorMessage);
       return null;
     } finally {
       setIsUploading(false);
