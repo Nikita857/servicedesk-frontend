@@ -1,0 +1,235 @@
+import { useState, useRef } from 'react';
+import axios from 'axios';
+import { messageApi } from '@/lib/api/messages';
+import { useFileUpload } from '@/lib/hooks';
+import { toaster } from '@/components/ui/toaster';
+import { validateFile } from '@/lib/utils';
+import type { Message } from '@/types/message';
+
+interface UseChatActionsReturn {
+  newMessage: string;
+  setNewMessage: (value: string) => void;
+  selectedFile: File | null;
+  isUploading: boolean;
+  isSending: boolean;
+  editingMessage: Message | null;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRemoveFile: () => void;
+  handleEditMessage: (msg: Message) => void;
+  handleDeleteMessage: (msgId: number) => Promise<void>;
+  sendMessage: (
+    content: string, 
+    file: File | null
+  ) => Promise<void>;
+}
+
+export const useChatActions = (
+  ticketId: number,
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  wsSendMessage: (content: string) => boolean,
+  isConnected: boolean
+): UseChatActionsReturn => {
+  const [newMessage, setNewMessage] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { upload } = useFileUpload();
+
+  // Обработка выбора файла
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const error = validateFile(file);
+    if (error) {
+      toaster.error({ title: 'Ошибка', description: error });
+      return;
+    }
+    setSelectedFile(file);
+  };
+
+  // Удаление выбранного файла
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Установка сообщения для редактирования
+  const handleEditMessage = (msg: Message) => {
+    setEditingMessage(msg);
+    setNewMessage(msg.content);
+  };
+
+  // Удаление сообщения
+  const handleDeleteMessage = async (msgId: number) => {
+    try {
+      await messageApi.delete(msgId);
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+      toaster.success({ title: 'Сообщение удалено' });
+    } catch (error) {
+      toaster.error({
+        title: 'Ошибка',
+        description: 'Не удалось удалить сообщение',
+      });
+    }
+  };
+
+  // Основная логика отправки сообщения
+  const sendMessage = async (content: string, file: File | null) => {
+    if (!content.trim() && !file) return;
+
+    setNewMessage('');
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Режим редактирования
+    if (editingMessage) {
+      try {
+        const updatedMessage = await messageApi.edit(editingMessage.id, {
+          content,
+        });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m))
+        );
+        toaster.success({ title: 'Сообщение обновлено' });
+      } catch (error) {
+        toaster.error({
+          title: 'Ошибка',
+          description: 'Не удалось обновить сообщение',
+        });
+        setNewMessage(content);
+      } finally {
+        setEditingMessage(null);
+      }
+      return;
+    }
+
+    // Если есть файл, отправляем его через HTTP API + MinIO
+    if (file) {
+      setIsUploading(true);
+      let messageId: number | null = null;
+
+      try {
+        // 1. Создаем сообщение (с текстом или плейсхолдером)
+        const messageContent = content || `📎 ${file.name}`;
+        const message = await messageApi.send(ticketId, {
+          content: messageContent,
+        });
+        messageId = message.id;
+
+        // Оптимистичное добавление сообщения в чат
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) {
+            return prev.map((m) => (m.id === message.id ? message : m));
+          }
+          return [...prev, message];
+        });
+
+        // 2. Загружаем файл в MinIO и привязываем к сообщению
+        const result = await upload(file, 'MESSAGE', message.id);
+
+        if (!result) {
+          throw new Error('Upload failed');
+        }
+
+        // 3. Оптимистично обновляем сообщение, добавляя вложение
+        // Это убирает визуальную задержку до получения события WebSocket
+        setMessages((prev) => {
+          return prev.map((m) => {
+            if (m.id === message.id) {
+              return {
+                ...m,
+                attachments: [...(m.attachments || []), result],
+              };
+            }
+            return m;
+          });
+        });
+
+      } catch (error) {
+        // Откат: удаляем сообщение, если не удалось загрузить файл
+        if (messageId) {
+          try {
+            await messageApi.delete(messageId);
+            setMessages((prev) => prev.filter((m) => m.id !== messageId));
+            console.log('Rolled back message due to upload failure');
+          } catch (rollbackError) {
+            console.error('Failed to rollback message', rollbackError);
+          }
+        }
+
+        if (error instanceof Error && error.message === 'Upload failed') {
+            // Ошибка уже обработана в хуке useFileUpload
+        } else if (axios.isAxiosError(error) && error.response) {
+          toaster.error({
+            title: 'Ошибка загрузки файла',
+            description:
+              error.response.data.message || 'Не удалось отправить файл',
+            closable: true,
+          });
+        } else {
+          toaster.error({
+            title: 'Ошибка',
+            description: 'Не удалось отправить файл',
+            closable: true,
+          });
+        }
+      } finally {
+        setIsUploading(false);
+      }
+    } 
+    // Если только текст, пробуем через WebSocket
+    else if (content) {
+      if (isConnected && wsSendMessage(content)) return;
+
+      // Фолбэк на HTTP API, если WS недоступен
+      setIsSending(true);
+      try {
+        const message = await messageApi.send(ticketId, { content });
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) {
+            return prev.map((m) => (m.id === message.id ? message : m));
+          }
+          return [...prev, message];
+        });
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          toaster.error({
+            title: 'Ошибка',
+            description:
+              error.response.data.message || 'Не удалось отправить сообщение',
+            closable: true,
+          });
+        } else {
+          toaster.error({
+            title: 'Ошибка',
+            description: 'Не удалось отправить сообщение',
+            closable: true,
+          });
+        }
+        setNewMessage(content);
+      } finally {
+        setIsSending(false);
+      }
+    }
+  };
+
+  return {
+    newMessage,
+    setNewMessage,
+    selectedFile,
+    isUploading,
+    isSending,
+    editingMessage,
+    fileInputRef,
+    handleFileSelect,
+    handleRemoveFile,
+    handleEditMessage,
+    handleDeleteMessage,
+    sendMessage,
+  };
+};

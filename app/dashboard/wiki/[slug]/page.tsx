@@ -30,12 +30,12 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, WikiAttachment } from "@/lib/api/wiki";
+import { attachmentApi } from "@/lib/api/attachments";
 import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
 import { formatDate } from "@/lib/utils";
 import { API_BASE_URL } from "@/lib/config";
-import { getAttachmentDownloadUrl } from "@/lib/api/attachments";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -244,15 +244,26 @@ export default function WikiArticlePage({ params }: PageProps) {
                           ({formatFileSize(attachment.fileSize)})
                         </Text>
                       </HStack>
-                      <ChakraLink
-                        href={getAttachmentDownloadUrl(attachment.id)}
-                        target="_blank"
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={async () => {
+                          try {
+                            const { downloadUrl } = await attachmentApi.getUrl(
+                              attachment.id
+                            );
+                            window.open(downloadUrl, "_blank");
+                          } catch {
+                            toaster.error({
+                              title: "Ошибка",
+                              description: "Не удалось скачать файл",
+                            });
+                          }
+                        }}
                       >
-                        <Button size="xs" variant="ghost">
-                          <LuDownload size={14} />
-                          Скачать
-                        </Button>
-                      </ChakraLink>
+                        <LuDownload size={14} />
+                        Скачать
+                      </Button>
                     </HStack>
                   );
                 })}

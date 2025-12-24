@@ -24,9 +24,10 @@ export interface AuthResponse {
 }
 
 export const userRolesBadges: Record<SenderType, {name: string, color: string}> = {
-    USER: {name: 'Пользователь', color: 'gray'},
-    SYSADMIN: {name: 'Системный администратор', color: 'green'},
-    DEV1C: {name: 'Программист 1С', color: 'blue'},
-    DEVELOPER: {name: 'Разработчик', color: 'purple'},
-    ADMIN: {name: 'Администратор', color: 'red'}
+    'USER': {name: 'Пользователь', color: 'gray'},
+    'SYSADMIN': {name: 'Системный администратор', color: 'green'},
+    '1CSUPPORT': {name: '1С Поддержка', color: 'blue'},
+    'DEV1C': {name: 'Программист 1С', color: 'blue'},
+    'DEVELOPER': {name: 'Разработчик', color: 'purple'},
+    'ADMIN': {name: 'Администратор', color: 'red'}
   };

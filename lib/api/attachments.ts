@@ -85,9 +85,51 @@ export const attachmentApi = {
     await api.delete(`/attachments/${attachmentId}`);
   },
 
-  // Get download URL (legacy)
-  getDownloadUrl: (filename: string): string => {
-    return `${API_BASE_URL}/attachments/file/${filename}`;
+  // ============ MinIO Migration ============
+
+  // 1. Get Presigned URL for upload
+  getUploadUrl: async (
+    filename: string, 
+    contentType: string, 
+    targetType: 'TICKET' | 'MESSAGE' | 'DIRECT_MESSAGE' | 'WIKI_ARTICLE',
+    targetId: number
+  ): Promise<UploadUrlResponse> => {
+    const response = await api.post<ApiResponse<UploadUrlResponse>>('/attachments/upload-url', {
+      filename,
+      contentType,
+      targetType,
+      targetId
+    });
+    return response.data.data;
+  },
+
+  // 2. Confirm upload
+  confirmUpload: async (data: ConfirmUploadRequest): Promise<Attachment> => {
+    const response = await api.post<ApiResponse<Attachment>>('/attachments/confirm', data);
+    return response.data.data;
+  },
+
+  // 3. Get Presigned URL for download/view
+  getUrl: async (attachmentId: number): Promise<{ downloadUrl: string }> => {
+    const response = await api.get<ApiResponse<{ downloadUrl: string }>>(`/attachments/${attachmentId}/url`);
+    return response.data.data;
   },
 };
+
+export interface UploadUrlResponse {
+  uploadUrl: string;
+  fileKey: string;
+  bucket: string;
+}
+
+export interface ConfirmUploadRequest {
+  fileKey: string;
+  filename: string;
+  contentType: string;
+  fileSize: number;
+  bucket: string;
+  targetType: 'TICKET' | 'MESSAGE' | 'DIRECT_MESSAGE' | 'WIKI_ARTICLE';
+  targetId: number;
+}
+
 

@@ -3,7 +3,7 @@
 import type { UserShort } from './ticket';
 
 // Role hierarchy: USER < SYSADMIN (1 line) < DEV1C (2 line) < DEVELOPER (3 line + admin)
-export type SenderType = 'USER' | 'SYSADMIN' | 'DEV1C' | 'DEVELOPER' | 'ADMIN';
+export type SenderType = 'USER' | 'SYSADMIN' | '1CSUPPORT' | 'DEV1C' | 'DEVELOPER' | 'ADMIN';
 
 export interface MessageAttachment {
   id: number;
@@ -57,11 +57,12 @@ export interface SenderTypeConfig {
 }
 
 export const senderTypeConfig: Record<SenderType, SenderTypeConfig> = {
-  USER: { label: 'Пользователь', color: 'blue' },
-  SYSADMIN: { label: 'Сисадмин', color: 'green', line: 1 },
-  DEV1C: { label: 'Разработчик 1С', color: 'orange', line: 2 },
-  DEVELOPER: { label: 'Разработчик', color: 'purple', line: 3 },
-  ADMIN: { label: 'Администратор', color: 'red' },
+  'USER': { label: 'Пользователь', color: 'blue' },
+  'SYSADMIN': { label: 'Сисадмин', color: 'green', line: 1 },
+  '1CSUPPORT': { label: '1С Поддержка', color: 'blue', line: 2 },
+  'DEV1C': { label: 'Разработчик 1С', color: 'orange', line: 3 },
+  'DEVELOPER': { label: 'Разработчик', color: 'purple', line: 4 },
+  'ADMIN': { label: 'Администратор', color: 'red' },
 };
 
 // Get sender config with fallback for unknown types

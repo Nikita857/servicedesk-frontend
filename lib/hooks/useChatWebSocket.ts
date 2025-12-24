@@ -25,8 +25,8 @@ interface UseChatWebSocketReturn {
 }
 
 /**
- * Hook для управления чатом тикета через WebSocket
- * Использует централизованный WebSocketProvider вместо singleton
+ * Хук для управления чатом тикета через WebSocket
+ * Использует централизованный WebSocketProvider
  */
 export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const { user } = useAuthStore();
@@ -45,26 +45,27 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const [typingUser, setTypingUser] = useState<TypingUser | null>(null);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  // Buffer for attachments that arrive before their messages
+  
+  // Буфер для вложений, которые пришли раньше своих сообщений
   const pendingAttachmentsRef = useRef<Map<number, MessageAttachment[]>>(new Map());
-  // Store timeouts for cleaning up orphaned attachments
+  // Храним таймауты для очистки осиротевших вложений
   const pendingTimeoutsRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const lastTypingSentRef = useRef<number>(0);
 
-  // Fetch initial messages
+  // Получение начальных сообщений
   const fetchMessages = useCallback(async () => {
     try {
       const response = await messageApi.list(ticketId, 0, 100);
       setMessages(response.content.reverse());
       await messageApi.markAsRead(ticketId);
     } catch (error) {
-      console.error("Failed to load messages", error);
+      console.error("Не удалось загрузить сообщения", error);
     } finally {
       setIsLoading(false);
     }
   }, [ticketId]);
 
-  // Send typing indicator (debounced)
+  // Отправка индикатора печати (с задержкой)
   const sendTypingIndicator = useCallback(
     (typing: boolean) => {
       const now = Date.now();
@@ -76,7 +77,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     [ticketId, sendTyping]
   );
 
-  // Send message via WebSocket
+  // Отправка сообщения через WebSocket
   const sendMessage = useCallback(
     (content: string, internal = false): boolean => {
       return wsSendMessage(ticketId, content, internal);
@@ -84,18 +85,35 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     [ticketId, wsSendMessage]
   );
 
-  // Fetch messages on mount
+  // Получаем сообщения при монтировании
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Handle incoming message (both regular and internal)
+  // Обработка входящего сообщения (обычное и внутреннее)
   const handleIncomingMessage = useCallback((wsMessage: ChatMessageWS) => {
-    // Construct sender if missing (flat structure vs nested)
+    console.log("[WS] Входящее сообщение (payload):", wsMessage);
+    
+    // Формируем отправителя, если не хватает данных (плоская структура vs вложенная)
     const sender = wsMessage.sender || {
       id: wsMessage.senderId!,
       username: wsMessage.senderUsername || "unknown",
       fio: wsMessage.senderFio || null,
+    };
+
+    // Хелпер для конвертации вложений из WS в тип MessageAttachment
+    const convertWsAttachments = (
+      wsAttachments?: AttachmentWS[]
+    ): MessageAttachment[] | undefined => {
+      if (!wsAttachments || wsAttachments.length === 0) return undefined;
+      return wsAttachments.map((att) => ({
+        id: att.id,
+        filename: att.filename,
+        url: att.url,
+        fileSize: att.fileSize,
+        mimeType: att.mimeType,
+        type: att.type,
+      }));
     };
 
     const newMsg: Message = {
@@ -110,18 +128,42 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
       edited: false,
       createdAt: wsMessage.createdAt,
       updatedAt: wsMessage.createdAt,
+      attachments: convertWsAttachments(wsMessage.attachments),
     };
 
     setMessages((prev) => {
-      if (prev.find((m) => m.id === newMsg.id)) return prev;
+      const existingIndex = prev.findIndex((m) => m.id === newMsg.id);
 
-      // Check if there are pending attachments for this message
+      // Если сообщение уже существует, обновляем его (например, могли прийти вложения)
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        const existingMsg = updated[existingIndex];
+        
+        // Объединение вложений: используем новые, если есть
+        const newAttachments = newMsg.attachments;
+        const existingAttachments = existingMsg.attachments;
+        
+        // Стратегия: 
+        // Если пришедшее сообщение имеет вложения - используем их.
+        // Если нет - оставляем старые (чтобы не затереть оптимистично добавленные).
+        
+        if (newAttachments && newAttachments.length > 0) {
+            updated[existingIndex] = { ...existingMsg, ...newMsg, attachments: newAttachments };
+        } else {
+            // Оставляем существующие
+            updated[existingIndex] = { ...existingMsg, ...newMsg, attachments: existingAttachments || [] };
+        }
+        
+        return updated;
+      }
+
+      // Проверяем, есть ли буферизированные вложения для этого НОВОГО сообщения
       const pendingAttachments = pendingAttachmentsRef.current.get(newMsg.id);
       if (pendingAttachments) {
-        newMsg.attachments = pendingAttachments;
+        newMsg.attachments = [...(newMsg.attachments || []), ...pendingAttachments];
         pendingAttachmentsRef.current.delete(newMsg.id);
         
-        // Clear cleanup timeout
+        // Очищаем таймаут очистки
         const timeoutId = pendingTimeoutsRef.current.get(newMsg.id);
         if (timeoutId) {
           clearTimeout(timeoutId);
@@ -133,7 +175,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     });
   }, []);
 
-  // Subscribe to chat messages and internal comments
+  // Подписка на сообщения и внутренние комментарии
   useEffect(() => {
     if (!isConnected) return;
 
@@ -146,7 +188,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     };
   }, [isConnected, ticketId, subscribeToChatMessages, subscribeToInternalComments, handleIncomingMessage]);
 
-  // Subscribe to typing indicators
+  // Подписка на индикатор набора текста
   useEffect(() => {
     if (!isConnected) return;
 
@@ -165,12 +207,14 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     return unsubscribe;
   }, [isConnected, ticketId, subscribeToTyping, user?.id]);
 
-  // Subscribe to attachments
+  // Подписка на вложения
   useEffect(() => {
     if (!isConnected) return;
 
     const unsubscribe = subscribeToAttachments(ticketId, (attachment: AttachmentWS) => {
-      // Convert AttachmentWS to MessageAttachment
+      console.log("[WS] Получено событие вложения:", attachment);
+      
+      // Конвертация AttachmentWS в MessageAttachment
       const newAttachment: MessageAttachment = {
         id: attachment.id,
         filename: attachment.filename,
@@ -186,17 +230,18 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           const messageExists = prev.some((m) => m.id === messageId);
 
           if (!messageExists) {
-            // Message hasn't arrived yet, buffer the attachment
+            console.log(`[WS] Сообщение ${messageId} для вложения не найдено локально. Буферизируем.`);
+            // Сообщение еще не пришло, буферизируем вложение
             const existing = pendingAttachmentsRef.current.get(messageId) || [];
             pendingAttachmentsRef.current.set(messageId, [...existing, newAttachment]);
 
-            // Set cleanup timeout (60 seconds) to avoid memory leaks
-            // If message doesn't arrive in 60s, discard these attachments
+            // Устанавливаем таймаут очистки (60 секунд) чтобы избежать утечек памяти
+            // Если сообщение не придет за 60 сек, удаляем буфер
             if (!pendingTimeoutsRef.current.has(messageId)) {
               const timeoutId = setTimeout(() => {
                 pendingAttachmentsRef.current.delete(messageId);
                 pendingTimeoutsRef.current.delete(messageId);
-                console.warn(`Cleaned up orphaned attachments for message ${messageId}`);
+                console.warn(`Очищены осиротевшие вложения для сообщения ${messageId}`);
               }, 60000);
               pendingTimeoutsRef.current.set(messageId, timeoutId);
             }
@@ -204,6 +249,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
             return prev;
           }
 
+          console.log(`[WS] Сообщение ${messageId} найдено. Обновляем вложения.`);
           return prev.map((msg) =>
             msg.id === messageId
               ? {
@@ -213,6 +259,13 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
               : msg
           );
         });
+        
+        // Принудительное обновление сообщений для гарантии консистентности (fail-safe)
+        // Добавляем задержку, чтобы транзакция на бэке успела закоммититься
+        setTimeout(() => {
+            console.log("[WS] Принудительное обновление сообщений после события вложения");
+            fetchMessages();
+        }, 1000);
       }
     });
 

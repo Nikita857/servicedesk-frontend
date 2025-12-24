@@ -35,6 +35,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const rolePriority = [
     "USER",
     "SYSADMIN",
+    "1CSUPPORT",
     "DEV1C",
     "DEVELOPER",
     "ADMIN",

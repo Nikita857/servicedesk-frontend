@@ -17,6 +17,7 @@ import { LuArrowLeft, LuSave, LuPaperclip, LuX, LuFile } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
+import { useFileUpload } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { toaster } from "@/components/ui/toaster";
 import { CustomEmojiPicker } from "@/components/features/ticket-chat/CustomEmojiPicker";
@@ -34,6 +35,7 @@ export default function NewWikiArticlePage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { upload } = useFileUpload();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CreateWikiArticleRequest>({
@@ -111,7 +113,7 @@ export default function NewWikiArticlePage() {
       // Upload attachments if any
       if (selectedFiles.length > 0) {
         const uploadPromises = selectedFiles.map((file) =>
-          wikiApi.uploadAttachment(article.id, file)
+          upload(file, "WIKI_ARTICLE", article.id)
         );
 
         try {
