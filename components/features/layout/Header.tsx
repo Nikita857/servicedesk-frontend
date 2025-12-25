@@ -24,6 +24,7 @@ import { useAuthStore } from "@/stores";
 import { SenderType, userRolesBadges } from "@/types";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { ActivityStatusDropdown } from "./ActivityStatusDropdown";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -76,14 +77,17 @@ export function Header({ onMenuClick }: HeaderProps) {
             <LuMenu size={20} />
           </IconButton>
 
-          {/* Role badge */}
+          {/* Role badge with tooltip */}
           <Box display={{ base: "none", sm: "block" }}>
-            <Text color="fg.muted" fontSize="sm">
-              Добро пожаловать. Ваша роль:{" "}
-              <Badge colorPalette={roleBadgeInfo.color}>
+            <Tooltip
+              content={roleBadgeInfo.description}
+              showArrow
+              positioning={{ placement: "bottom" }}
+            >
+              <Badge colorPalette={roleBadgeInfo.color} cursor="help">
                 {roleBadgeInfo.name}
               </Badge>
-            </Text>
+            </Tooltip>
           </Box>
         </HStack>
 

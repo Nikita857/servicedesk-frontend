@@ -24,11 +24,11 @@ export interface AuthResponse {
   userAuthResponse: User;  // matches backend API field name
 }
 
-export const userRolesBadges: Record<SenderType, {name: string, color: string}> = {
-    'USER': {name: 'Пользователь', color: 'gray'},
-    'SYSADMIN': {name: 'Системный администратор', color: 'green'},
-    '1CSUPPORT': {name: '1С Поддержка', color: 'blue'},
-    'DEV1C': {name: 'Программист 1С', color: 'blue'},
-    'DEVELOPER': {name: 'Разработчик', color: 'purple'},
-    'ADMIN': {name: 'Администратор', color: 'red'}
+export const userRolesBadges: Record<SenderType, {name: string, color: string, description: string}> = {
+    'USER': {name: 'Пользователь', color: 'gray', description: 'Может создавать заявки и общаться со специалистами'},
+    'SYSADMIN': {name: 'Системный администратор', color: 'green', description: 'Специалист 1-й линии поддержки. Решает базовые технические вопросы'},
+    '1CSUPPORT': {name: '1С Поддержка', color: 'blue', description: 'Специалист по поддержке продуктов 1С'},
+    'DEV1C': {name: 'Программист 1С', color: 'blue', description: 'Разработчик 1С. Решает сложные задачи по 1С'},
+    'DEVELOPER': {name: 'Разработчик', color: 'purple', description: 'Разработчик ПО. Решает задачи по разработке и интеграции'},
+    'ADMIN': {name: 'Администратор', color: 'red', description: 'Полный доступ к системе. Управление пользователями и настройками'}
   };
