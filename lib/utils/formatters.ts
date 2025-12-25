@@ -7,12 +7,12 @@
  * Форматирование даты в русской локали
  */
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(dateStr).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -20,10 +20,10 @@ export function formatDate(dateStr: string): string {
  * Форматирование даты (только дата, без времени)
  */
 export function formatDateShort(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  return new Date(dateStr).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -31,9 +31,9 @@ export function formatDateShort(dateStr: string): string {
  * Форматирование времени
  */
 export function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(dateStr).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -41,10 +41,11 @@ export function formatTime(dateStr: string): string {
  * Форматирование размера файла в читаемый формат
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1024 * 1024 * 1024)
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB";
 }
 
 /**
@@ -63,7 +64,7 @@ export function formatDurationFull(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (hours > 0) {
     return `${hours} ч ${minutes} мин`;
   }
@@ -85,10 +86,10 @@ export function formatRelativeTime(dateStr: string): string {
   const diffHours = Math.floor(diffMin / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSec < 60) return 'только что';
+  if (diffSec < 60) return "только что";
   if (diffMin < 60) return `${diffMin} мин назад`;
   if (diffHours < 24) return `${diffHours} ч назад`;
   if (diffDays < 7) return `${diffDays} дн назад`;
-  
+
   return formatDateShort(dateStr);
 }
