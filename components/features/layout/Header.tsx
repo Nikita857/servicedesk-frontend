@@ -18,6 +18,7 @@ import {
   LuChevronDown,
   LuMenu,
 } from "react-icons/lu";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/stores";
 import { SenderType, userRolesBadges } from "@/types";
@@ -29,6 +30,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const router = useRouter();
   const { logout } = useAuth();
   const { user } = useAuthStore();
 
@@ -119,6 +121,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               >
                 <Avatar.Root size="sm">
                   <Avatar.Fallback name={user?.fio || user?.username} />
+                  {user?.avatarUrl && <Avatar.Image src={user.avatarUrl} />}
                 </Avatar.Root>
                 <Text
                   fontSize="sm"
@@ -136,11 +139,21 @@ export function Header({ onMenuClick }: HeaderProps) {
             </Menu.Trigger>
             <Menu.Positioner>
               <Menu.Content bg="bg.surface" borderColor="border.default">
-                <Menu.Item value="profile" gap={2} fontSize="sm">
+                <Menu.Item
+                  value="profile"
+                  gap={2}
+                  fontSize="sm"
+                  onClick={() => router.push("/dashboard/profile")}
+                >
                   <LuUser size={16} />
                   Профиль
                 </Menu.Item>
-                <Menu.Item value="settings" gap={2} fontSize="sm">
+                <Menu.Item
+                  value="settings"
+                  gap={2}
+                  fontSize="sm"
+                  onClick={() => router.push("/dashboard/settings")}
+                >
                   <LuSettings size={16} />
                   Настройки
                 </Menu.Item>

@@ -13,14 +13,8 @@ import {
   Menu,
   Portal,
 } from "@chakra-ui/react";
-import {
-  LuPencil,
-  LuTrash2,
-} from "react-icons/lu";
-import {
-  getSenderConfig,
-  type Message,
-} from "@/types/message";
+import { LuPencil, LuTrash2 } from "react-icons/lu";
+import { getSenderConfig, type Message } from "@/types/message";
 import { AttachmentItem } from "./AttachmentItem";
 
 interface ChatMessageListProps {
@@ -123,6 +117,9 @@ export function ChatMessageList({
                   <Avatar.Fallback>
                     {getInitials(msg.sender.fio, msg.sender.username)}
                   </Avatar.Fallback>
+                  {msg.sender.avatarUrl && (
+                    <Avatar.Image src={msg.sender.avatarUrl} />
+                  )}
                 </Avatar.Root>
               )}
               <Menu.Root>
@@ -171,10 +168,10 @@ export function ChatMessageList({
                     {msg.attachments && msg.attachments.length > 0 && (
                       <VStack gap={2} mt={2} align="stretch">
                         {msg.attachments.map((att) => (
-                          <AttachmentItem 
-                            key={att.id} 
-                            attachment={att} 
-                            isOwn={isOwn} 
+                          <AttachmentItem
+                            key={att.id}
+                            attachment={att}
+                            isOwn={isOwn}
                           />
                         ))}
                       </VStack>
