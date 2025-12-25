@@ -33,7 +33,7 @@ export function useDashboardQuery(): UseDashboardQueryReturn {
     queryKey: queryKeys.reports.ticketsByStatus(),
     queryFn: async (): Promise<DashboardStats> => {
       const [statusStats, pendingCount] = await Promise.all([
-        reportsApi.getTicketsByStatus(),
+        reportsApi.getStatsByStatus(),
         isSpecialist ? assignmentApi.getPendingCount() : Promise.resolve(0),
       ]);
 
