@@ -122,7 +122,7 @@ export function ClosureConfirmationDialog({
         <Portal>
           <Dialog.Backdrop />
           <Dialog.Positioner>
-            <Dialog.Content maxW="md">
+            <Dialog.Content maxW="lg">
               <Dialog.Header>
                 <HStack gap={2}>
                   <Box color="cyan.500">
