@@ -137,11 +137,11 @@ export default function AllTicketsReportPage() {
                 Всего тикетов
               </Text>
               <Text fontSize="lg" fontWeight="semibold" color="fg.default">
-                {data.totalElements.toLocaleString("ru-RU")}
+                {(data.totalElements ?? 0).toLocaleString("ru-RU")}
               </Text>
             </VStack>
             <Text fontSize="sm" color="fg.muted">
-              Страница {page + 1} из {data.totalPages}
+              Страница {page + 1} из {data.totalPages ?? 1}
             </Text>
           </HStack>
 
