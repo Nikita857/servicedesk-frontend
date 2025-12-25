@@ -13,6 +13,7 @@ interface AuthState {
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
   setHydrated: () => void;
+  updateUserAvatar: (avatarUrl: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -56,6 +57,13 @@ export const useAuthStore = create<AuthState>()(
       setHydrated: () => {
         set({ isHydrated: true });
       },
+
+      updateUserAvatar: (avatarUrl: string | null) => {
+        const { user } = get();
+        if (user) {
+          set({ user: { ...user, avatarUrl } });
+        }
+      },
     }),
     {
       name: 'auth-storage',
@@ -71,4 +79,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-

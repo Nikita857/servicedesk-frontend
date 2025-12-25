@@ -18,6 +18,7 @@ export interface UserShort {
   id: number;
   username: string;
   fio: string | null;
+  avatarUrl: string | null;
 }
 
 export interface CategoryShort {

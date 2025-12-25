@@ -5,6 +5,7 @@ export interface User {
   username: string;
   fio: string | null;
   telegramId: number | null;
+  avatarUrl: string | null;
   specialist: boolean;
   roles: string[];
   active: boolean;
