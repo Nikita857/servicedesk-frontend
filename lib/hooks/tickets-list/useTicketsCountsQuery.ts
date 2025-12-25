@@ -44,7 +44,7 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
 
       // Fetch all data in parallel
       const [statusStats, pendingCount, assignedTickets] = await Promise.all([
-        reportsApi.getTicketsByStatus(),
+        reportsApi.getStatsByStatus(),
         assignmentApi.getPendingCount(),
         ticketApi.listAssigned(0, 100), // Get assigned tickets for accurate counts
       ]);
