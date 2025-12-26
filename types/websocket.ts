@@ -44,7 +44,7 @@ export interface AttachmentWS {
   url: string;
   fileSize: number;
   mimeType: string;
-  type: 'PHOTO' | 'SCREENSHOT' | 'VIDEO' | 'DOCUMENT';
+  type: "PHOTO" | "SCREENSHOT" | "VIDEO" | "DOCUMENT";
   ticketId: number;
   messageId: number | null;
   uploadedById: number;
@@ -60,12 +60,12 @@ export interface AttachmentWS {
 export interface TicketUpdatePayload {
   ticketId: number;
   eventType:
-    | 'created'
-    | 'updated'
-    | 'deleted'
-    | 'taken'
-    | 'assigned'
-    | 'status_changed';
+    | "created"
+    | "updated"
+    | "deleted"
+    | "taken"
+    | "assigned"
+    | "status_changed";
 }
 
 // ==================== Callback Types ====================
@@ -80,4 +80,38 @@ export interface ChatWebSocketCallbacks {
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: string) => void;
+}
+
+// ==================== Assignment Types ====================
+
+/**
+ * Назначение, полученное через WebSocket
+ * Соответствует AssignmentResponse с бэкенда
+ */
+export interface AssignmentWS {
+  id: number;
+  ticketId: number;
+  ticketTitle: string;
+  fromLine?: {
+    id: number;
+    name: string;
+  } | null;
+  toLine: {
+    id: number;
+    name: string;
+  };
+  fromUser?: {
+    id: number;
+    username: string;
+    fio: string | null;
+  } | null;
+  toUser?: {
+    id: number;
+    username: string;
+    fio: string | null;
+  } | null;
+  mode: "DIRECT" | "LINE";
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  note: string | null;
+  createdAt: string;
 }

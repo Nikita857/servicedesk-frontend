@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { useAuthStore } from "@/stores";
 import { toast } from "@/lib/utils";
-import { Ticket } from "@/types/ticket";
+import { AssignmentWS } from "@/types/websocket";
 
 /**
  * Хук для подписки на real-time назначения тикетов.
@@ -17,11 +17,11 @@ export function useAssignmentsWebSocket() {
   const queryClient = useQueryClient();
 
   const handleNewAssignment = useCallback(
-    (ticket: Ticket) => {
+    (assignment: AssignmentWS) => {
       // Показываем тост с информацией о новом назначении
       toast.info(
         "Новое назначение",
-        `Вам назначен тикет #${ticket.id}: ${ticket.title}`
+        `Вам назначен тикет #${assignment.ticketId}: ${assignment.ticketTitle}`
       );
 
       // Инвалидируем список тикетов чтобы обновить UI

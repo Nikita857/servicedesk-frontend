@@ -1,148 +1,160 @@
-# WebSocket маршруты (Ticket)
+# Assignment Notification Flow
+
+## Обзор
+
+При создании назначения (assignment) система отправляет real-time уведомления получателям через WebSocket.
 
 ## Архитектура
 
 ```
-┌─────────────────┐      ┌──────────────────┐      ┌─────────────┐      ┌──────────────┐
-│  TicketService  │─────▶│ TicketEventPub   │─────▶│  RabbitMQ   │─────▶│ EventConsumer│
-│ AttachmentSvc   │      │   (Producer)     │      │    Queue    │      │  (WebSocket) │
-│ MessageWSCtrl   │      └──────────────────┘      └─────────────┘      └──────┬───────┘
-└─────────────────┘                                                            │
-                                                                               ▼
-                                                                    ┌──────────────────┐
-                                                                    │  Frontend Client │
-                                                                    │   (WebSocket)    │
-                                                                    └──────────────────┘
+┌─────────────────┐     ┌─────────────┐     ┌────────────────────┐     ┌──────────────┐
+│ AssignmentService│ ──► │  RabbitMQ   │ ──► │ TicketEventConsumer │ ──► │  WebSocket   │
+│ createAssignment│     │   Queue     │     │ handleAssignment... │     │  /user/...   │
+└─────────────────┘     └─────────────┘     └────────────────────┘     └──────────────┘
 ```
 
----
+## Поток данных
 
-## Каналы подписки (Subscribe)
+### 1. Создание назначения (Backend)
 
-| Канал                                | Описание                 | Данные                        |
-| ------------------------------------ | ------------------------ | ----------------------------- |
-| `/topic/ticket/new`                  | Новый тикет создан       | `TicketResponse`              |
-| `/topic/ticket/{id}`                 | Обновление тикета        | `TicketResponse`              |
-| `/topic/ticket/{id}/messages`        | Сообщения чата           | `ChatMessage`                 |
-| `/topic/ticket/{id}/typing`          | Индикатор печати         | `TypingIndicator`             |
-| `/topic/ticket/{id}/deleted`         | Тикет удалён             | `{ id: Long, deleted: true }` |
-| `/topic/ticket/{id}/attachments`     | Вложение добавлено       | `AttachmentResponse`          |
-| `/topic/ticket/{id}/internal`        | Внутренний комментарий   | `ChatMessage`                 |
-| `/topic/sla/breach`                  | SLA нарушен              | `TicketResponse`              |
-| `/topic/user/{userId}/notifications` | Уведомления пользователю | `Notification`                |
+**Файл:** `AssignmentService.java`
 
----
+```java
+// После сохранения назначения:
 
-## Каналы отправки (App)
+// 1. Уведомление подписчикам тикета (broadcast)
+ticketEventPublisher.publishAssigned(ticket.getId(), assignedById, ticketMapper.toResponse(ticket));
 
-| Канал                     | Описание            | Данные               |
-| ------------------------- | ------------------- | -------------------- |
-| `/app/ticket/{id}/send`   | Отправить сообщение | `SendMessageRequest` |
-| `/app/ticket/{id}/typing` | Печатает...         | `TypingIndicator`    |
-
----
-
-## RabbitMQ Events
-
-| Тип события        | Producer                               | Описание               |
-| ------------------ | -------------------------------------- | ---------------------- |
-| `CREATED`          | TicketService.createTicket             | Тикет создан           |
-| `UPDATED`          | TicketService.updateTicket             | Тикет обновлён         |
-| `STATUS_CHANGED`   | TicketService.changeStatus             | Статус изменён         |
-| `ASSIGNED`         | TicketService.takeTicket, assignToLine | Назначение             |
-| `RATED`            | TicketService.rateTicket               | Оценка поставлена      |
-| `DELETED`          | TicketService.deleteTicket             | Тикет удалён           |
-| `MESSAGE_SENT`     | MessageWebSocketController             | Новое сообщение        |
-| `ATTACHMENT_ADDED` | AttachmentService                      | Вложение добавлено     |
-| `INTERNAL_COMMENT` | (reserved)                             | Внутренний комментарий |
-| `SLA_BREACH`       | (reserved)                             | SLA нарушен            |
-
----
-
-## Методы, публикующие события через RabbitMQ
-
-### TicketService
-
-| Метод          | Событие RabbitMQ | WebSocket канал              |
-| -------------- | ---------------- | ---------------------------- |
-| `createTicket` | CREATED          | `/topic/ticket/new`          |
-| `updateTicket` | UPDATED          | `/topic/ticket/{id}`         |
-| `changeStatus` | STATUS_CHANGED   | `/topic/ticket/{id}`         |
-| `takeTicket`   | ASSIGNED         | `/topic/ticket/{id}`         |
-| `rateTicket`   | RATED            | `/topic/ticket/{id}`         |
-| `assignToLine` | ASSIGNED         | `/topic/ticket/{id}`         |
-| `deleteTicket` | DELETED          | `/topic/ticket/{id}/deleted` |
-
-### AttachmentService
-
-| Метод             | Событие RabbitMQ | WebSocket канал                  |
-| ----------------- | ---------------- | -------------------------------- |
-| `uploadToTicket`  | ATTACHMENT_ADDED | `/topic/ticket/{id}/attachments` |
-| `uploadToMessage` | ATTACHMENT_ADDED | `/topic/ticket/{id}/attachments` |
-
-### MessageWebSocketController
-
-| Метод                    | Событие RabbitMQ | WebSocket канал               |
-| ------------------------ | ---------------- | ----------------------------- |
-| `sendMessage` (public)   | MESSAGE_SENT     | `/topic/ticket/{id}/messages` |
-| `sendMessage` (internal) | — (direct WS)    | `/queue/ticket/{id}`          |
-| `sendTypingIndicator`    | — (direct WS)    | `/topic/ticket/{id}/typing`   |
-
----
-
-## Конфигурация RabbitMQ
-
-```yaml
-# application.yml
-spring:
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
+// 2. Персональное уведомление получателю
+if (saved.getToUser() != null) {
+    // Прямое назначение конкретному специалисту
+    ticketEventPublisher.publishAssignmentCreated(
+            ticket.getId(),
+            saved.getToUser().getId(),
+            assignmentMapper.toResponse(saved));
+} else {
+    // Назначение на линию - всем специалистам линии
+    toLine.getSpecialists().forEach(specialist ->
+            ticketEventPublisher.publishAssignmentCreated(
+                    ticket.getId(),
+                    specialist.getId(),
+                    assignmentMapper.toResponse(saved)));
+}
 ```
 
-| Параметр    | Значение                     |
-| ----------- | ---------------------------- |
-| Exchange    | `servicedesk.events` (Topic) |
-| Queue       | `servicedesk.ticket.events`  |
-| Routing Key | `ticket.#`                   |
+### 2. Публикация события (TicketEventPublisher)
 
----
+**Файл:** `TicketEventPublisher.java`
 
-## Пример подписки (JavaScript)
+```java
+public void publishAssignmentCreated(Long ticketId, Long toUserId, Object payload) {
+    publish(TicketEvent.assignedToUser(ticketId, toUserId, payload));
+}
+```
 
-```javascript
+**Событие:**
+
+```java
+TicketEvent.of(TicketEventType.ASSIGNMENT_CREATED, ticketId, toUserId, payload)
+```
+
+### 3. RabbitMQ Routing
+
+- **Exchange:** `ticket.exchange`
+- **Routing Key:** `ticket.assignment_created`
+- **Queue:** `ticket.queue`
+
+### 4. Обработка события (TicketEventConsumer)
+
+**Файл:** `TicketEventConsumer.java`
+
+```java
+private void handleAssignmentCreated(TicketEvent event) {
+    String destination = "/queue/assignments";
+    messagingTemplate.convertAndSendToUser(
+            event.userId().toString(),  // ID получателя
+            destination,
+            event.payload());
+}
+```
+
+### 5. WebSocket Destination
+
+| Метод                                         | Назначение                                     |
+| --------------------------------------------- | ---------------------------------------------- |
+| `convertAndSendToUser(userId, dest, payload)` | Персональная отправка конкретному пользователю |
+
+**Итоговый путь для пользователя с ID `123`:**
+
+```
+/user/123/queue/assignments
+```
+
+## Подписка на Frontend
+
+### React/TypeScript
+
+```typescript
 import { Client } from "@stomp/stompjs";
 
 const client = new Client({
   brokerURL: "ws://localhost:8080/ws",
-  onConnect: () => {
-    // Подписка на новые тикеты
-    client.subscribe("/topic/ticket/new", (message) => {
-      const ticket = JSON.parse(message.body);
-      console.log("Новый тикет:", ticket);
-    });
-
-    // Подписка на обновления конкретного тикета
-    client.subscribe("/topic/ticket/123", (message) => {
-      const ticket = JSON.parse(message.body);
-      console.log("Тикет обновлён:", ticket);
-    });
-
-    // Подписка на сообщения чата тикета
-    client.subscribe("/topic/ticket/123/messages", (message) => {
-      const chatMessage = JSON.parse(message.body);
-      console.log("Новое сообщение:", chatMessage);
-    });
-
-    // Подписка на вложения
-    client.subscribe("/topic/ticket/123/attachments", (message) => {
-      const attachment = JSON.parse(message.body);
-      console.log("Новое вложение:", attachment);
-    });
-  },
+  // ...
 });
 
-client.activate();
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+client.onConnect = () => {
+  // Подписка на персональные уведомления о назначениях
+  client.subscribe("/user/queue/assignments", (message) => {
+    const assignment = JSON.parse(message.body);
+    console.log("New assignment:", assignment);
+    // Обновить UI, показать уведомление
+  });
+};
+```
+
+## Payload (AssignmentResponse)
+
+```json
+{
+  "id": 1,
+  "ticketId": 42,
+  "ticketTitle": "Проблема с принтером",
+  "fromLine": {
+    "id": 1,
+    "name": "1C Support"
+  },
+  "toLine": {
+    "id": 2,
+    "name": "Sysadmin"
+  },
+  "fromUser": {
+    "id": 5,
+    "username": "support1",
+    "fio": "Иванов И.И."
+  },
+  "toUser": {
+    "id": 10,
+    "username": "admin1",
+    "fio": "Петров П.П."
+  },
+  "mode": "DIRECT",
+  "status": "PENDING",
+  "note": "Срочно нужна помощь",
+  "createdAt": "2025-12-26T08:30:00Z"
+}
+```
+
+## Типы событий
+
+| Тип                  | Назначение                   | WebSocket Path                     |
+| -------------------- | ---------------------------- | ---------------------------------- |
+| `ASSIGNED`           | Broadcast подписчикам тикета | `/topic/ticket/{ticketId}`         |
+| `ASSIGNMENT_CREATED` | Персональное уведомление     | `/user/{userId}/queue/assignments` |
+
+## Связанные файлы
+
+- `TicketEventType.java` - Enum типов событий
+- `TicketEvent.java` - Record события
+- `TicketEventPublisher.java` - Публикация в RabbitMQ
+- `TicketEventConsumer.java` - Обработка и отправка в WebSocket
+- `AssignmentService.java` - Бизнес-логика назначений

@@ -18,6 +18,7 @@ import type {
   ChatMessageWS,
   TypingIndicator,
   AttachmentWS,
+  AssignmentWS,
 } from "@/types/websocket";
 
 // Re-export types for convenience
@@ -82,7 +83,9 @@ interface WebSocketContextValue {
     callback: (notification: Notification) => void
   ) => () => void;
   // Assignment subscription (user-specific queue)
-  subscribeToAssignments: (callback: (ticket: Ticket) => void) => () => void;
+  subscribeToAssignments: (
+    callback: (assignment: AssignmentWS) => void
+  ) => () => void;
 }
 
 // ==================== Context ====================
@@ -324,13 +327,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   );
 
   const subscribeToAssignments = useCallback(
-    (callback: (ticket: Ticket) => void) => {
+    (callback: (assignment: AssignmentWS) => void) => {
       // User-specific queue - STOMP client handles /user prefix automatically
       return subscribe("/user/queue/assignments", (message) => {
         try {
-          const ticket: Ticket = JSON.parse(message.body);
-          console.log("[WS] Получено новое назначение:", ticket);
-          callback(ticket);
+          const assignment: AssignmentWS = JSON.parse(message.body);
+          console.log("[WS] Получено новое назначение:", assignment);
+          callback(assignment);
         } catch (e) {
           console.error("[WS] Ошибка подписки на назначения: ", e);
         }
