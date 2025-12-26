@@ -86,6 +86,9 @@ interface WebSocketContextValue {
   subscribeToAssignments: (
     callback: (assignment: AssignmentWS) => void
   ) => () => void;
+  subscribeToAssignmentRejected: (
+    callback: (assignment: AssignmentWS) => void
+  ) => () => void;
 }
 
 // ==================== Context ====================
@@ -342,6 +345,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     [subscribe]
   );
 
+  const subscribeToAssignmentRejected = useCallback(
+    (callback: (assignment: AssignmentWS) => void) => {
+      return subscribe("/user/queue/assignments/rejected", (message) => {
+        try {
+          const assignment: AssignmentWS = JSON.parse(message.body);
+          console.log("[WS] Назначение отклонено:", assignment);
+          callback(assignment);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на отклонение назначения: ", e);
+        }
+      });
+    },
+    [subscribe]
+  );
+
   // ==================== Send Methods ====================
 
   const sendMessage = useCallback(
@@ -382,6 +400,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     subscribeToSlaBreach,
     subscribeToUserNotifications,
     subscribeToAssignments,
+    subscribeToAssignmentRejected,
     sendMessage,
     sendTyping,
     subscribeToChatMessages,

@@ -9,10 +9,11 @@ import { AssignmentWS } from "@/types/websocket";
 
 /**
  * Хук для подписки на real-time назначения тикетов.
- * Показывает тост и обновляет список тикетов при получении нового назначения.
+ * Показывает тост и обновляет список тикетов при получении нового назначения или отклонения.
  */
 export function useAssignmentsWebSocket() {
-  const { subscribeToAssignments, isConnected } = useWebSocket();
+  const { subscribeToAssignments, subscribeToAssignmentRejected, isConnected } =
+    useWebSocket();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -31,6 +32,29 @@ export function useAssignmentsWebSocket() {
     [queryClient]
   );
 
+  const handleAssignmentRejected = useCallback(
+    (assignment: AssignmentWS) => {
+      // Показываем тост об отклонении
+      const rejectedBy =
+        assignment.toUser?.fio ||
+        assignment.toUser?.username ||
+        assignment.toLine?.name ||
+        "Специалист";
+      toast.error(
+        "Назначение отклонено",
+        `${rejectedBy} отклонил назначение на тикет #${assignment.ticketId}: ${assignment.ticketTitle}`
+      );
+
+      // Инвалидируем данные тикета чтобы обновить UI (rejection alert в сайдбаре)
+      queryClient.invalidateQueries({
+        queryKey: ["ticket", assignment.ticketId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["ticketsCount"] });
+    },
+    [queryClient]
+  );
+
   useEffect(() => {
     // Подписываемся только если есть подключение и пользователь - специалист
     if (!isConnected || !user?.specialist) {
@@ -38,16 +62,22 @@ export function useAssignmentsWebSocket() {
     }
 
     console.log("[Assignments WS] Подписка на назначения");
-    const unsubscribe = subscribeToAssignments(handleNewAssignment);
+    const unsubscribeNew = subscribeToAssignments(handleNewAssignment);
+    const unsubscribeRejected = subscribeToAssignmentRejected(
+      handleAssignmentRejected
+    );
 
     return () => {
       console.log("[Assignments WS] Отписка от назначений");
-      unsubscribe();
+      unsubscribeNew();
+      unsubscribeRejected();
     };
   }, [
     isConnected,
     user?.specialist,
     subscribeToAssignments,
+    subscribeToAssignmentRejected,
     handleNewAssignment,
+    handleAssignmentRejected,
   ]);
 }

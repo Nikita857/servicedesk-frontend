@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useState } from "react";
+import { use, useCallback } from "react";
 import {
   Box,
   Flex,
@@ -25,6 +25,7 @@ import {
   ClosureConfirmationDialog,
   TicketChat,
 } from "@/components/features/tickets";
+import AssignmentPanel from "@/components/features/tickets/AssignmentPanel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -37,8 +38,6 @@ export default function TicketDetailPage({ params }: PageProps) {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const canEscalate = isSpecialist;
-
-  const [showHistory, setShowHistory] = useState(false);
 
   // ==================== React Query Hooks ====================
   const {
@@ -170,18 +169,18 @@ export default function TicketDetailPage({ params }: PageProps) {
           <Box mt={6}>
             <TicketChat ticketId={ticket.id} ticketStatus={ticket.status} />
           </Box>
+
+          {/* Assignment Panel - under chat */}
+          <AssignmentPanel
+            currentAssignment={currentAssignment}
+            assignmentHistory={assignmentHistory}
+            isSpecialist={isSpecialist}
+          />
         </GridItem>
 
         {/* Sidebar */}
         <GridItem>
-          <TicketSidebar
-            ticket={ticket}
-            currentAssignment={currentAssignment}
-            isSpecialist={isSpecialist}
-            assignmentHistory={assignmentHistory}
-            showHistory={showHistory}
-            setShowHistory={setShowHistory}
-          />
+          <TicketSidebar ticket={ticket} />
         </GridItem>
       </Grid>
     </Box>

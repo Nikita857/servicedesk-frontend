@@ -1,9 +1,7 @@
 import { Ticket } from "@/types";
 import { formatDate, formatDuration } from "@/lib/utils";
 import {
-  Badge,
   Box,
-  Button,
   Heading,
   HStack,
   Separator,
@@ -13,31 +11,16 @@ import {
 import {
   LuCircleX,
   LuClock,
-  LuForward,
-  LuHistory,
   LuMessageSquare,
   LuPaperclip,
   LuUser,
 } from "react-icons/lu";
-import { Assignment } from "@/lib/api/assignments";
 
 interface TicketSidebarProps {
   ticket: Ticket;
-  currentAssignment: Assignment | null;
-  isSpecialist: boolean;
-  assignmentHistory: Assignment[];
-  showHistory: boolean;
-  setShowHistory: (arg: boolean) => void;
 }
 
-export default function TicketSidebar({
-  ticket,
-  currentAssignment,
-  isSpecialist,
-  assignmentHistory,
-  showHistory,
-  setShowHistory,
-}: TicketSidebarProps) {
+export default function TicketSidebar({ ticket }: TicketSidebarProps) {
   return (
     <VStack gap={4} align="stretch">
       {/* Rejection Alert - shown when last assignment was rejected */}
@@ -72,8 +55,7 @@ export default function TicketSidebar({
               "—"}
           </Text>
           <Text fontSize="xs" color="red.500">
-              Дата: {" "}
-              {formatDate(ticket.lastAssignment.rejectedAt || "")}
+            Дата: {formatDate(ticket.lastAssignment.rejectedAt || "")}
           </Text>
         </Box>
       )}
@@ -206,115 +188,6 @@ export default function TicketSidebar({
           )}
         </VStack>
       </Box>
-
-      {/* Current Assignment */}
-      {currentAssignment && (
-        <Box
-          bg="blue.50"
-          borderRadius="xl"
-          borderWidth="1px"
-          borderColor="blue.200"
-          p={4}
-          _dark={{ bg: "blue.900/20", borderColor: "blue.700" }}
-        >
-          <HStack mb={2}>
-            <LuForward size={16} />
-            <Text fontWeight="medium" fontSize="sm">
-              Текущее назначение
-            </Text>
-          </HStack>
-          <VStack align="stretch" gap={2} fontSize="sm">
-            <Text>
-              <Text as="span" color="fg.muted">
-                Кому:{" "}
-              </Text>
-              {currentAssignment.toFio ||
-                currentAssignment.toUsername ||
-                currentAssignment.toLineName}
-            </Text>
-            {currentAssignment.fromFio && (
-              <Text>
-                <Text as="span" color="fg.muted">
-                  От:{" "}
-                </Text>
-                {currentAssignment.fromFio || currentAssignment.fromUsername}
-              </Text>
-            )}
-            <Text>
-              <Text as="span" color="fg.muted">
-                Комментарий:{" "}
-              </Text>
-              {currentAssignment.note}
-            </Text>
-            <Badge
-              size="sm"
-              colorPalette={
-                currentAssignment.status === "ACCEPTED"
-                  ? "green"
-                  : currentAssignment.status === "REJECTED"
-                  ? "red"
-                  : "yellow"
-              }
-            >
-              {currentAssignment.status === "ACCEPTED"
-                ? "Принято"
-                : currentAssignment.status === "REJECTED"
-                ? "Отклонено"
-                : "Ожидает"}
-            </Badge>
-          </VStack>
-        </Box>
-      )}
-      {/* Assignment History - only for specialists */}
-      {isSpecialist && assignmentHistory.length > 0 && (
-        <Box
-          bg="bg.surface"
-          borderRadius="xl"
-          borderWidth="1px"
-          borderColor="border.default"
-          p={4}
-        >
-          <HStack justify="space-between" mb={2}>
-            <HStack>
-              <LuHistory size={16} />
-              <Text fontWeight="medium" fontSize="sm">
-                История назначений ({assignmentHistory.length})
-              </Text>
-            </HStack>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => setShowHistory(!showHistory)}
-            >
-              {showHistory ? "Скрыть" : "Показать"}
-            </Button>
-          </HStack>
-
-          {showHistory && (
-            <VStack align="stretch" gap={3} mt={3}>
-              {assignmentHistory.map((a) => (
-                <Box
-                  key={a.id}
-                  p={2}
-                  bg="bg.subtle"
-                  borderRadius="md"
-                  fontSize="xs"
-                >
-                  <HStack justify="space-between" mb={1}>
-                    <Text fontWeight="medium">{a.toLineName}</Text>
-                    <Text color="fg.muted">{formatDate(a.createdAt)}</Text>
-                  </HStack>
-                  {a.note && (
-                    <Text color="fg.muted" lineClamp={2}>
-                      {a.note}
-                    </Text>
-                  )}
-                </Box>
-              ))}
-            </VStack>
-          )}
-        </Box>
-      )}
     </VStack>
   );
 }
