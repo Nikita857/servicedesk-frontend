@@ -26,14 +26,14 @@ export function useAuth() {
       return { success: true };
     } catch (error: unknown) {
       setIsLoggingIn(false);
-      
+
       let message = 'Ошибка авторизации';
       if (error instanceof AxiosError) {
         message = error.response?.data.message;
       }
-      
+
       toast.error('Ошибка входа', message);
-      
+
       return { success: false, error: message };
     }
   }, [setAuth, router]);

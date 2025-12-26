@@ -12,7 +12,7 @@ import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
-import { Ticket } from "@/types/ticket";
+import { Ticket, LastAssignment } from "@/types/ticket";
 import { Notification } from "@/types/notification";
 import type {
   ChatMessageWS,
@@ -81,6 +81,8 @@ interface WebSocketContextValue {
     userId: number,
     callback: (notification: Notification) => void
   ) => () => void;
+  // Assignment subscription (user-specific queue)
+  subscribeToAssignments: (callback: (ticket: Ticket) => void) => () => void;
 }
 
 // ==================== Context ====================
@@ -311,7 +313,26 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const notification: Notification = JSON.parse(message.body);
           callback(notification);
         } catch (e) {
-          console.error("[WS] Ошибка подписки на уведомления пользователя: ", e);
+          console.error(
+            "[WS] Ошибка подписки на уведомления пользователя: ",
+            e
+          );
+        }
+      });
+    },
+    [subscribe]
+  );
+
+  const subscribeToAssignments = useCallback(
+    (callback: (ticket: Ticket) => void) => {
+      // User-specific queue - STOMP client handles /user prefix automatically
+      return subscribe("/user/queue/assignments", (message) => {
+        try {
+          const ticket: Ticket = JSON.parse(message.body);
+          console.log("[WS] Получено новое назначение:", ticket);
+          callback(ticket);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на назначения: ", e);
         }
       });
     },
@@ -357,6 +378,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     subscribeToTicketDeleted,
     subscribeToSlaBreach,
     subscribeToUserNotifications,
+    subscribeToAssignments,
     sendMessage,
     sendTyping,
     subscribeToChatMessages,

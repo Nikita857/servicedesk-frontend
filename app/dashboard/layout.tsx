@@ -16,6 +16,7 @@ import { Sidebar } from "@/components/features/layout/Sidebar";
 import { Header } from "@/components/features/layout/Header";
 import { WebSocketProvider } from "@/lib/providers";
 import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
+import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -54,6 +55,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <WebSocketProvider>
       {/* Подписка на уведомления через централизованный WebSocket */}
       <NotificationSubscriber />
+      {/* Подписка на назначения тикетов (для специалистов) */}
+      <AssignmentSubscriber />
 
       <Flex h="100vh" bg="bg.canvas">
         {/* Desktop Sidebar - hidden on mobile */}
