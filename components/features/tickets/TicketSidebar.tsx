@@ -71,6 +71,10 @@ export default function TicketSidebar({
               ticket.lastAssignment.toUsername ||
               "—"}
           </Text>
+          <Text fontSize="xs" color="red.500">
+              Дата: {" "}
+              {formatDate(ticket.lastAssignment.rejectedAt || "")}
+          </Text>
         </Box>
       )}
 
@@ -261,66 +265,6 @@ export default function TicketSidebar({
           </VStack>
         </Box>
       )}
-
-      {/* Информация об отклонении переадресации - видит только отправитель */}
-      {isSpecialist && ticket.lastAssignment?.status === "REJECTED" && (
-        <Box
-          bg="red.50"
-          borderRadius="xl"
-          borderWidth="1px"
-          borderColor="red.200"
-          p={4}
-          _dark={{ bg: "red.900/20", borderColor: "red.700" }}
-        >
-          <HStack mb={2}>
-            <LuCircleX size={16} color="var(--chakra-colors-red-500)" />
-            <Text
-              fontWeight="medium"
-              fontSize="sm"
-              color="red.600"
-              _dark={{ color: "red.400" }}
-            >
-              Назначение отклонено
-            </Text>
-          </HStack>
-          <VStack align="stretch" gap={2} fontSize="sm">
-            <Text>
-              <Text as="span" color="fg.muted">
-                Отклонил:{" "}
-              </Text>
-              {ticket.lastAssignment.toFio || ticket.lastAssignment.toUsername}
-            </Text>
-            {ticket.lastAssignment.rejectedAt && (
-              <Text>
-                <Text as="span" color="fg.muted">
-                  Дата:{" "}
-                </Text>
-                {new Date(ticket.lastAssignment.rejectedAt).toLocaleString(
-                  "ru-RU"
-                )}
-              </Text>
-            )}
-            {ticket.lastAssignment.rejectedReason && (
-              <Box>
-                <Text color="fg.muted" mb={1}>
-                  Причина:
-                </Text>
-                <Text
-                  bg="white"
-                  p={2}
-                  borderRadius="md"
-                  borderWidth="1px"
-                  borderColor="red.100"
-                  _dark={{ bg: "red.900/40", borderColor: "red.600" }}
-                >
-                  {ticket.lastAssignment.rejectedReason}
-                </Text>
-              </Box>
-            )}
-          </VStack>
-        </Box>
-      )}
-
       {/* Assignment History - only for specialists */}
       {isSpecialist && assignmentHistory.length > 0 && (
         <Box
