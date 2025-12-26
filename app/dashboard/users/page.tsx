@@ -23,6 +23,7 @@ import {
   DialogCloseTrigger,
   Switch,
   Field,
+  Icon,
 } from "@chakra-ui/react";
 import {
   LuPlus,
@@ -36,6 +37,7 @@ import {
   LuShield,
   LuChevronLeft,
   LuChevronRight,
+  LuCross,
 } from "react-icons/lu";
 import { useAuthStore } from "@/stores";
 import {
@@ -401,12 +403,20 @@ export default function UsersPage() {
                     <Table.Cell>
                       <HStack>
                         <Switch.Root
+                          colorPalette="blue"
+                          size="lg"
                           checked={u.active}
                           onCheckedChange={() => handleToggleActive(u)}
-                          colorPalette="green"
-                          size="sm"
                         >
-                          <Switch.Thumb />
+                          <Switch.HiddenInput />
+                          <Switch.Control>
+                            <Switch.Thumb />
+                            <Switch.Indicator
+                              fallback={<Icon as={LuCheck} color="gray.400" />}
+                            >
+                              <Icon as={LuCross} color="yellow.400" />
+                            </Switch.Indicator>
+                          </Switch.Control>
                         </Switch.Root>
                         <Text
                           fontSize="sm"
