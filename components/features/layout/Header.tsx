@@ -76,19 +76,6 @@ export function Header({ onMenuClick }: HeaderProps) {
           >
             <LuMenu size={20} />
           </IconButton>
-
-          {/* Role badge with tooltip */}
-          <Box display={{ base: "none", sm: "block" }}>
-            <Tooltip
-              content={roleBadgeInfo.description}
-              showArrow
-              positioning={{ placement: "bottom" }}
-            >
-              <Badge colorPalette={roleBadgeInfo.color} cursor="help">
-                {roleBadgeInfo.name}
-              </Badge>
-            </Tooltip>
-          </Box>
         </HStack>
 
         {/* Right side: activity status, notifications & profile */}
@@ -127,14 +114,32 @@ export function Header({ onMenuClick }: HeaderProps) {
                   <Avatar.Fallback name={user?.fio || user?.username} />
                   {user?.avatarUrl && <Avatar.Image src={user.avatarUrl} />}
                 </Avatar.Root>
-                <Text
-                  fontSize="sm"
-                  fontWeight="medium"
-                  color="fg.default"
-                  display={{ base: "none", md: "block" }}
-                >
-                  {user?.fio || user?.username}
-                </Text>
+
+                {/* Name and role - desktop layout */}
+                <Box display={{ base: "none", md: "block" }}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight="medium"
+                    color="fg.default"
+                    lineHeight="1.2"
+                  >
+                    {user?.fio || user?.username}
+                  </Text>
+                  <Tooltip
+                    content={roleBadgeInfo.description}
+                    showArrow
+                    positioning={{ placement: "bottom" }}
+                  >
+                    <Badge
+                      colorPalette={roleBadgeInfo.color}
+                      cursor="help"
+                      size="xs"
+                    >
+                      {roleBadgeInfo.name}
+                    </Badge>
+                  </Tooltip>
+                </Box>
+
                 <LuChevronDown
                   size={16}
                   color="var(--chakra-colors-fg-muted)"

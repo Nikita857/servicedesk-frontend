@@ -48,8 +48,8 @@ export function ActivityStatusDropdown() {
       <Menu.Trigger asChild>
         <Flex
           align="center"
-          gap={2}
-          px={3}
+          gap={{ base: 0, md: 2 }}
+          px={{ base: 2, md: 3 }}
           py={1.5}
           borderRadius="lg"
           cursor="pointer"
@@ -61,11 +61,19 @@ export function ActivityStatusDropdown() {
           {/* Status indicator dot */}
           <Circle size="10px" bg={`${currentConfig.color}.500`} />
 
-          <Text fontSize="sm" fontWeight="medium" color="fg.default">
+          {/* Status text - hidden on mobile */}
+          <Text
+            fontSize="sm"
+            fontWeight="medium"
+            color="fg.default"
+            display={{ base: "none", md: "block" }}
+          >
             {currentConfig.label}
           </Text>
 
-          <LuChevronDown size={14} color="var(--chakra-colors-fg-muted)" />
+          <Box display={{ base: "none", md: "block" }}>
+            <LuChevronDown size={14} color="var(--chakra-colors-fg-muted)" />
+          </Box>
         </Flex>
       </Menu.Trigger>
 
