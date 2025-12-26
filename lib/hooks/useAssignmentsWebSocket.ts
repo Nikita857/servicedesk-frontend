@@ -56,14 +56,15 @@ export function useAssignmentsWebSocket() {
   );
 
   useEffect(() => {
-    // Подписываемся только если есть подключение и пользователь - специалист
-    if (!isConnected || !user?.specialist) {
+    // Подписываемся только если есть подключение, userId и пользователь - специалист
+    if (!isConnected || !user?.id || !user?.specialist) {
       return;
     }
 
-    console.log("[Assignments WS] Подписка на назначения");
-    const unsubscribeNew = subscribeToAssignments(handleNewAssignment);
+    console.log("[Assignments WS] Подписка на назначения для userId:", user.id);
+    const unsubscribeNew = subscribeToAssignments(user.id, handleNewAssignment);
     const unsubscribeRejected = subscribeToAssignmentRejected(
+      user.id,
       handleAssignmentRejected
     );
 

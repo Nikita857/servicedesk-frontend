@@ -82,11 +82,13 @@ interface WebSocketContextValue {
     userId: number,
     callback: (notification: Notification) => void
   ) => () => void;
-  // Assignment subscription (user-specific queue)
+  // Assignment subscriptions (user-specific topics)
   subscribeToAssignments: (
+    userId: number,
     callback: (assignment: AssignmentWS) => void
   ) => () => void;
   subscribeToAssignmentRejected: (
+    userId: number,
     callback: (assignment: AssignmentWS) => void
   ) => () => void;
 }
@@ -330,9 +332,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   );
 
   const subscribeToAssignments = useCallback(
-    (callback: (assignment: AssignmentWS) => void) => {
-      // User-specific queue - STOMP client handles /user prefix automatically
-      return subscribe("/user/queue/assignments", (message) => {
+    (userId: number, callback: (assignment: AssignmentWS) => void) => {
+      return subscribe(`/topic/user/${userId}/assignments`, (message) => {
         try {
           const assignment: AssignmentWS = JSON.parse(message.body);
           console.log("[WS] Получено новое назначение:", assignment);
@@ -346,16 +347,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   );
 
   const subscribeToAssignmentRejected = useCallback(
-    (callback: (assignment: AssignmentWS) => void) => {
-      return subscribe("/user/queue/assignments/rejected", (message) => {
-        try {
-          const assignment: AssignmentWS = JSON.parse(message.body);
-          console.log("[WS] Назначение отклонено:", assignment);
-          callback(assignment);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на отклонение назначения: ", e);
+    (userId: number, callback: (assignment: AssignmentWS) => void) => {
+      return subscribe(
+        `/topic/user/${userId}/assignments/rejected`,
+        (message) => {
+          try {
+            const assignment: AssignmentWS = JSON.parse(message.body);
+            console.log("[WS] Назначение отклонено:", assignment);
+            callback(assignment);
+          } catch (e) {
+            console.error("[WS] Ошибка подписки на отклонение назначения: ", e);
+          }
         }
-      });
+      );
     },
     [subscribe]
   );

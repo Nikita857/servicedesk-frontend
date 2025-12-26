@@ -18,13 +18,33 @@ import {
 
 interface TicketSidebarProps {
   ticket: Ticket;
+  isSpecialist: boolean;
 }
 
-export default function TicketSidebar({ ticket }: TicketSidebarProps) {
+/**
+ * Рассчитывает время работы над тикетом в секундах.
+ * Если тикет закрыт - разница между createdAt и closedAt.
+ * Если не закрыт - разница между createdAt и текущим временем.
+ */
+function calculateTimeSpent(ticket: Ticket): number {
+  const createdAt = new Date(ticket.createdAt).getTime();
+  const endTime = ticket.closedAt
+    ? new Date(ticket.closedAt).getTime()
+    : Date.now();
+
+  return Math.floor((endTime - createdAt) / 1000);
+}
+
+export default function TicketSidebar({
+  ticket,
+  isSpecialist,
+}: TicketSidebarProps) {
+  const timeSpentSeconds = calculateTimeSpent(ticket);
+
   return (
     <VStack gap={4} align="stretch">
-      {/* Rejection Alert - shown when last assignment was rejected */}
-      {ticket.lastAssignment?.status === "REJECTED" && (
+      {/* Rejection Alert - shown when last assignment was rejected (only for specialists) */}
+      {isSpecialist && ticket.lastAssignment?.status === "REJECTED" && (
         <Box
           bg="red.50"
           borderRadius="xl"
@@ -141,7 +161,7 @@ export default function TicketSidebar({ ticket }: TicketSidebarProps) {
           <HStack justify="space-between">
             <HStack color="fg.muted" fontSize="sm">
               <LuClock size={14} />
-              <Text>{formatDuration(ticket.timeSpentSeconds)}</Text>
+              <Text>{formatDuration(timeSpentSeconds)}</Text>
             </HStack>
             <HStack color="fg.muted" fontSize="sm">
               <LuMessageSquare size={14} />

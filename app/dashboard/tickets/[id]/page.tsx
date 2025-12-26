@@ -180,7 +180,7 @@ export default function TicketDetailPage({ params }: PageProps) {
 
         {/* Sidebar */}
         <GridItem>
-          <TicketSidebar ticket={ticket} />
+          <TicketSidebar ticket={ticket} isSpecialist={isSpecialist} />
         </GridItem>
       </Grid>
     </Box>

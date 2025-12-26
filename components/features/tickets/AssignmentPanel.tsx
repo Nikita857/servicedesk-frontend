@@ -35,8 +35,8 @@ export default function AssignmentPanel({
 }: AssignmentPanelProps) {
   const [showHistory, setShowHistory] = useState(false);
 
-  // Не показываем панель если нет данных
-  if (!currentAssignment && assignmentHistory.length === 0) {
+  // Не показываем панель если нет данных или пользователь не специалист
+  if (!isSpecialist || (!currentAssignment && assignmentHistory.length === 0)) {
     return null;
   }
 
