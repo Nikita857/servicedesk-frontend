@@ -29,7 +29,7 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   { label: "Дашборд", href: "/dashboard", icon: LuLayoutDashboard },
   { label: "Тикеты", href: "/dashboard/tickets", icon: LuTicket },
-  { label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
+  //{ label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
   { label: "Wiki", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
 ];

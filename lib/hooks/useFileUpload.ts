@@ -53,6 +53,7 @@ export const useFileUpload = (): UseFileUploadReturn => {
       });
 
       return attachment;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('File upload failed:', err);
       const errorMessage = err.response?.data?.message || 'Не удалось загрузить файл';
