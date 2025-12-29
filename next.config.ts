@@ -19,9 +19,11 @@ const nextConfig: NextConfig = {
     "http://localhost",
     "http://192.168.14.9:3000",
     "http://192.168.14.9",
-    "192.168.14.9" //Для работы Hot module replpacement (HMR) by websocket connection. Крч чтобы страница сама не перезажгружалась
-    ]
+    "http://192.168.0.13:3000",
+    "http://192.168.0.13",
+    "192.168.0.13",
+    "192.168.14.9", //Для работы Hot module replpacement (HMR) by websocket connection
+  ],
 };
 
 export default nextConfig;
-

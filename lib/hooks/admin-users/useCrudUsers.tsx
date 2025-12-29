@@ -2,33 +2,33 @@ import { adminApi, AdminUser, CreateUserParams } from "@/lib/api/admin";
 import { toast } from "@/lib/utils/toast";
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+// Query keys
+const USERS_QUERY_KEY = "admin-users";
 
 export const useCrudUsers = () => {
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes("ADMIN");
+  const router = useRouter();
 
-  // UI state
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Pagination & search state
+  const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // dialogs
+  // Dialog states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditRolesOpen, setIsEditRolesOpen] = useState(false);
   const [isEditFioOpen, setIsEditFioOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  // data
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-
-  const [page, setPage] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-
+  // Selected user for editing
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
+  // Form states
   const [newUser, setNewUser] = useState<CreateUserParams>({
     username: "",
     password: "",
@@ -40,8 +40,6 @@ export const useCrudUsers = () => {
   const [editFio, setEditFio] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  const router = useRouter();
-
   // Redirect if not admin
   useEffect(() => {
     if (user && !isAdmin) {
@@ -49,48 +47,24 @@ export const useCrudUsers = () => {
     }
   }, [user, isAdmin, router]);
 
-  // Fetch users
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await adminApi.getUsers(
-        page,
-        20,
-        searchQuery || undefined
-      );
-      setUsers(response.content);
-      setTotalPages(response.totalPages);
-      setTotalElements(response.totalElements);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить пользователей");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, searchQuery]);
+  // ==================== QUERY ====================
 
-  useEffect(() => {
-    if (isAdmin) {
-      fetchUsers();
-    }
-  }, [isAdmin, fetchUsers]);
+  const usersQuery = useQuery({
+    queryKey: [USERS_QUERY_KEY, page, searchQuery],
+    queryFn: () => adminApi.getUsers(page, 20, searchQuery || undefined),
+    enabled: !!isAdmin,
+    staleTime: 30 * 1000, // 30 seconds
+  });
 
-  // Handlers
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(0);
-    fetchUsers();
-  };
+  const users = usersQuery.data?.content ?? [];
+  const totalPages = usersQuery.data?.totalPages ?? 0;
+  const totalElements = usersQuery.data?.totalElements ?? 0;
 
-  const handleCreateUser = async () => {
-    if (!newUser.username || !newUser.password) {
-      toast.error("Ошибка", "Заполните обязательные поля");
-      return;
-    }
+  // ==================== MUTATIONS ====================
 
-    setIsSubmitting(true);
-    try {
-      await adminApi.createUser(newUser);
+  const createUserMutation = useMutation({
+    mutationFn: (params: CreateUserParams) => adminApi.createUser(params),
+    onSuccess: () => {
       toast.success("Пользователь создан");
       setIsCreateOpen(false);
       setNewUser({
@@ -100,91 +74,127 @@ export const useCrudUsers = () => {
         roles: ["USER"],
         active: true,
       });
-      fetchUsers();
-    } catch {
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: () => {
       toast.error("Ошибка", "Не удалось создать пользователя");
-    } finally {
-      setIsSubmitting(false);
-    }
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
+      adminApi.toggleActive(id, active),
+    onSuccess: (_, variables) => {
+      toast.success(
+        variables.active
+          ? "Пользователь активирован"
+          : "Пользователь деактивирован"
+      );
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: () => {
+      toast.error("Ошибка", "Не удалось изменить статус");
+    },
+  });
+
+  const updateRolesMutation = useMutation({
+    mutationFn: ({ id, roles }: { id: number; roles: string[] }) =>
+      adminApi.updateRoles(id, roles),
+    onSuccess: () => {
+      toast.success("Роли обновлены");
+      setIsEditRolesOpen(false);
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: () => {
+      toast.error("Ошибка", "Не удалось обновить роли");
+    },
+  });
+
+  const updateFioMutation = useMutation({
+    mutationFn: ({ id, fio }: { id: number; fio: string }) =>
+      adminApi.updateFio(id, fio),
+    onSuccess: () => {
+      toast.success("ФИО обновлено");
+      setIsEditFioOpen(false);
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: () => {
+      toast.error("Ошибка", "Не удалось обновить ФИО");
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: ({ id, password }: { id: number; password: string }) =>
+      adminApi.changePassword(id, password),
+    onSuccess: () => {
+      toast.success("Пароль изменён");
+      setIsChangePasswordOpen(false);
+      setNewPassword("");
+    },
+    onError: () => {
+      toast.error("Ошибка", "Не удалось изменить пароль");
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: number) => adminApi.deleteUser(id),
+    onSuccess: () => {
+      toast.success("Пользователь удалён");
+      setIsDeleteOpen(false);
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: () => {
+      toast.error("Ошибка", "Не удалось удалить пользователя");
+    },
+  });
+
+  // ==================== HANDLERS ====================
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(0);
+    // Query will automatically refetch due to searchQuery change
   };
 
-  const handleToggleActive = async (targetUser: AdminUser) => {
-    try {
-      await adminApi.toggleActive(targetUser.id, !targetUser.active);
-      toast.success(
-        targetUser.active
-          ? "Пользователь деактивирован"
-          : "Пользователь активирован"
-      );
-      fetchUsers();
-    } catch {
-      toast.error("Ошибка", "Не удалось изменить статус");
+  const handleCreateUser = async () => {
+    if (!newUser.username || !newUser.password) {
+      toast.error("Ошибка", "Заполните обязательные поля");
+      return;
     }
+    createUserMutation.mutate(newUser);
+  };
+
+  const handleToggleActive = (targetUser: AdminUser) => {
+    toggleActiveMutation.mutate({
+      id: targetUser.id,
+      active: !targetUser.active,
+    });
   };
 
   const handleUpdateRoles = async () => {
     if (!selectedUser) return;
-
-    setIsSubmitting(true);
-    try {
-      await adminApi.updateRoles(selectedUser.id, editRoles);
-      toast.success("Роли обновлены");
-      setIsEditRolesOpen(false);
-      fetchUsers();
-    } catch {
-      toast.error("Ошибка", "Не удалось обновить роли");
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateRolesMutation.mutate({ id: selectedUser.id, roles: editRoles });
   };
 
   const handleUpdateFio = async () => {
     if (!selectedUser) return;
-
-    setIsSubmitting(true);
-    try {
-      await adminApi.updateFio(selectedUser.id, editFio);
-      toast.success("ФИО обновлено");
-      setIsEditFioOpen(false);
-      fetchUsers();
-    } catch {
-      toast.error("Ошибка", "Не удалось обновить ФИО");
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateFioMutation.mutate({ id: selectedUser.id, fio: editFio });
   };
 
   const handleChangePassword = async () => {
     if (!selectedUser || !newPassword) return;
-
-    setIsSubmitting(true);
-    try {
-      await adminApi.changePassword(selectedUser.id, newPassword);
-      toast.success("Пароль изменён");
-      setIsChangePasswordOpen(false);
-      setNewPassword("");
-    } catch {
-      toast.error("Ошибка", "Не удалось изменить пароль");
-    } finally {
-      setIsSubmitting(false);
-    }
+    changePasswordMutation.mutate({
+      id: selectedUser.id,
+      password: newPassword,
+    });
   };
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
-
-    setIsSubmitting(true);
-    try {
-      await adminApi.deleteUser(selectedUser.id);
-      toast.success("Пользователь удалён");
-      setIsDeleteOpen(false);
-      fetchUsers();
-    } catch {
-      toast.error("Ошибка", "Не удалось удалить пользователя");
-    } finally {
-      setIsSubmitting(false);
-    }
+    deleteUserMutation.mutate(selectedUser.id);
   };
+
+  // ==================== DIALOG OPENERS ====================
 
   const openEditRoles = (targetUser: AdminUser) => {
     setSelectedUser(targetUser);
@@ -209,6 +219,8 @@ export const useCrudUsers = () => {
     setIsDeleteOpen(true);
   };
 
+  // ==================== UTILS ====================
+
   const toggleRole = (
     role: string,
     roles: string[],
@@ -221,12 +233,22 @@ export const useCrudUsers = () => {
     }
   };
 
+  // ==================== COMPUTED ====================
+
+  const isSubmitting =
+    createUserMutation.isPending ||
+    toggleActiveMutation.isPending ||
+    updateRolesMutation.isPending ||
+    updateFioMutation.isPending ||
+    changePasswordMutation.isPending ||
+    deleteUserMutation.isPending;
+
   return {
     /* ===== AUTH ===== */
     isAdmin,
 
     /* ===== LOADING ===== */
-    isLoading,
+    isLoading: usersQuery.isLoading,
     isSubmitting,
 
     /* ===== PAGINATION / SEARCH ===== */
@@ -254,6 +276,7 @@ export const useCrudUsers = () => {
       newPassword,
       setNewPassword,
     },
+
     /* ===== DIALOG STATES ===== */
     dialogState: {
       isCreateOpen,
@@ -277,8 +300,8 @@ export const useCrudUsers = () => {
       closeChangePassword: () => setIsChangePasswordOpen(false),
       closeDelete: () => setIsDeleteOpen(false),
     },
+
     actions: {
-      fetchUsers,
       handleSearch,
       handleCreateUser,
       handleToggleActive,
@@ -287,6 +310,7 @@ export const useCrudUsers = () => {
       handleChangePassword,
       handleDeleteUser,
     },
+
     utils: {
       toggleRole,
     },

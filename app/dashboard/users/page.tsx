@@ -6,14 +6,8 @@ import {
   Heading,
   Text,
   Button,
-  Input, Spinner, DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-  DialogCloseTrigger,
-  Field
+  Input,
+  Spinner,
 } from "@chakra-ui/react";
 import { useAuthStore } from "@/stores";
 import { useCrudUsers } from "@/lib/hooks/admin-users/useCrudUsers";
@@ -22,8 +16,8 @@ import UsersTable from "@/components/features/admin-users/UsersTable";
 import CreateUser from "./dialog/create/CreateUser";
 import EditRoles from "./dialog/edit/EditRoles";
 import EditFio from "./dialog/edit/EditFio";
-
-// Available roles
+import ChangePassword from "./dialog/edit/ChangePassword";
+import DeleteUser from "./dialog/delete/DeleteUser";
 
 export default function UsersPage() {
   const { user } = useAuthStore();
@@ -62,8 +56,8 @@ export default function UsersPage() {
   } = dialogState;
 
   const {
-    openCreate,
     closeCreate,
+    openCreate,
     openEditRoles,
     openEditFio,
     openChangePassword,
@@ -106,8 +100,6 @@ export default function UsersPage() {
       </Flex>
     );
   }
-
-  if (!isAdmin) return null;
 
   return (
     <Box>
@@ -152,8 +144,6 @@ export default function UsersPage() {
         </form>
       </Box>
 
-      {/* FIXME  не открываются диалоговые окна */}
-
       {/* Users table */}
       <UsersTable
         isLoading={isLoading}
@@ -173,7 +163,7 @@ export default function UsersPage() {
       {/* Create User Dialog */}
       <CreateUser
         isCreateOpen={isCreateOpen}
-        openCreate={openCreate}
+        closeCreate={closeCreate}
         newUser={newUser}
         setNewUser={setNewUser}
         handleCreateUser={handleCreateUser}
@@ -185,13 +175,12 @@ export default function UsersPage() {
       <EditRoles
         isEditRolesOpen={isEditRolesOpen}
         selectedUser={selectedUser}
-        newUser={newUser}
-        setNewUser={setNewUser}
+        editRoles={editRoles}
+        setEditRoles={setEditRoles}
         toggleRole={toggleRole}
         closeEditRoles={closeEditRoles}
         handleUpdateRoles={handleUpdateRoles}
         isSubmitting={isSubmitting}
-        openEditRoles={openEditRoles}
       />
 
       {/* Edit FIO Dialog */}
@@ -206,80 +195,24 @@ export default function UsersPage() {
       />
 
       {/* Change Password Dialog */}
-      <DialogRoot
-        open={isChangePasswordOpen}
-        onOpenChange={(e) =>
-          e.open ? openChangePassword : closeChangePassword
-        }
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Пароль: {selectedUser?.username}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <Field.Root>
-              <Field.Label>Новый пароль</Field.Label>
-              <Input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </Field.Root>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeChangePassword}>
-              Отмена
-            </Button>
-            <Button
-              bg="gray.900"
-              color="white"
-              onClick={handleChangePassword}
-              disabled={isSubmitting || !newPassword}
-            >
-              {isSubmitting ? <Spinner size="sm" /> : "Изменить"}
-            </Button>
-          </DialogFooter>
-          <DialogCloseTrigger />
-        </DialogContent>
-      </DialogRoot>
+      <ChangePassword
+        isChangePasswordOpen={isChangePasswordOpen}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        closeChangePassword={closeChangePassword}
+        handleChangePassword={handleChangePassword}
+        isSubmitting={isSubmitting}
+        selectedUser={selectedUser}
+      />
 
       {/* Delete Dialog */}
-      <DialogRoot
-
-        open={isDeleteOpen}
-        onOpenChange={(e) =>
-          e.open ? openDelete(selectedUser!) : closeDelete()
-        }
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Удалить пользователя?</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <Text>
-              Вы уверены, что хотите удалить пользователя{" "}
-              <strong>@{selectedUser?.username}</strong>?
-            </Text>
-            <Text color="fg.muted" fontSize="sm" mt={2}>
-              Это действие нельзя отменить.
-            </Text>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDelete}>
-              Отмена
-            </Button>
-            <Button
-              colorPalette="red"
-              onClick={handleDeleteUser}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <Spinner size="sm" /> : "Удалить"}
-            </Button>
-          </DialogFooter>
-          <DialogCloseTrigger />
-        </DialogContent>
-      </DialogRoot>
+      <DeleteUser
+        isDeleteOpen={isDeleteOpen}
+        closeDelete={closeDelete}
+        handleDeleteUser={handleDeleteUser}
+        isSubmitting={isSubmitting}
+        selectedUser={selectedUser}
+      />
     </Box>
   );
 }
