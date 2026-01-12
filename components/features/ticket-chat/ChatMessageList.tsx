@@ -13,7 +13,7 @@ import {
   Menu,
   Portal,
 } from "@chakra-ui/react";
-import { LuPencil, LuTrash2 } from "react-icons/lu";
+import { LuPencil, LuTrash2, LuCopy } from "react-icons/lu";
 import { getSenderConfig, type Message } from "@/types/message";
 import { AttachmentItem } from "./AttachmentItem";
 
@@ -188,33 +188,40 @@ export function ChatMessageList({
                     </HStack>
                   </Box>
                 </Menu.ContextTrigger>
-                {isOwn && (onEditMessage || onDeleteMessage) && (
-                  <Portal>
-                    <Menu.Positioner>
-                      <Menu.Content minW="150px">
-                        {onEditMessage && (
-                          <Menu.Item
-                            value="edit"
-                            onClick={() => onEditMessage(msg)}
-                          >
-                            <LuPencil />
-                            Редактировать
-                          </Menu.Item>
-                        )}
-                        {onDeleteMessage && (
-                          <Menu.Item
-                            value="delete"
-                            color="fg.error"
-                            onClick={() => onDeleteMessage(msg.id)}
-                          >
-                            <LuTrash2 />
-                            Удалить
-                          </Menu.Item>
-                        )}
-                      </Menu.Content>
-                    </Menu.Positioner>
-                  </Portal>
-                )}
+                <Portal>
+                  <Menu.Positioner>
+                    <Menu.Content minW="150px">
+                      <Menu.Item
+                        value="copy"
+                        onClick={() => {
+                          navigator.clipboard.writeText(msg.content);
+                        }}
+                      >
+                        <LuCopy />
+                        Копировать
+                      </Menu.Item>
+                      {isOwn && onEditMessage && (
+                        <Menu.Item
+                          value="edit"
+                          onClick={() => onEditMessage(msg)}
+                        >
+                          <LuPencil />
+                          Редактировать
+                        </Menu.Item>
+                      )}
+                      {isOwn && onDeleteMessage && (
+                        <Menu.Item
+                          value="delete"
+                          color="fg.error"
+                          onClick={() => onDeleteMessage(msg.id)}
+                        >
+                          <LuTrash2 />
+                          Удалить
+                        </Menu.Item>
+                      )}
+                    </Menu.Content>
+                  </Menu.Positioner>
+                </Portal>
               </Menu.Root>
             </Flex>
           </Box>

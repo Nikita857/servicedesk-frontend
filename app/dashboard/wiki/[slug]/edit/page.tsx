@@ -33,6 +33,7 @@ import { attachmentApi } from "@/lib/api/attachments";
 import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { toast } from "@/lib/utils";
+import { WikiEditor } from "@/components/features/wiki";
 import { AxiosError } from "axios";
 
 interface PageProps {
@@ -312,15 +313,13 @@ export default function EditWikiArticlePage({ params }: PageProps) {
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
                 Содержимое *
               </Text>
-              <Textarea
+              <WikiEditor
                 value={formData.content || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, content: e.target.value }))
+                onChange={(content) =>
+                  setFormData((prev) => ({ ...prev, content }))
                 }
                 placeholder="Напишите содержимое статьи..."
-                bg="bg.subtle"
-                rows={15}
-                minH="300px"
+                minHeight="400px"
               />
             </Box>
 
