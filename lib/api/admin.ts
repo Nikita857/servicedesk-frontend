@@ -120,4 +120,42 @@ export const adminApi = {
     );
     return response.data.data;
   },
+
+  // ==================== Admin Tickets ====================
+
+  // Get all NEW (unclaimed) tickets
+  getNewTickets: async (
+    page: number = 0,
+    size: number = 20
+  ): Promise<AdminPaginatedResponse<AdminTicketListItem>> => {
+    const response = await api.get<
+      ApiResponse<AdminPaginatedResponse<AdminTicketListItem>>
+    >(`/admin/tickets/new?page=${page}&size=${size}`);
+    return response.data.data;
+  },
+
+  // Get all CLOSED tickets
+  getClosedTickets: async (
+    page: number = 0,
+    size: number = 20
+  ): Promise<AdminPaginatedResponse<AdminTicketListItem>> => {
+    const response = await api.get<
+      ApiResponse<AdminPaginatedResponse<AdminTicketListItem>>
+    >(`/admin/tickets/closed?page=${page}&size=${size}`);
+    return response.data.data;
+  },
 };
+
+// Admin ticket list item type (matches TicketListResponse from backend)
+export interface AdminTicketListItem {
+  id: number;
+  title: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  creatorFio: string | null;
+  creatorUsername: string;
+  assigneeFio: string | null;
+  assigneeUsername: string | null;
+  lineName: string | null;
+}

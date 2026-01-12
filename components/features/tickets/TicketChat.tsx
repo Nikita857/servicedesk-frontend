@@ -11,10 +11,16 @@ import { formatFileSize } from "@/lib/utils";
 interface TicketChatProps {
   ticketId: number;
   ticketStatus: TicketStatus;
+  isCreator?: boolean; // Is current user the ticket creator
 }
 
-export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
+export function TicketChat({
+  ticketId,
+  ticketStatus,
+  isCreator = false,
+}: TicketChatProps) {
   const { user } = useAuthStore();
+  const isSpecialist = user?.specialist || false;
 
   // Use custom hook for WebSocket and messages
   const {
@@ -57,8 +63,15 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
     handleSend();
   };
 
-  const isTicketActive = (status: TicketStatus): boolean => {
-    return status !== "CLOSED" && status !== "CANCELLED";
+  // Check if chat should be active
+  // - CLOSED/CANCELLED: specialists can still send, creators cannot
+  const isChatActive = (): boolean => {
+    if (ticketStatus === "CLOSED") return false; // No one can send on closed
+    if (ticketStatus === "CANCELLED") {
+      // Specialists can send, but creators cannot
+      return isSpecialist && !isCreator;
+    }
+    return true;
   };
 
   return (
@@ -176,7 +189,7 @@ export function TicketChat({ ticketId, ticketStatus }: TicketChatProps) {
           )}
 
           {/* Chat Input */}
-          {isTicketActive(ticketStatus) ? (
+          {isChatActive() ? (
             <ChatInput
               handleFileSelect={handleFileSelect}
               isUploading={isUploading}

@@ -167,7 +167,11 @@ export default function TicketDetailPage({ params }: PageProps) {
 
           {/* Messages section */}
           <Box mt={6}>
-            <TicketChat ticketId={ticket.id} ticketStatus={ticket.status} />
+            <TicketChat
+              ticketId={ticket.id}
+              ticketStatus={ticket.status}
+              isCreator={user?.id === ticket.createdBy?.id}
+            />
           </Box>
 
           {/* Assignment Panel - under chat */}
