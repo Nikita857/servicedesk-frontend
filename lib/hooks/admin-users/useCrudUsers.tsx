@@ -17,6 +17,15 @@ export const useCrudUsers = () => {
   // Pagination & search state
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  // Debounce search query - wait 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Dialog states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -50,15 +59,16 @@ export const useCrudUsers = () => {
   // ==================== QUERY ====================
 
   const usersQuery = useQuery({
-    queryKey: [USERS_QUERY_KEY, page, searchQuery],
-    queryFn: () => adminApi.getUsers(page, 20, searchQuery || undefined),
+    queryKey: [USERS_QUERY_KEY, page, debouncedSearchQuery],
+    queryFn: () =>
+      adminApi.getUsers(page, 20, debouncedSearchQuery || undefined),
     enabled: !!isAdmin,
     staleTime: 30 * 1000, // 30 seconds
   });
 
   const users = usersQuery.data?.content ?? [];
-  const totalPages = usersQuery.data?.totalPages ?? 0;
-  const totalElements = usersQuery.data?.totalElements ?? 0;
+  const totalPages = usersQuery.data?.page?.totalPages ?? 0;
+  const totalElements = usersQuery.data?.page?.totalElements ?? 0;
 
   // ==================== MUTATIONS ====================
 

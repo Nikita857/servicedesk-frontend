@@ -1,5 +1,5 @@
-import api from './client';
-import type { ApiResponse } from '@/types/api';
+import api from "./client";
+import type { ApiResponse } from "@/types/api";
 
 // Types based on OpenAPI spec
 export interface WikiArticle {
@@ -60,19 +60,18 @@ export interface UpdateWikiArticleRequest {
 
 export interface PagedWikiArticleList {
   content: WikiArticleListItem[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }
 
 export const wikiApi = {
   // List all articles (paginated)
   list: async (page = 0, size = 20): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>('/wiki', {
+    const response = await api.get<ApiResponse<PagedWikiArticleList>>("/wiki", {
       params: { page, size },
     });
     return response.data.data;
@@ -86,13 +85,19 @@ export const wikiApi = {
 
   // Create new article
   create: async (data: CreateWikiArticleRequest): Promise<WikiArticle> => {
-    const response = await api.post<ApiResponse<WikiArticle>>('/wiki', data);
+    const response = await api.post<ApiResponse<WikiArticle>>("/wiki", data);
     return response.data.data;
   },
 
   // Update article
-  update: async (id: number, data: UpdateWikiArticleRequest): Promise<WikiArticle> => {
-    const response = await api.put<ApiResponse<WikiArticle>>(`/wiki/${id}`, data);
+  update: async (
+    id: number,
+    data: UpdateWikiArticleRequest
+  ): Promise<WikiArticle> => {
+    const response = await api.put<ApiResponse<WikiArticle>>(
+      `/wiki/${id}`,
+      data
+    );
     return response.data.data;
   },
 
@@ -112,26 +117,43 @@ export const wikiApi = {
   },
 
   // Search articles
-  search: async (query: string, page = 0, size = 20): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>('/wiki/search', {
-      params: { q: query, page, size },
-    });
+  search: async (
+    query: string,
+    page = 0,
+    size = 20
+  ): Promise<PagedWikiArticleList> => {
+    const response = await api.get<ApiResponse<PagedWikiArticleList>>(
+      "/wiki/search",
+      {
+        params: { q: query, page, size },
+      }
+    );
     return response.data.data;
   },
 
   // Get popular articles
   getPopular: async (page = 0, size = 10): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>('/wiki/popular', {
-      params: { page, size },
-    });
+    const response = await api.get<ApiResponse<PagedWikiArticleList>>(
+      "/wiki/popular",
+      {
+        params: { page, size },
+      }
+    );
     return response.data.data;
   },
 
   // Get articles by category
-  getByCategory: async (categoryId: number, page = 0, size = 20): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>(`/wiki/category/${categoryId}`, {
-      params: { page, size },
-    });
+  getByCategory: async (
+    categoryId: number,
+    page = 0,
+    size = 20
+  ): Promise<PagedWikiArticleList> => {
+    const response = await api.get<ApiResponse<PagedWikiArticleList>>(
+      `/wiki/category/${categoryId}`,
+      {
+        params: { page, size },
+      }
+    );
     return response.data.data;
   },
 
@@ -139,7 +161,9 @@ export const wikiApi = {
 
   // Get attachments for article
   getAttachments: async (articleId: number): Promise<WikiAttachment[]> => {
-    const response = await api.get<ApiResponse<WikiAttachment[]>>(`/wiki/${articleId}/attachments`);
+    const response = await api.get<ApiResponse<WikiAttachment[]>>(
+      `/wiki/${articleId}/attachments`
+    );
     return response.data.data;
   },
 };
@@ -151,9 +175,8 @@ export interface WikiAttachment {
   url: string;
   fileSize: number;
   mimeType: string;
-  type: 'PHOTO' | 'SCREENSHOT' | 'DOCUMENT' | 'VIDEO';
+  type: "PHOTO" | "SCREENSHOT" | "DOCUMENT" | "VIDEO";
   uploadedById: number;
   uploadedByUsername: string;
   createdAt: string;
 }
-
