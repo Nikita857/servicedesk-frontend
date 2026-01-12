@@ -63,26 +63,8 @@ export function useSupportLinesQuery(
   });
 
   // Determine if ticket is on last line
-  const isOnLastLine = (() => {
-    if (!ticket?.supportLine || supportLines.length === 0) return false;
-    if (isAdmin) return false; // Admin can always escalate
-
-    const ticketLineName = ticket.supportLine.name?.toLowerCase() || "";
-    const isDeveloperLine =
-      ticketLineName.includes("developer") ||
-      ticketLineName.includes("разработ") ||
-      ticketLineName.includes("3 линия") ||
-      ticketLineName.includes("третья");
-
-    if (isDeveloperLine) return true;
-
-    const maxDisplayOrder = Math.max(
-      ...supportLines.map((l: SupportLine) => l.displayOrder || 0)
-    );
-    const ticketLineOrder = ticket.supportLine.displayOrder || 0;
-    return ticketLineOrder > 0 && ticketLineOrder >= maxDisplayOrder;
-  })();
-
+  const isOnLastLine = false;
+    
   const handleSetSelectedLineId = useCallback((id: number | undefined) => {
     setSelectedLineId(id);
   }, []);

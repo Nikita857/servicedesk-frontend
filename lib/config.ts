@@ -2,7 +2,7 @@
 // Все API маршруты должны использовать эти константы
 
 // Базовый URL сервера (без /api/v1)
-export const API_SERVER_URL = "http://192.168.0.13:8080";
+export const API_SERVER_URL = "http://sd.bormash.ru:8080";
 
 // Базовый URL API (с /api/v1)
 export const API_BASE_URL = `${API_SERVER_URL}/api/v1`;

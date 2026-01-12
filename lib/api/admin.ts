@@ -1,7 +1,18 @@
 import api from "./client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api";
 
 // ==================== Types ====================
+
+// Paginated response structure from admin API (different from standard PaginatedResponse)
+export interface AdminPaginatedResponse<T> {
+  content: T[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
 
 export interface AdminUser {
   id: number;
@@ -31,15 +42,15 @@ export const adminApi = {
     page: number = 0,
     size: number = 20,
     search?: string
-  ): Promise<PaginatedResponse<AdminUser>> => {
+  ): Promise<AdminPaginatedResponse<AdminUser>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
     if (search) params.append("search", search);
 
-    const response = await api.get<ApiResponse<PaginatedResponse<AdminUser>>>(
-      `/admin/users?${params.toString()}`
-    );
+    const response = await api.get<
+      ApiResponse<AdminPaginatedResponse<AdminUser>>
+    >(`/admin/users?${params.toString()}`);
     return response.data.data;
   },
 

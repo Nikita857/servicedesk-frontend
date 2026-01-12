@@ -134,7 +134,7 @@ export default function ProfilePage() {
       toast.error("Пароли не совпадают");
       return;
     }
-    if (newPassword.length < 6) {
+    if (newPassword.length < 4) {
       toast.error("Пароль должен быть не менее 6 символов");
       return;
     }

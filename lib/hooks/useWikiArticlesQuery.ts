@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { wikiApi, type WikiArticleListItem } from "@/lib/api/wiki";
+import {
+  wikiApi,
+  type WikiArticleListItem,
+  type PagedWikiArticleList,
+} from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
 import { toast } from "@/lib/utils";
 import { useState, useCallback } from "react";
@@ -80,7 +84,7 @@ export function useWikiArticlesQuery(
       // Optimistically update
       queryClient.setQueryData(
         queryKeys.wiki.list({ page, search: debouncedSearch }),
-        (old: { content: WikiArticleListItem[]; totalPages: number } | undefined) => {
+        (old: PagedWikiArticleList | undefined) => {
           if (!old) return old;
           return {
             ...old,
@@ -103,7 +107,11 @@ export function useWikiArticlesQuery(
       return { previousData };
     },
     onSuccess: (_, { isLiked }) => {
-      toast.success(isLiked ? "Статья удалена из избранного" : "Статья добавлена в избранное");
+      toast.success(
+        isLiked
+          ? "Статья удалена из избранного"
+          : "Статья добавлена в избранное"
+      );
     },
     onError: (error, _, context) => {
       // Rollback on error
@@ -138,7 +146,9 @@ export function useWikiArticlesQuery(
       e.preventDefault();
       e.stopPropagation();
 
-      const article = articlesQuery.data?.content.find((a) => a.id === articleId);
+      const article = articlesQuery.data?.content.find(
+        (a) => a.id === articleId
+      );
       if (!article) return;
 
       likeMutation.mutate({
@@ -153,7 +163,7 @@ export function useWikiArticlesQuery(
     articles: articlesQuery.data?.content ?? [],
     isLoading: articlesQuery.isLoading,
     page,
-    totalPages: articlesQuery.data?.totalPages ?? 0,
+    totalPages: articlesQuery.data?.page?.totalPages ?? 0,
     searchQuery,
     setSearchQuery,
     setPage,
