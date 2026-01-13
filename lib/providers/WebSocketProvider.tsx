@@ -117,18 +117,29 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(WS_URL) as WebSocket,
+      // Use brokerURL for native WebSockets, or webSocketFactory for SockJS
+      ...(WS_URL.startsWith("ws")
+        ? { brokerURL: WS_URL }
+        : {
+            webSocketFactory: () =>
+              new SockJS(WS_URL, null, {
+                transports: ["websocket", "xhr-streaming", "xhr-polling"],
+              }) as WebSocket,
+          }),
       connectHeaders: {
         Authorization: `Bearer ${accessToken}`,
       },
       debug: (str) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("[WS]", str);
+          // Log only important STOMP messages or all in verbose mode
+          if (!str.includes("PING") && !str.includes("PONG")) {
+            console.log("[WS STOMP]", str);
+          }
         }
       },
       reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
     });
 
     client.onConnect = () => {
@@ -143,10 +154,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     client.onStompError = (frame) => {
       console.error("[WS] STOMP ошибка:", frame.headers["message"]);
+      console.error("[WS] Подробности:", frame.body);
     };
 
     client.onWebSocketError = (event) => {
-      console.error("[WS] WebSocket ошибка:", event);
+      // Попытка извлечь больше информации из события ошибки
+      let errorDetails = "";
+      if (event instanceof ErrorEvent) {
+        errorDetails = ` (${event.message})`;
+      } else if (event instanceof CloseEvent) {
+        errorDetails = ` (Close code: ${event.code}, Reason: ${event.reason})`;
+      }
+
+      console.error(`[WS] WebSocket ошибка${errorDetails}`, event);
     };
 
     client.activate();

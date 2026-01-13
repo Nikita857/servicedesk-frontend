@@ -6,6 +6,7 @@ import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { useAuthStore } from "@/stores";
 import { toast } from "@/lib/utils";
 import { AssignmentWS } from "@/types/websocket";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * Хук для подписки на real-time назначения тикетов.
@@ -26,8 +27,10 @@ export function useAssignmentsWebSocket() {
       );
 
       // Инвалидируем список тикетов чтобы обновить UI
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["ticketsCount"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
     },
     [queryClient]
   );
@@ -47,10 +50,12 @@ export function useAssignmentsWebSocket() {
 
       // Инвалидируем данные тикета чтобы обновить UI (rejection alert в сайдбаре)
       queryClient.invalidateQueries({
-        queryKey: ["ticket", assignment.ticketId],
+        queryKey: queryKeys.tickets.detail(assignment.ticketId),
       });
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["ticketsCount"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
     },
     [queryClient]
   );

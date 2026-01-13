@@ -35,7 +35,13 @@ export interface WikiArticleListItem {
   excerpt: string | null;
   categoryName: string | null;
   tags: string[];
-  authorName: string | null;
+  author: {
+    id: number;
+    username: string;
+    fio: string | null;
+    avatarUrl: string | null;
+    isSpecialist: boolean;
+  } | null;
   viewCount: number;
   likeCount: number;
   likedByCurrentUser: boolean;

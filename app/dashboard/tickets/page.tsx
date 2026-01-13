@@ -20,12 +20,13 @@ import { LuPlus, LuChevronLeft, LuChevronRight, LuBell } from "react-icons/lu";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
-import { TicketCard } from "@/components/features/tickets";
+import { TicketCard, AdminTicketsView } from "@/components/features/tickets";
 import {
   useTicketsQuery,
   useTicketsCountsQuery,
   useAssignmentsActions,
   useTicketsWebSocket,
+  useAssignmentsWebSocket,
   FilterType,
 } from "@/lib/hooks";
 
@@ -33,8 +34,14 @@ export default function TicketsPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const userRoles = user?.roles || [];
+  const isAdmin = userRoles.includes("ADMIN");
   const canCreateTicket =
     userRoles.includes("USER") || userRoles.includes("ADMIN");
+
+  // Admin users see a different view
+  if (isAdmin) {
+    return <AdminTicketsView />;
+  }
 
   // Read filter from URL query param
   const searchParams = useSearchParams();
@@ -94,6 +101,9 @@ export default function TicketsPage() {
     },
     enabled: true,
   });
+
+  // WebSocket for assignments (real-time pending count updates)
+  useAssignmentsWebSocket();
 
   // ==================== Фильтр тикетов ====================
   const filterCollection = useMemo(() => {

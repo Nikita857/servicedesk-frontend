@@ -13,7 +13,7 @@ import {
   Menu,
   Portal,
 } from "@chakra-ui/react";
-import { LuPencil, LuTrash2 } from "react-icons/lu";
+import { LuPencil, LuTrash2, LuCopy } from "react-icons/lu";
 import { getSenderConfig, type Message } from "@/types/message";
 import { AttachmentItem } from "./AttachmentItem";
 
@@ -23,6 +23,7 @@ interface ChatMessageListProps {
   isLoading: boolean;
   onEditMessage?: (message: Message) => void;
   onDeleteMessage?: (messageId: number) => void;
+  onImageClick?: (url: string) => void;
 }
 
 // Helper functions
@@ -59,6 +60,7 @@ export function ChatMessageList({
   isLoading,
   onEditMessage,
   onDeleteMessage,
+  onImageClick,
 }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -172,6 +174,7 @@ export function ChatMessageList({
                             key={att.id}
                             attachment={att}
                             isOwn={isOwn}
+                            onImageClick={onImageClick}
                           />
                         ))}
                       </VStack>
@@ -188,33 +191,40 @@ export function ChatMessageList({
                     </HStack>
                   </Box>
                 </Menu.ContextTrigger>
-                {isOwn && (onEditMessage || onDeleteMessage) && (
-                  <Portal>
-                    <Menu.Positioner>
-                      <Menu.Content minW="150px">
-                        {onEditMessage && (
-                          <Menu.Item
-                            value="edit"
-                            onClick={() => onEditMessage(msg)}
-                          >
-                            <LuPencil />
-                            Редактировать
-                          </Menu.Item>
-                        )}
-                        {onDeleteMessage && (
-                          <Menu.Item
-                            value="delete"
-                            color="fg.error"
-                            onClick={() => onDeleteMessage(msg.id)}
-                          >
-                            <LuTrash2 />
-                            Удалить
-                          </Menu.Item>
-                        )}
-                      </Menu.Content>
-                    </Menu.Positioner>
-                  </Portal>
-                )}
+                <Portal>
+                  <Menu.Positioner>
+                    <Menu.Content minW="150px">
+                      <Menu.Item
+                        value="copy"
+                        onClick={() => {
+                          navigator.clipboard.writeText(msg.content);
+                        }}
+                      >
+                        <LuCopy />
+                        Копировать
+                      </Menu.Item>
+                      {isOwn && onEditMessage && (
+                        <Menu.Item
+                          value="edit"
+                          onClick={() => onEditMessage(msg)}
+                        >
+                          <LuPencil />
+                          Редактировать
+                        </Menu.Item>
+                      )}
+                      {isOwn && onDeleteMessage && (
+                        <Menu.Item
+                          value="delete"
+                          color="fg.error"
+                          onClick={() => onDeleteMessage(msg.id)}
+                        >
+                          <LuTrash2 />
+                          Удалить
+                        </Menu.Item>
+                      )}
+                    </Menu.Content>
+                  </Menu.Positioner>
+                </Portal>
               </Menu.Root>
             </Flex>
           </Box>

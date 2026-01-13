@@ -34,6 +34,7 @@ import { attachmentApi } from "@/lib/api/attachments";
 import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { formatDate, toast } from "@/lib/utils";
+import { WikiContent } from "@/components/features/wiki";
 import { API_BASE_URL } from "@/lib/config";
 
 interface PageProps {
@@ -191,15 +192,8 @@ export default function WikiArticlePage({ params }: PageProps) {
         </VStack>
 
         {/* Content */}
-        <Box
-          className="article-content"
-          color="fg.default"
-          fontSize="md"
-          lineHeight="1.8"
-          whiteSpace="pre-wrap"
-          mb={6}
-        >
-          {article.content}
+        <Box mb={6}>
+          <WikiContent content={article.content} />
         </Box>
 
         {/* Attachments Section */}

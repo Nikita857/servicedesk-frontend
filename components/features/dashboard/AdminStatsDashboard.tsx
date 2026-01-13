@@ -34,7 +34,7 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
       </Flex>
 
       <Grid
-        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }}
+        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
         gap={3}
       >
         <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
@@ -53,14 +53,7 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
             В работе
           </Text>
         </Box>
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="xl" fontWeight="bold" color="green.500">
-            {line.resolved}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Решено
-          </Text>
-        </Box>
+
         <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
           <Text fontSize="xl" fontWeight="bold" color="gray.500">
             {line.closed}
@@ -130,7 +123,7 @@ export function AdminStatsDashboard() {
           </HStack>
 
           <Grid
-            templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }}
+            templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
             gap={4}
           >
             <Box
@@ -161,20 +154,7 @@ export function AdminStatsDashboard() {
                 В работе
               </Text>
             </Box>
-            <Box
-              textAlign="center"
-              p={4}
-              bg="green.50"
-              borderRadius="lg"
-              _dark={{ bg: "green.900/20" }}
-            >
-              <Text fontSize="3xl" fontWeight="bold" color="green.500">
-                {totals.resolved}
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                Решено
-              </Text>
-            </Box>
+
             <Box
               textAlign="center"
               p={4}

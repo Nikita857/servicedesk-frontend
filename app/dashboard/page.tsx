@@ -15,7 +15,11 @@ import Link from "next/link";
 import { useAuthStore } from "@/stores";
 import type { TicketListItem } from "@/types/ticket";
 import { TicketCard } from "@/components/features/tickets";
-import { useTicketsWebSocket, useDashboardQuery } from "@/lib/hooks";
+import {
+  useTicketsWebSocket,
+  useAssignmentsWebSocket,
+  useDashboardQuery,
+} from "@/lib/hooks";
 import {
   UserStatsDashboard,
   SpecialistStatsDashboard,
@@ -43,6 +47,9 @@ export default function DashboardPage() {
     onNewTicket: handleNewTicket,
     enabled: true,
   });
+
+  // WebSocket for assignments (stats update)
+  useAssignmentsWebSocket();
 
   // Render appropriate dashboard based on role
   const renderStatsDashboard = () => {

@@ -6,7 +6,12 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 import type { TicketListItem, PagedTicketList } from "@/types/ticket";
 
-export type FilterType = "unprocessed" | "my" | "assigned" | "pending" | "closed";
+export type FilterType =
+  | "unprocessed"
+  | "my"
+  | "assigned"
+  | "pending"
+  | "closed";
 
 interface UseTicketsQueryOptions {
   initialFilter?: FilterType;
@@ -65,26 +70,19 @@ export function useTicketsQuery(
           };
         }
         case "closed": {
-          // Get assigned tickets that are CLOSED
-          const response = await ticketApi.listAssigned(page, pageSize);
-          return {
-            ...response,
-            content: response.content.filter((t) => t.status === "CLOSED"),
-          };
+          // Get tickets that are CLOSED using dedicated status endpoint
+          return ticketApi.listByStatus("CLOSED", page, pageSize);
         }
         case "unprocessed": {
-          const response = await ticketApi.list(page, pageSize);
-          return {
-            ...response,
-            content: response.content.filter((t) => t.status === "NEW"),
-          };
+          // Get NEW tickets using dedicated status endpoint
+          return ticketApi.listByStatus("NEW", page, pageSize);
         }
         default:
           return ticketApi.listMy(page, pageSize);
       }
     },
     enabled: filter !== "pending",
-    staleTime: 30 * 1000, // 30 секунд
+    staleTime: 0,
   });
 
   // Query for pending assignments
@@ -92,7 +90,7 @@ export function useTicketsQuery(
     queryKey: queryKeys.assignments.pending(page),
     queryFn: () => assignmentApi.getMyPending(page, pageSize),
     enabled: filter === "pending",
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   // Optimistic update helpers
@@ -148,12 +146,15 @@ export function useTicketsQuery(
     [queryClient, filter, page]
   );
 
-  const handleSetFilter = useCallback((newFilter: FilterType) => {
-    if (isSpecialist) {
-      setRawFilter(newFilter);
-      setPage(0);
-    }
-  }, [isSpecialist]);
+  const handleSetFilter = useCallback(
+    (newFilter: FilterType) => {
+      if (isSpecialist) {
+        setRawFilter(newFilter);
+        setPage(0);
+      }
+    },
+    [isSpecialist]
+  );
 
   const refetch = useCallback(() => {
     if (filter === "pending") {

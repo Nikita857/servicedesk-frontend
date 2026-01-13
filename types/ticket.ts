@@ -1,18 +1,18 @@
 // Ticket types based on OpenAPI spec
 
-export type TicketStatus = 
-  | 'NEW' 
-  | 'OPEN' 
-  | 'PENDING' 
-  | 'ESCALATED' 
-  | 'RESOLVED' 
-  | 'PENDING_CLOSURE'
-  | 'CLOSED' 
-  | 'REOPENED' 
-  | 'REJECTED' 
-  | 'CANCELLED';
+export type TicketStatus =
+  | "NEW"
+  | "OPEN"
+  | "PENDING"
+  | "ESCALATED"
+  | "RESOLVED"
+  | "PENDING_CLOSURE"
+  | "CLOSED"
+  | "REOPENED"
+  | "REJECTED"
+  | "CANCELLED";
 
-export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface UserShort {
   id: number;
@@ -87,7 +87,7 @@ export interface LastAssignment {
   toUsername: string | null;
   toFio: string | null;
   note: string | null;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
   createdAt: string;
   acceptedAt: string | null;
   rejectedAt: string | null;
@@ -129,65 +129,72 @@ export interface PagedTicketList {
 }
 
 // Status labels and colors
-export const ticketStatusConfig: Record<TicketStatus, { label: string; color: string }> = {
-  NEW: { label: 'Новый', color: 'blue' },
-  OPEN: { label: 'Открыт', color: 'green' },
-  PENDING: { label: 'Ожидание', color: 'yellow' },
-  ESCALATED: { label: 'Эскалирован', color: 'orange' },
-  RESOLVED: { label: 'Решён', color: 'teal' },
-  PENDING_CLOSURE: { label: 'Ожидает закрытия', color: 'cyan' },
-  CLOSED: { label: 'Закрыт', color: 'gray' },
-  REOPENED: { label: 'Переоткрыт', color: 'purple' },
-  REJECTED: { label: 'Отклонён', color: 'red' },
-  CANCELLED: { label: 'Отменён', color: 'gray' },
+export const ticketStatusConfig: Record<
+  TicketStatus,
+  { label: string; color: string }
+> = {
+  NEW: { label: "Новый", color: "blue" },
+  OPEN: { label: "Открыт", color: "green" },
+  PENDING: { label: "Ожидание", color: "yellow" },
+  ESCALATED: { label: "Эскалирован", color: "orange" },
+  RESOLVED: { label: "Решён", color: "teal" },
+  PENDING_CLOSURE: { label: "Ожидает закрытия", color: "cyan" },
+  CLOSED: { label: "Закрыт", color: "gray" },
+  REOPENED: { label: "Переоткрыт", color: "purple" },
+  REJECTED: { label: "Отклонён", color: "red" },
+  CANCELLED: { label: "Отменён", color: "gray" },
 };
 
-export const ticketPriorityConfig: Record<TicketPriority, { label: string; color: string }> = {
-  LOW: { label: 'Низкий', color: 'gray' },
-  MEDIUM: { label: 'Средний', color: 'blue' },
-  HIGH: { label: 'Высокий', color: 'orange' },
-  URGENT: { label: 'Срочный', color: 'red' },
+export const ticketPriorityConfig: Record<
+  TicketPriority,
+  { label: string; color: string }
+> = {
+  LOW: { label: "Низкий", color: "gray" },
+  MEDIUM: { label: "Средний", color: "blue" },
+  HIGH: { label: "Высокий", color: "orange" },
+  URGENT: { label: "Срочный", color: "red" },
 };
 
 // Status transition rules - which statuses can transition to which (FULL - for admin)
 export const statusTransitions: Record<TicketStatus, TicketStatus[]> = {
-  NEW: ['OPEN', 'REJECTED', 'CANCELLED'],
-  OPEN: ['PENDING', 'RESOLVED', 'ESCALATED'],
-  PENDING: ['OPEN'],
-  ESCALATED: ['OPEN', 'PENDING', 'RESOLVED'],
-  RESOLVED: ['PENDING_CLOSURE', 'REOPENED'],
-  PENDING_CLOSURE: ['CLOSED', 'REOPENED'],
-  CLOSED: ['REOPENED'],
-  REOPENED: ['OPEN', 'RESOLVED', 'PENDING', 'ESCALATED', 'CANCELLED'],
+  NEW: ["OPEN", "REJECTED", "CANCELLED"],
+  OPEN: ["PENDING", "RESOLVED", "ESCALATED", "CLOSED"],
+  PENDING: ["OPEN", "CLOSED"],
+  ESCALATED: ["OPEN", "PENDING", "RESOLVED", "CLOSED"],
+  RESOLVED: ["PENDING_CLOSURE", "REOPENED", "CLOSED"],
+  PENDING_CLOSURE: ["CLOSED", "REOPENED"],
+  CLOSED: ["REOPENED"],
+  REOPENED: ["OPEN", "RESOLVED", "PENDING", "ESCALATED", "CANCELLED", "CLOSED"],
   REJECTED: [],
   CANCELLED: [],
 };
 
 // User-allowed transitions (regular users)
 export const userStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
-  NEW: ['CANCELLED'],
-  OPEN: ['CANCELLED'],
-  PENDING: ['CANCELLED'],
+  NEW: ["CANCELLED"],
+  OPEN: ["CANCELLED"],
+  PENDING: ["CANCELLED"],
   ESCALATED: [],
-  RESOLVED: ['REOPENED'],
-  PENDING_CLOSURE: ['CLOSED', 'REOPENED'],
-  CLOSED: ['REOPENED'],
-  REOPENED: ['CANCELLED'],
+  RESOLVED: ["REOPENED"],
+  PENDING_CLOSURE: ["CLOSED", "REOPENED"],
+  CLOSED: ["REOPENED"],
+  REOPENED: ["CANCELLED"],
   REJECTED: [],
   CANCELLED: [],
 };
 
 // Specialist-allowed transitions (specialists except admin) - NO CANCELLED
 // Specialists should use cancel button instead
-export const specialistStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
-  NEW: ['OPEN', 'REJECTED'],
-  OPEN: ['PENDING', 'RESOLVED', 'ESCALATED'],
-  PENDING: ['OPEN'],
-  ESCALATED: ['OPEN', 'PENDING', 'RESOLVED'],
-  RESOLVED: ['PENDING_CLOSURE', 'REOPENED'],
-  PENDING_CLOSURE: ['CLOSED', 'REOPENED'],
-  CLOSED: ['REOPENED'],
-  REOPENED: ['OPEN', 'RESOLVED', 'PENDING', 'ESCALATED'],
-  REJECTED: [],
-  CANCELLED: [],
-};
+export const specialistStatusTransitions: Record<TicketStatus, TicketStatus[]> =
+  {
+    NEW: ["OPEN", "REJECTED"],
+    OPEN: ["PENDING", "RESOLVED", "ESCALATED"],
+    PENDING: ["OPEN"],
+    ESCALATED: ["OPEN", "PENDING", "RESOLVED"],
+    RESOLVED: ["PENDING_CLOSURE", "REOPENED"],
+    PENDING_CLOSURE: ["CLOSED", "REOPENED"],
+    CLOSED: ["REOPENED"],
+    REOPENED: ["OPEN", "RESOLVED", "PENDING", "ESCALATED"],
+    REJECTED: [],
+    CANCELLED: [],
+  };

@@ -20,7 +20,7 @@ import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
 import { useFileUpload } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
 import { toast } from "@/lib/utils";
-import { CustomEmojiPicker } from "@/components/features/ticket-chat/CustomEmojiPicker";
+import { WikiEditor } from "@/components/features/wiki";
 import { AxiosError } from "axios";
 
 // Helper to format file size
@@ -217,24 +217,14 @@ export default function NewWikiArticlePage() {
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
                 Содержимое *
               </Text>
-              <Textarea
+              <WikiEditor
                 value={formData.content}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, content: e.target.value }))
+                onChange={(content) =>
+                  setFormData((prev) => ({ ...prev, content }))
                 }
-                placeholder="Напишите содержимое статьи..."
-                bg="bg.subtle"
-                rows={15}
-                minH="300px"
+                placeholder="Начните писать статью..."
+                height="400px"
               />
-              <Box>
-                {/* Эмодзи перезаписывает текст */}
-                <CustomEmojiPicker
-                  onSelect={(emoji) =>
-                    setFormData((prev) => ({ ...prev, content: emoji }))
-                  }
-                />
-              </Box>
             </Box>
 
             {/* File Attachments */}

@@ -248,7 +248,11 @@ export default function WikiPage() {
                     >
                       <HStack gap={1}>
                         <LuUser size={12} />
-                        <Text>{article.authorName || "Аноним"}</Text>
+                        <Text>
+                          {article.author?.fio ||
+                            article.author?.username ||
+                            "Аноним"}
+                        </Text>
                       </HStack>
                       <HStack gap={1}>
                         <LuEye size={12} />

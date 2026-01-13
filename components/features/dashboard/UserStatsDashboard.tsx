@@ -86,7 +86,7 @@ export function UserStatsDashboard() {
         templateColumns={{
           base: "1fr",
           md: "repeat(2, 1fr)",
-          lg: "repeat(5, 1fr)",
+          lg: "repeat(4, 1fr)",
         }}
         gap={4}
       >
@@ -104,14 +104,6 @@ export function UserStatsDashboard() {
             value={stats.open}
             icon={LuClock}
             color="orange.500"
-          />
-        </GridItem>
-        <GridItem>
-          <StatCard
-            label="Решено"
-            value={stats.resolved}
-            icon={LuCircleCheck}
-            color="green.500"
           />
         </GridItem>
         <GridItem>

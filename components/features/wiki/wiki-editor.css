@@ -1,0 +1,174 @@
+/* TipTap Wiki Editor Styles */
+
+.wiki-editor-content {
+  padding: 1rem;
+  outline: none;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.wiki-editor-content:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.wiki-editor-content p.is-editor-empty:first-child::before {
+  color: var(--chakra-colors-fg-muted, #a0aec0);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Typography */
+.wiki-editor-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.wiki-editor-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.wiki-editor-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.wiki-editor-content p {
+  margin-bottom: 0.75rem;
+}
+
+/* Lists */
+.wiki-editor-content ul,
+.wiki-editor-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.wiki-editor-content ul {
+  list-style-type: disc;
+}
+
+.wiki-editor-content ol {
+  list-style-type: decimal;
+}
+
+.wiki-editor-content li {
+  margin-bottom: 0.25rem;
+}
+
+.wiki-editor-content li p {
+  margin-bottom: 0;
+}
+
+/* Blockquote */
+.wiki-editor-content blockquote {
+  border-left: 4px solid var(--chakra-colors-border-default, #e2e8f0);
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-bottom: 0.75rem;
+  color: var(--chakra-colors-fg-muted, #718096);
+  font-style: italic;
+}
+
+/* Horizontal rule */
+.wiki-editor-content hr {
+  border: none;
+  border-top: 2px solid var(--chakra-colors-border-default, #e2e8f0);
+  margin: 1.5rem 0;
+}
+
+/* Links */
+.wiki-editor-link {
+  color: var(--chakra-colors-blue-500, #3182ce);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.wiki-editor-link:hover {
+  color: var(--chakra-colors-blue-600, #2b6cb0);
+}
+
+/* Images */
+.wiki-editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.wiki-editor-image.ProseMirror-selectednode {
+  outline: 3px solid var(--chakra-colors-blue-500, #3182ce);
+  outline-offset: 2px;
+}
+
+/* Clickable images in content viewer */
+.wiki-content-viewer .wiki-image-clickable {
+  cursor: zoom-in;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.wiki-content-viewer .wiki-image-clickable:hover {
+  opacity: 0.9;
+  transform: scale(1.01);
+}
+
+/* Code */
+.wiki-editor-content code {
+  background-color: var(--chakra-colors-bg-subtle, #f7fafc);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+.wiki-editor-content pre {
+  background-color: var(--chakra-colors-bg-subtle, #f7fafc);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.wiki-editor-content pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Strong and emphasis */
+.wiki-editor-content strong {
+  font-weight: 700;
+}
+
+.wiki-editor-content em {
+  font-style: italic;
+}
+
+.wiki-editor-content s {
+  text-decoration: line-through;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .wiki-editor-content code,
+[data-theme="dark"] .wiki-editor-content pre {
+  background-color: var(--chakra-colors-gray-800, #1a202c);
+}
+
+[data-theme="dark"] .wiki-editor-content blockquote {
+  border-left-color: var(--chakra-colors-gray-600, #4a5568);
+}
+
+[data-theme="dark"] .wiki-editor-content hr {
+  border-top-color: var(--chakra-colors-gray-600, #4a5568);
+}

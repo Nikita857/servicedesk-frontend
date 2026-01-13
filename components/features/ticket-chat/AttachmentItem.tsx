@@ -18,6 +18,7 @@ import { toast } from "@/lib/utils";
 interface AttachmentItemProps {
   attachment: MessageAttachment;
   isOwn?: boolean;
+  onImageClick?: (url: string) => void;
 }
 
 const isVideoType = (mimeType: string) => mimeType?.startsWith("video/");
@@ -32,6 +33,7 @@ const getFileIcon = (mimeType: string) => {
 export function AttachmentItem({
   attachment,
   isOwn = false,
+  onImageClick,
 }: AttachmentItemProps) {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +102,18 @@ export function AttachmentItem({
     }
 
     return (
-      <Box onClick={handleDownload} display="block" cursor="pointer">
+      <Box
+        onClick={(e) => {
+          if (onImageClick) {
+            e.preventDefault();
+            onImageClick(downloadUrl);
+          } else {
+            handleDownload(e);
+          }
+        }}
+        display="block"
+        cursor="pointer"
+      >
         <Image
           src={downloadUrl}
           alt={attachment.filename}

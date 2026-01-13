@@ -29,10 +29,8 @@ export * from "./useStatsQuery";
 // File Upload
 export { useFileUpload } from "./useFileUpload";
 
+// Assignments WebSocket
+export { useAssignmentsWebSocket } from "./useAssignmentsWebSocket";
+
 // Ticket Chat
 export * from "./ticket-chat/useChatActions";
-
-
-
-
-
