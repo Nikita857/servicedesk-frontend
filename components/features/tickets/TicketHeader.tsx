@@ -84,7 +84,11 @@ export default function TicketHeader({
 
   // Can show escalation button: not closed/resolved and no pending assignment
   const canReassign = () => {
-    if (ticket.status === "CLOSED" || ticket.status === "RESOLVED") {
+    if (
+      ticket.status === "CLOSED" ||
+      ticket.status === "RESOLVED" ||
+      ticket.status === "PENDING_CLOSURE"
+    ) {
       return false;
     }
     // Hide if there's already a pending assignment
@@ -274,7 +278,7 @@ export default function TicketHeader({
               })()}
 
             {/* Cancel button - for ticket creator or admin */}
-            {canCancel && (
+            {canCancel && isTicketCreator && (
               <Button
                 size="sm"
                 variant="outline"
@@ -307,7 +311,9 @@ export default function TicketHeader({
           <Dialog.Positioner>
             <Dialog.Content>
               <Dialog.Header>
-                <Dialog.Title>Отменить тикет?</Dialog.Title>
+                {isTicketCreator && (
+                  <Dialog.Title>Отменить тикет?</Dialog.Title>
+                )}
               </Dialog.Header>
               <Dialog.Body>
                 <Text mb={4} color="fg.muted">

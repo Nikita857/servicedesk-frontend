@@ -26,6 +26,7 @@ import {
   useTicketsCountsQuery,
   useAssignmentsActions,
   useTicketsWebSocket,
+  useAssignmentsWebSocket,
   FilterType,
 } from "@/lib/hooks";
 
@@ -100,6 +101,9 @@ export default function TicketsPage() {
     },
     enabled: true,
   });
+
+  // WebSocket for assignments (real-time pending count updates)
+  useAssignmentsWebSocket();
 
   // ==================== Фильтр тикетов ====================
   const filterCollection = useMemo(() => {

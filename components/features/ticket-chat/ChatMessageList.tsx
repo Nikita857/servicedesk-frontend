@@ -23,6 +23,7 @@ interface ChatMessageListProps {
   isLoading: boolean;
   onEditMessage?: (message: Message) => void;
   onDeleteMessage?: (messageId: number) => void;
+  onImageClick?: (url: string) => void;
 }
 
 // Helper functions
@@ -59,6 +60,7 @@ export function ChatMessageList({
   isLoading,
   onEditMessage,
   onDeleteMessage,
+  onImageClick,
 }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -172,6 +174,7 @@ export function ChatMessageList({
                             key={att.id}
                             attachment={att}
                             isOwn={isOwn}
+                            onImageClick={onImageClick}
                           />
                         ))}
                       </VStack>

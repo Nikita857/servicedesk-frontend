@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
     "http://192.168.0.13:3000",
     "http://192.168.0.13",
     "http://sd.bormash.ru:2007",
+    "http://192.168.31.126:3000",
+    "http://192.168.31.126",
     "192.168.0.13",
     "192.168.0.111", //Для работы Hot module replpacement (HMR) by websocket connection
   ],

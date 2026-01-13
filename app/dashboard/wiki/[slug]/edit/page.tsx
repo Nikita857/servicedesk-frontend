@@ -319,7 +319,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
                   setFormData((prev) => ({ ...prev, content }))
                 }
                 placeholder="Напишите содержимое статьи..."
-                minHeight="400px"
+                height="400px"
               />
             </Box>
 

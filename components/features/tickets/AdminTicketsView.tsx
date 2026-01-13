@@ -16,15 +16,23 @@ import {
   createListCollection,
 } from "@chakra-ui/react";
 import { Select } from "@chakra-ui/react";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import {
+  LuChevronLeft,
+  LuChevronRight,
+  LuUser,
+  LuShield,
+  LuClock,
+  LuUserCheck,
+} from "react-icons/lu";
 import Link from "next/link";
-import { adminApi, AdminTicketListItem } from "@/lib/api/admin";
+import { adminApi } from "@/lib/api/admin";
 import { formatDate } from "@/lib/utils";
 import {
   ticketStatusConfig,
   ticketPriorityConfig,
   TicketStatus,
   TicketPriority,
+  type TicketListItem,
 } from "@/types/ticket";
 
 type AdminFilter = "new" | "closed";
@@ -159,14 +167,12 @@ export function AdminTicketsView() {
 }
 
 // Admin ticket card component
-function AdminTicketCard({ ticket }: { ticket: AdminTicketListItem }) {
-  const statusConf = ticketStatusConfig[ticket.status as TicketStatus] || {
+function AdminTicketCard({ ticket }: { ticket: TicketListItem }) {
+  const statusConf = ticketStatusConfig[ticket.status] || {
     label: ticket.status,
     color: "gray",
   };
-  const priorityConf = ticketPriorityConfig[
-    ticket.priority as TicketPriority
-  ] || {
+  const priorityConf = ticketPriorityConfig[ticket.priority] || {
     label: ticket.priority,
     color: "gray",
   };
@@ -200,14 +206,24 @@ function AdminTicketCard({ ticket }: { ticket: AdminTicketListItem }) {
             </Text>
 
             <HStack gap={4} fontSize="sm" color="fg.muted" flexWrap="wrap">
-              <Text>Автор: {ticket.creatorFio || ticket.creatorUsername}</Text>
-              {ticket.assigneeUsername && (
-                <Text>
-                  Исполнитель: {ticket.assigneeFio || ticket.assigneeUsername}
-                </Text>
+              <HStack gap={1}>
+                <LuUser size={14} />
+                <Text>Автор: {ticket.createdByUsername}</Text>
+              </HStack>
+              {ticket.assignedToUsername && (
+                <HStack gap={1}>
+                  <LuUserCheck size={14} />
+                  <Text>Исполнитель: {ticket.assignedToUsername}</Text>
+                </HStack>
               )}
-              {ticket.lineName && <Text>Линия: {ticket.lineName}</Text>}
-              <Text>{formatDate(ticket.createdAt)}</Text>
+              <HStack gap={1}>
+                <LuShield size={14} />
+                <Text>Линия: {ticket.supportLineName || "Не назначена"}</Text>
+              </HStack>
+              <HStack gap={1}>
+                <LuClock size={14} />
+                <Text>{formatDate(ticket.createdAt)}</Text>
+              </HStack>
             </HStack>
           </Box>
         </Flex>

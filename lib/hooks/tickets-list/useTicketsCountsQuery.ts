@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { reportsApi } from "@/lib/api/reports";
 import { assignmentApi } from "@/lib/api/assignments";
 import { ticketApi } from "@/lib/api/tickets";
+import { statsApi } from "@/lib/api/stats";
 import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 
@@ -42,20 +43,32 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
         };
       }
 
-      // Fetch all data in parallel
-      const [statusStats, pendingCount, assignedTickets] = await Promise.all([
-        reportsApi.getStatsByStatus(),
-        assignmentApi.getPendingCount(),
-        ticketApi.listAssigned(0, 100), // Get assigned tickets for accurate counts
-      ]);
+      // Fetch all data in parallel with error handling
+      const [statusStats, pendingCount, assignedTickets, lineStats] =
+        await Promise.all([
+          reportsApi.getStatsByStatus().catch(() => []),
+          assignmentApi.getPendingCount().catch(() => 0),
+          ticketApi
+            .listAssigned(0, 100)
+            .catch(() => ({ content: [], totalElements: 0, totalPages: 0 })),
+          statsApi.getStatsByAllLines().catch(() => []),
+        ]);
 
-      // Extract counts from status stats
+      // Extract counts from status stats (for ADMIN)
       const getCount = (status: string) =>
         statusStats.find((s) => s.status === status)?.count ?? 0;
 
-      const newCount = getCount("NEW");
-      const openCount = getCount("OPEN") + getCount("PENDING") + getCount("ESCALATED");
-      const resolvedCount = getCount("RESOLVED");
+      // For specialists, if statusStats is empty, aggregate from lineStats
+      let newCount = getCount("NEW");
+      let openCount =
+        getCount("OPEN") + getCount("PENDING") + getCount("ESCALATED");
+      let resolvedCount = getCount("RESOLVED");
+
+      if (statusStats.length === 0 && lineStats.length > 0) {
+        newCount = lineStats.reduce((acc, line) => acc + line.newTickets, 0);
+        openCount = lineStats.reduce((acc, line) => acc + line.open, 0);
+        resolvedCount = lineStats.reduce((acc, line) => acc + line.resolved, 0);
+      }
 
       // Count assigned tickets (not closed) and closed separately
       const assignedNotClosed = assignedTickets.content.filter(
@@ -76,7 +89,7 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
       };
     },
     enabled: isSpecialist,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 0, // Fresh counts every time
   });
 
   const refetch = useCallback(() => {
@@ -94,4 +107,3 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
     refetch,
   };
 }
-

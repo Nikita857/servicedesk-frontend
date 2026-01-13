@@ -32,7 +32,7 @@ interface WikiEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  minHeight?: string;
+  height?: string;
 }
 
 // Toolbar Button Component
@@ -246,7 +246,7 @@ export default function WikiEditor({
   value,
   onChange,
   placeholder = "Начните писать статью...",
-  minHeight = "300px",
+  height = "500px",
 }: WikiEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploading = useRef(false);
@@ -292,7 +292,7 @@ export default function WikiEditor({
     editorProps: {
       attributes: {
         class: "wiki-editor-content",
-        style: `min-height: ${minHeight}`,
+        style: `min-height: 100%`,
       },
       handleDrop: (view, event, slice, moved) => {
         if (!moved && event.dataTransfer?.files?.length) {
@@ -394,7 +394,9 @@ export default function WikiEditor({
         onImageUpload={handleImageButtonClick}
         isUploading={uploadingState}
       />
-      <EditorContent editor={editor} />
+      <Box height={height} overflowY="auto" position="relative">
+        <EditorContent editor={editor} style={{ height: "100%" }} />
+      </Box>
 
       {/* Hidden file input for image upload */}
       <input

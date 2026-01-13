@@ -11,7 +11,7 @@ import {
   HStack,
   Spinner,
 } from "@chakra-ui/react";
-import { LuUsers, LuSparkles, LuUserX } from "react-icons/lu";
+import { LuUsers, LuSparkles, LuUserX, LuArchive } from "react-icons/lu";
 import { useLineStatsQuery, type LineTicketStats } from "@/lib/hooks";
 
 function LineStatsCard({ line }: { line: LineTicketStats }) {
@@ -54,11 +54,11 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
           </Text>
         </Box>
         <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="2xl" fontWeight="bold" color="green.500">
-            {line.resolved}
+          <Text fontSize="2xl" fontWeight="bold" color="gray.500">
+            {line.closed}
           </Text>
           <Text fontSize="xs" color="fg.muted">
-            Решено
+            Закрыто
           </Text>
         </Box>
         <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">

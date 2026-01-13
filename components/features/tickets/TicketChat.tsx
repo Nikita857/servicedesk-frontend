@@ -1,5 +1,16 @@
-import { Box, Flex, Text, Button, VStack, HStack } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Dialog,
+  Portal,
+  CloseButton,
+} from "@chakra-ui/react";
 import { LuWifi, LuWifiOff, LuPaperclip, LuX } from "react-icons/lu";
+import { useState } from "react";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
 import { useChatWebSocket } from "@/lib/hooks/useChatWebSocket";
@@ -21,6 +32,7 @@ export function TicketChat({
 }: TicketChatProps) {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Use custom hook for WebSocket and messages
   const {
@@ -123,6 +135,7 @@ export function TicketChat({
             isLoading={isLoading}
             onEditMessage={handleEditMessage}
             onDeleteMessage={handleDeleteMessage}
+            onImageClick={setLightboxImage}
           />
         </Box>
 
@@ -218,6 +231,56 @@ export function TicketChat({
           )}
         </Box>
       </Box>
+
+      {/* Image Lightbox */}
+      <Dialog.Root
+        open={!!lightboxImage}
+        onOpenChange={(details) => !details.open && setLightboxImage(null)}
+        size="cover"
+      >
+        <Portal>
+          <Dialog.Backdrop
+            bg="blackAlpha.800"
+            onClick={() => setLightboxImage(null)}
+          />
+          <Dialog.Positioner>
+            <Dialog.Content
+              bg="transparent"
+              shadow="none"
+              maxW="95vw"
+              maxH="95vh"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              onClick={() => setLightboxImage(null)}
+            >
+              <CloseButton
+                position="absolute"
+                top={4}
+                right={4}
+                color="white"
+                size="lg"
+                onClick={() => setLightboxImage(null)}
+                zIndex={10}
+                _hover={{ bg: "whiteAlpha.200" }}
+              />
+              {lightboxImage && (
+                <img
+                  src={lightboxImage}
+                  alt="Enlarged view"
+                  style={{
+                    maxWidth: "90vw",
+                    maxHeight: "90vh",
+                    objectFit: "contain",
+                    borderRadius: "8px",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </VStack>
   );
 }

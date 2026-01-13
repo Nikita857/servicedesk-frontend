@@ -223,7 +223,7 @@ export default function NewWikiArticlePage() {
                   setFormData((prev) => ({ ...prev, content }))
                 }
                 placeholder="Начните писать статью..."
-                minHeight="400px"
+                height="400px"
               />
             </Box>
 

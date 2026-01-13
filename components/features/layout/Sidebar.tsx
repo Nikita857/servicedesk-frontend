@@ -11,6 +11,7 @@ import {
   LuBarcode,
   LuSettings,
   LuUsers,
+  LuNetwork,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -36,6 +37,11 @@ const navItems: NavItem[] = [
 
 const adminItems: NavItem[] = [
   { label: "Пользователи", href: "/dashboard/users", icon: LuUsers },
+  {
+    label: "Линии поддержки",
+    href: "/dashboard/admin/support-lines",
+    icon: LuNetwork,
+  },
   { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
 ];
 

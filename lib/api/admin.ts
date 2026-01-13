@@ -1,5 +1,6 @@
 import api from "./client";
 import type { ApiResponse } from "@/types/api";
+import type { TicketListItem } from "@/types/ticket";
 
 // ==================== Types ====================
 
@@ -51,6 +52,22 @@ export const adminApi = {
     const response = await api.get<
       ApiResponse<AdminPaginatedResponse<AdminUser>>
     >(`/admin/users?${params.toString()}`);
+    return response.data.data;
+  },
+
+  // Get users by role with pagination
+  getUsersByRole: async (
+    role: string,
+    page: number = 0,
+    size: number = 50
+  ): Promise<AdminPaginatedResponse<AdminUser>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+
+    const response = await api.get<
+      ApiResponse<AdminPaginatedResponse<AdminUser>>
+    >(`/admin/users/by-role/${role}?${params.toString()}`);
     return response.data.data;
   },
 
@@ -127,9 +144,9 @@ export const adminApi = {
   getNewTickets: async (
     page: number = 0,
     size: number = 20
-  ): Promise<AdminPaginatedResponse<AdminTicketListItem>> => {
+  ): Promise<AdminPaginatedResponse<TicketListItem>> => {
     const response = await api.get<
-      ApiResponse<AdminPaginatedResponse<AdminTicketListItem>>
+      ApiResponse<AdminPaginatedResponse<TicketListItem>>
     >(`/admin/tickets/new?page=${page}&size=${size}`);
     return response.data.data;
   },
@@ -138,24 +155,10 @@ export const adminApi = {
   getClosedTickets: async (
     page: number = 0,
     size: number = 20
-  ): Promise<AdminPaginatedResponse<AdminTicketListItem>> => {
+  ): Promise<AdminPaginatedResponse<TicketListItem>> => {
     const response = await api.get<
-      ApiResponse<AdminPaginatedResponse<AdminTicketListItem>>
+      ApiResponse<AdminPaginatedResponse<TicketListItem>>
     >(`/admin/tickets/closed?page=${page}&size=${size}`);
     return response.data.data;
   },
 };
-
-// Admin ticket list item type (matches TicketListResponse from backend)
-export interface AdminTicketListItem {
-  id: number;
-  title: string;
-  status: string;
-  priority: string;
-  createdAt: string;
-  creatorFio: string | null;
-  creatorUsername: string;
-  assigneeFio: string | null;
-  assigneeUsername: string | null;
-  lineName: string | null;
-}
