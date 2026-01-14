@@ -29,13 +29,16 @@ interface UseDashboardQueryReturn {
 export function useDashboardQuery(): UseDashboardQueryReturn {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
+  const isAdmin = user?.roles.includes("ADMIN") || false;
 
   // Stats query using reports API
   const statsQuery = useQuery({
     queryKey: queryKeys.reports.ticketsByStatus(),
     queryFn: async (): Promise<DashboardStats> => {
       const [statusStats, pendingCount, lineStats] = await Promise.all([
-        reportsApi.getStatsByStatus().catch(() => []),
+        isAdmin
+          ? reportsApi.getStatsByStatus().catch(() => [])
+          : Promise.resolve([]),
         isSpecialist ? assignmentApi.getPendingCount() : Promise.resolve(0),
         isSpecialist
           ? statsApi.getStatsByAllLines().catch(() => [])

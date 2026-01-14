@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { use } from "react";
 import {
   Box,
   Flex,
@@ -16,25 +15,13 @@ import {
   Badge,
   IconButton,
   Portal,
+  createListCollection,
 } from "@chakra-ui/react";
-import { Select, createListCollection } from "@chakra-ui/react";
-import {
-  LuArrowLeft,
-  LuSave,
-  LuUsers,
-  LuClock,
-  LuTrash2,
-  LuPlus,
-} from "react-icons/lu";
+import { Select } from "@chakra-ui/react";
+import { LuArrowLeft, LuSave, LuUsers, LuTrash2, LuPlus } from "react-icons/lu";
 import Link from "next/link";
-import {
-  supportLineApi,
-  type SupportLineDetail,
-  type Specialist,
-  type AssignmentMode,
-} from "@/lib/api/supportLines";
-import { adminApi, type AdminUser } from "@/lib/api/admin";
-import { toast } from "@/lib/utils";
+import { type Specialist, type AssignmentMode } from "@/lib/api/supportLines";
+import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
 import { userRolesBadges } from "@/types/auth";
 
 interface PageProps {
@@ -62,100 +49,21 @@ const assignmentModeCollection = createListCollection({
 export default function SupportLineDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const lineId = parseInt(id);
-  const queryClient = useQueryClient();
 
-  // Form state
-  const [description, setDescription] = useState("");
-  const [slaMinutes, setSlaMinutes] = useState(60);
-  const [assignmentMode, setAssignmentMode] =
-    useState<AssignmentMode>("FIRST_AVAILABLE");
-  const [displayOrder, setDisplayOrder] = useState(0);
-  const [isFormDirty, setIsFormDirty] = useState(false);
-
-  // User selection for adding specialist
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-
-  // Queries
-  const { data: line, isLoading } = useQuery({
-    queryKey: ["support-line", lineId],
-    queryFn: () => supportLineApi.get(lineId),
-    staleTime: 30 * 1000,
-  });
-
-  const { data: availableUsers, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ["admin-users-by-role", selectedRole],
-    queryFn: () => adminApi.getUsersByRole(selectedRole!),
-    enabled: !!selectedRole,
-    staleTime: 60 * 1000,
-  });
-
-  // Sync form state when line loads
-  const syncFormState = (lineData: SupportLineDetail) => {
-    setDescription(lineData.description || "");
-    setSlaMinutes(lineData.slaMinutes);
-    setAssignmentMode(lineData.assignmentMode);
-    setDisplayOrder(lineData.displayOrder);
-    setIsFormDirty(false);
-  };
-
-  // Initial sync
-  if (line && !isFormDirty && description === "" && slaMinutes === 60) {
-    syncFormState(line);
-  }
-
-  // Mutations
-  const updateMutation = useMutation({
-    mutationFn: () =>
-      supportLineApi.update(lineId, {
-        description,
-        slaMinutes,
-        assignmentMode,
-        displayOrder,
-      }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["support-line", lineId], data);
-      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
-      toast.success("Линия обновлена");
-      setIsFormDirty(false);
-    },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось обновить линию");
-    },
-  });
-
-  const addSpecialistMutation = useMutation({
-    mutationFn: (userId: number) =>
-      supportLineApi.addSpecialist(lineId, userId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["support-line", lineId], data);
-      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
-      toast.success("Специалист добавлен");
-      setSelectedUserId(null);
-    },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось добавить специалиста");
-    },
-  });
-
-  const removeSpecialistMutation = useMutation({
-    mutationFn: (userId: number) =>
-      supportLineApi.removeSpecialist(lineId, userId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["support-line", lineId], data);
-      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
-      toast.success("Специалист удален");
-    },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось удалить специалиста");
-    },
-  });
-
-  // Filter users who are not already on this line
-  const availableSpecialists =
-    availableUsers?.content.filter(
-      (u) => u.active && !line?.specialists.some((s) => s.id === u.id)
-    ) || [];
+  const {
+    line,
+    isLoading,
+    availableSpecialists,
+    isLoadingUsers,
+    form,
+    selection,
+    updateLine,
+    addSpecialist,
+    removeSpecialist,
+    isUpdating,
+    isAddingSpecialist,
+    isRemovingSpecialist,
+  } = useSupportLineDetail(lineId);
 
   const specialistCollection = createListCollection({
     items: availableSpecialists.map((u) => ({
@@ -205,9 +113,9 @@ export default function SupportLineDetailPage({ params }: PageProps) {
           bg="gray.900"
           color="white"
           _hover={{ bg: "gray.800" }}
-          onClick={() => updateMutation.mutate()}
-          loading={updateMutation.isPending}
-          disabled={!isFormDirty}
+          onClick={() => updateLine()}
+          loading={isUpdating}
+          disabled={!form.isDirty}
         >
           <LuSave />
           Сохранить
@@ -233,11 +141,8 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 Описание
               </Text>
               <Textarea
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                  setIsFormDirty(true);
-                }}
+                value={form.description}
+                onChange={(e) => form.setDescription(e.target.value)}
                 placeholder="Описание линии поддержки"
                 rows={3}
               />
@@ -250,11 +155,10 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 </Text>
                 <Input
                   type="number"
-                  value={slaMinutes}
-                  onChange={(e) => {
-                    setSlaMinutes(parseInt(e.target.value) || 0);
-                    setIsFormDirty(true);
-                  }}
+                  value={form.slaMinutes}
+                  onChange={(e) =>
+                    form.setSlaMinutes(parseInt(e.target.value) || 0)
+                  }
                   min={1}
                 />
               </Box>
@@ -265,11 +169,10 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 </Text>
                 <Input
                   type="number"
-                  value={displayOrder}
-                  onChange={(e) => {
-                    setDisplayOrder(parseInt(e.target.value) || 0);
-                    setIsFormDirty(true);
-                  }}
+                  value={form.displayOrder}
+                  onChange={(e) =>
+                    form.setDisplayOrder(parseInt(e.target.value) || 0)
+                  }
                 />
               </Box>
             </HStack>
@@ -280,11 +183,10 @@ export default function SupportLineDetailPage({ params }: PageProps) {
               </Text>
               <Select.Root
                 collection={assignmentModeCollection}
-                value={[assignmentMode]}
-                onValueChange={(e) => {
-                  setAssignmentMode(e.value[0] as AssignmentMode);
-                  setIsFormDirty(true);
-                }}
+                value={[form.assignmentMode]}
+                onValueChange={(e) =>
+                  form.setAssignmentMode(e.value[0] as AssignmentMode)
+                }
               >
                 <Select.Trigger>
                   <Select.ValueText />
@@ -331,11 +233,10 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 </Text>
                 <Select.Root
                   collection={roleCollection}
-                  value={selectedRole ? [selectedRole] : []}
-                  onValueChange={(e) => {
-                    setSelectedRole(e.value[0] || null);
-                    setSelectedUserId(null);
-                  }}
+                  value={selection.selectedRole ? [selection.selectedRole] : []}
+                  onValueChange={(e) =>
+                    selection.setSelectedRole(e.value[0] || null)
+                  }
                 >
                   <Select.Trigger>
                     <Select.ValueText placeholder="Выберите роль" />
@@ -343,7 +244,7 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   <Portal>
                     <Select.Positioner>
                       <Select.Content>
-                        {roleCollection.items.map((item) => (
+                        {roleCollection.items.map((item: any) => (
                           <Select.Item key={item.value} item={item}>
                             {item.label}
                           </Select.Item>
@@ -360,18 +261,24 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 </Text>
                 <Select.Root
                   collection={specialistCollection}
-                  value={selectedUserId ? [selectedUserId.toString()] : []}
-                  onValueChange={(e) =>
-                    setSelectedUserId(e.value[0] ? parseInt(e.value[0]) : null)
+                  value={
+                    selection.selectedUserId
+                      ? [selection.selectedUserId.toString()]
+                      : []
                   }
-                  disabled={!selectedRole || isLoadingUsers}
+                  onValueChange={(e) =>
+                    selection.setSelectedUserId(
+                      e.value[0] ? parseInt(e.value[0]) : null
+                    )
+                  }
+                  disabled={!selection.selectedRole || isLoadingUsers}
                 >
                   <Select.Trigger>
                     <Select.ValueText
                       placeholder={
                         isLoadingUsers
                           ? "Загрузка..."
-                          : !selectedRole
+                          : !selection.selectedRole
                           ? "Сначала выберите роль"
                           : availableSpecialists.length === 0
                           ? "Нет доступных пользователей"
@@ -382,7 +289,7 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   <Portal>
                     <Select.Positioner>
                       <Select.Content>
-                        {specialistCollection.items.map((item) => (
+                        {specialistCollection.items.map((item: any) => (
                           <Select.Item key={item.value} item={item}>
                             {item.label}
                           </Select.Item>
@@ -397,11 +304,11 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 <Button
                   colorPalette="blue"
                   onClick={() =>
-                    selectedUserId &&
-                    addSpecialistMutation.mutate(selectedUserId)
+                    selection.selectedUserId &&
+                    addSpecialist(selection.selectedUserId)
                   }
-                  disabled={!selectedUserId}
-                  loading={addSpecialistMutation.isPending}
+                  disabled={!selection.selectedUserId}
+                  loading={isAddingSpecialist}
                 >
                   <LuPlus />
                   Добавить
@@ -417,14 +324,12 @@ export default function SupportLineDetailPage({ params }: PageProps) {
             </Text>
           ) : (
             <VStack gap={2} align="stretch">
-              {line.specialists.map((specialist) => (
+              {line.specialists.map((specialist: Specialist) => (
                 <SpecialistRow
                   key={specialist.id}
                   specialist={specialist}
-                  onRemove={() =>
-                    removeSpecialistMutation.mutate(specialist.id)
-                  }
-                  isRemoving={removeSpecialistMutation.isPending}
+                  onRemove={() => removeSpecialist(specialist.id)}
+                  isRemoving={isRemovingSpecialist}
                 />
               ))}
             </VStack>

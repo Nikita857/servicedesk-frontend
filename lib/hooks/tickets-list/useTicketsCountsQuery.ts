@@ -28,6 +28,7 @@ interface UseTicketsCountsQueryReturn extends TicketCounts {
 export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
+  const isAdmin = user?.roles.includes("ADMIN") || false;
 
   const countsQuery = useQuery({
     queryKey: queryKeys.tickets.counts(),
@@ -46,7 +47,9 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
       // Fetch all data in parallel with error handling
       const [statusStats, pendingCount, assignedTickets, lineStats] =
         await Promise.all([
-          reportsApi.getStatsByStatus().catch(() => []),
+          isAdmin
+            ? reportsApi.getStatsByStatus().catch(() => [])
+            : Promise.resolve([]),
           assignmentApi.getPendingCount().catch(() => 0),
           ticketApi
             .listAssigned(0, 100)

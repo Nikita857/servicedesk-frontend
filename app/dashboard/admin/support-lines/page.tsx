@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Box,
   Flex,
@@ -13,14 +12,11 @@ import {
 } from "@chakra-ui/react";
 import { LuClock, LuUsers, LuChevronRight } from "react-icons/lu";
 import Link from "next/link";
-import { supportLineApi, type SupportLine } from "@/lib/api/supportLines";
+import { useSupportLines } from "@/lib/hooks/admin-support-lines";
+import { type SupportLine } from "@/lib/api/supportLines";
 
 export default function SupportLinesPage() {
-  const { data: lines, isLoading } = useQuery({
-    queryKey: ["support-lines"],
-    queryFn: supportLineApi.list,
-    staleTime: 30 * 1000,
-  });
+  const { lines, isLoading } = useSupportLines();
 
   return (
     <Box>
@@ -56,7 +52,7 @@ export default function SupportLinesPage() {
         </Flex>
       ) : (
         <VStack gap={3} align="stretch">
-          {lines.map((line) => (
+          {lines.map((line: SupportLine) => (
             <SupportLineCard key={line.id} line={line} />
           ))}
         </VStack>
