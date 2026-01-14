@@ -17,6 +17,7 @@ export function useSupportLineDetail(lineId: number) {
     useState<AssignmentMode>("FIRST_AVAILABLE");
   const [displayOrder, setDisplayOrder] = useState(0);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Specialist selection state
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -39,13 +40,20 @@ export function useSupportLineDetail(lineId: number) {
 
   // Sync form state when data is loaded (initial sync)
   useEffect(() => {
-    if (line && !isFormDirty) {
+    if (line && !isInitialized) {
       setDescription(line.description || "");
       setSlaMinutes(line.slaMinutes);
       setAssignmentMode(line.assignmentMode);
       setDisplayOrder(line.displayOrder);
+      setIsInitialized(true);
     }
-  }, [line, isFormDirty]);
+  }, [line, isInitialized]);
+
+  // Reset initialization when lineId changes
+  useEffect(() => {
+    setIsInitialized(false);
+    setIsFormDirty(false);
+  }, [lineId]);
 
   // --- Mutations ---
 
@@ -62,6 +70,8 @@ export function useSupportLineDetail(lineId: number) {
       queryClient.invalidateQueries({ queryKey: ["support-lines"] });
       toast.success("Линия обновлена");
       setIsFormDirty(false);
+      // Force re-sync with fresh data from server
+      setIsInitialized(false);
     },
     onError: () => {
       toast.error("Ошибка", "Не удалось обновить линию");
