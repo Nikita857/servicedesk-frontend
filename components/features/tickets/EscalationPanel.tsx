@@ -1,5 +1,6 @@
 import { Specialist, SupportLine } from "@/lib/api";
 import {
+  Badge,
   Box,
   Button,
   Heading,
@@ -14,22 +15,7 @@ import {
 import { useMemo } from "react";
 import { LuForward, LuUserPlus, LuTriangleAlert } from "react-icons/lu";
 
-// Status config for color indicators
-const statusColors: Record<string, string> = {
-  AVAILABLE: "green",
-  BUSY: "orange",
-  UNAVAILABLE: "gray",
-  TECHNICAL_ISSUE: "red",
-  OFFLINE: "gray",
-};
-
-const statusLabels: Record<string, string> = {
-  AVAILABLE: "Доступен",
-  BUSY: "Занят",
-  UNAVAILABLE: "Недоступен",
-  TECHNICAL_ISSUE: "Тех. проблемы",
-  OFFLINE: "Оффлайн",
-};
+// Status labels are no longer used as we use badges in the select list
 
 interface EscalationPanelProps {
   supportLines: SupportLine[];
@@ -89,21 +75,20 @@ export default function EscalationPanel({
     () =>
       createListCollection({
         items: specialists.map((s) => {
-          const status = s.activityStatus || "AVAILABLE";
-          const statusColor = statusColors[status] || "gray";
-          const statusLabel = statusLabels[status] || status;
+          const status = s.activityStatus || "OFFLINE";
+          const isOnline = status === "AVAILABLE" || status === "BUSY";
           const displayName = s.fio || s.username;
 
           return {
-            label: `${displayName} (${statusLabel})`,
+            label: displayName,
             value: String(s.id),
-            status,
-            statusColor,
+            isOnline,
           };
         }),
       }),
     [specialists]
   );
+
   return (
     <Box
       mb={6}
@@ -179,9 +164,21 @@ export default function EscalationPanel({
               <Portal>
                 <Select.Positioner>
                   <Select.Content>
-                    {specialistCollection.items.map((item) => (
-                      <Select.Item key={item.value} item={item}>
-                        {item.label}
+                    {specialistCollection.items.map((item: any) => (
+                      <Select.Item
+                        key={item.value}
+                        item={item}
+                        justifyContent="space-between"
+                      >
+                        <Text>{item.label}</Text>
+                        <Badge
+                          size="xs"
+                          colorPalette={item.isOnline ? "green" : "red"}
+                          variant="subtle"
+                          ml={2}
+                        >
+                          {item.isOnline ? "Online" : "Offline"}
+                        </Badge>
                       </Select.Item>
                     ))}
                   </Select.Content>
