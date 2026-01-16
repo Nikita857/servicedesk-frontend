@@ -1,4 +1,4 @@
-export * from './client';
+export * from "./client";
 export * from "./auth";
 export * from "./tickets";
 export * from "./users";
@@ -8,3 +8,4 @@ export * from "./attachments";
 export * from "./wiki";
 export * from "./stats";
 export * from "./profile";
+export * from "./categories";

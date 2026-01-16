@@ -42,6 +42,11 @@ const adminItems: NavItem[] = [
     href: "/dashboard/admin/support-lines",
     icon: LuNetwork,
   },
+  {
+    label: "Категории Wiki",
+    href: "/dashboard/admin/wiki-categories",
+    icon: LuBook,
+  },
   { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
 ];
 

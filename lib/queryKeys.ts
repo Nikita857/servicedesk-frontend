@@ -18,7 +18,8 @@ export const queryKeys = {
   // Assignments
   assignments: {
     all: ["assignments"] as const,
-    pending: (page: number) => [...queryKeys.assignments.all, "pending", page] as const,
+    pending: (page: number) =>
+      [...queryKeys.assignments.all, "pending", page] as const,
     current: (ticketId: number) =>
       [...queryKeys.assignments.all, "current", ticketId] as const,
     history: (ticketId: number) =>
@@ -37,11 +38,18 @@ export const queryKeys = {
   wiki: {
     all: ["wiki"] as const,
     lists: () => [...queryKeys.wiki.all, "list"] as const,
-    list: (params: { page?: number; search?: string; categoryId?: number }) =>
-      [...queryKeys.wiki.lists(), params] as const,
+    list: (params: {
+      page?: number;
+      search?: string;
+      categoryId?: number;
+      showAll?: boolean;
+    }) => [...queryKeys.wiki.lists(), params] as const,
     details: () => [...queryKeys.wiki.all, "detail"] as const,
     detail: (slug: string) => [...queryKeys.wiki.details(), slug] as const,
     popular: () => [...queryKeys.wiki.all, "popular"] as const,
+    categories: (showAll?: boolean) =>
+      [...queryKeys.wiki.all, "categories", { showAll }] as const,
+    adminCategories: () => [...queryKeys.wiki.all, "admin-categories"] as const,
   },
 
   // Users
@@ -49,23 +57,31 @@ export const queryKeys = {
     all: ["users"] as const,
     current: () => [...queryKeys.users.all, "current"] as const,
     myStatus: () => [...queryKeys.users.all, "my-status"] as const,
-    status: (userId: number) => [...queryKeys.users.all, "status", userId] as const,
-    search: (query: string) => [...queryKeys.users.all, "search", query] as const,
+    status: (userId: number) =>
+      [...queryKeys.users.all, "status", userId] as const,
+    search: (query: string) =>
+      [...queryKeys.users.all, "search", query] as const,
   },
 
   // Categories
   categories: {
     all: ["categories"] as const,
     list: () => [...queryKeys.categories.all, "list"] as const,
-    userSelectable: () => [...queryKeys.categories.all, "user-selectable"] as const,
+    userSelectable: () =>
+      [...queryKeys.categories.all, "user-selectable"] as const,
+    detail: (id: number) =>
+      [...queryKeys.categories.all, "detail", id] as const,
   },
 
   // Reports
   reports: {
     all: ["reports"] as const,
-    ticketsByStatus: () => [...queryKeys.reports.all, "tickets-by-status"] as const,
-    ticketsByCategory: () => [...queryKeys.reports.all, "tickets-by-category"] as const,
-    specialistWorkload: () => [...queryKeys.reports.all, "specialist-workload"] as const,
+    ticketsByStatus: () =>
+      [...queryKeys.reports.all, "tickets-by-status"] as const,
+    ticketsByCategory: () =>
+      [...queryKeys.reports.all, "tickets-by-category"] as const,
+    specialistWorkload: () =>
+      [...queryKeys.reports.all, "specialist-workload"] as const,
   },
 
   // Stats (Ticket Statistics)
@@ -73,8 +89,8 @@ export const queryKeys = {
     all: ["stats"] as const,
     my: () => [...queryKeys.stats.all, "my"] as const,
     byAllLines: () => [...queryKeys.stats.all, "by-all-lines"] as const,
-    byLine: (lineId: number) => [...queryKeys.stats.all, "by-line", lineId] as const,
+    byLine: (lineId: number) =>
+      [...queryKeys.stats.all, "by-line", lineId] as const,
     global: () => [...queryKeys.stats.all, "global"] as const,
   },
 } as const;
-

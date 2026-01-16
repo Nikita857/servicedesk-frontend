@@ -22,6 +22,8 @@ export interface AdminUser {
   avatarUrl: string | null;
   telegramId: number | null;
   specialist: boolean;
+  department: string | null;
+  position: string | null;
   roles: string[];
   active: boolean;
 }
@@ -33,6 +35,13 @@ export interface CreateUserParams {
   email?: string;
   roles?: string[];
   active?: boolean;
+}
+
+export interface Department {
+  id: number;
+  name: string;
+  description: string | null;
+  positionCount: number;
 }
 
 // ==================== API ====================
@@ -159,6 +168,15 @@ export const adminApi = {
     const response = await api.get<
       ApiResponse<AdminPaginatedResponse<TicketListItem>>
     >(`/admin/tickets/closed?page=${page}&size=${size}`);
+    return response.data.data;
+  },
+
+  // ==================== Departments ====================
+
+  getDepartments: async (): Promise<Department[]> => {
+    const response = await api.get<ApiResponse<Department[]>>(
+      "/admin/departments"
+    );
     return response.data.data;
   },
 };

@@ -52,6 +52,11 @@ export default function WikiContent({ content }: WikiContentProps) {
     ],
     content: getContent(),
     editable: false,
+    editorProps: {
+      attributes: {
+        class: "wiki-editor-content",
+      },
+    },
   });
 
   // Update content when prop changes

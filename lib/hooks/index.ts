@@ -7,9 +7,13 @@ export { useDashboardQuery } from "./useDashboardQuery";
 // Wiki
 export { useWikiArticlesQuery } from "./useWikiArticlesQuery";
 export { useWikiArticleQuery } from "./useWikiArticleQuery";
+export { useWikiCategoriesQuery } from "./useWikiCategoriesQuery";
 
 // Categories
-export { useCategoriesQuery } from "./useCategoriesQuery";
+export {
+  useCategoriesQuery,
+  useCategoryDetailQuery,
+} from "./useCategoriesQuery";
 
 // Support Lines
 export { useAllSupportLinesQuery } from "./useAllSupportLinesQuery";
@@ -34,3 +38,6 @@ export { useAssignmentsWebSocket } from "./useAssignmentsWebSocket";
 
 // Ticket Chat
 export * from "./ticket-chat/useChatActions";
+
+// Admin Wiki
+export * from "./admin-wiki";

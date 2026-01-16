@@ -27,6 +27,8 @@ import { useAuthStore } from "@/stores";
 import { useWikiArticlesQuery } from "@/lib/hooks";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
+import { Tooltip } from "@/components/ui/tooltip";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 export default function WikiPage() {
   const { user } = useAuthStore();
@@ -44,6 +46,8 @@ export default function WikiPage() {
     handleSearch,
     handleLike,
     likingArticleId,
+    showAll,
+    setShowAll,
   } = useWikiArticlesQuery();
 
   const [showFavorites, setShowFavorites] = useState(false);
@@ -77,11 +81,28 @@ export default function WikiPage() {
           <Button
             variant={showFavorites ? "solid" : "outline"}
             colorPalette={showFavorites ? "red" : "gray"}
-            onClick={() => setShowFavorites(!showFavorites)}
+            onClick={() => {
+              setShowFavorites(!showFavorites);
+              if (!showFavorites) setShowAll(false);
+            }}
           >
             <LuHeart />
             Избранное
           </Button>
+
+          <SegmentedControl
+            value={showAll ? "all" : "department"}
+            onValueChange={(e) => {
+              const isAll = e.value === "all";
+              setShowAll(isAll);
+              if (isAll) setShowFavorites(false);
+            }}
+            items={[
+              { value: "department", label: "Мой отдел" },
+              { value: "all", label: "Все отделы" },
+            ]}
+            size="sm"
+          />
 
           {isSpecialist && (
             <Link href="/dashboard/wiki/new">
@@ -144,6 +165,12 @@ export default function WikiPage() {
               Показать все статьи
             </Button>
           )}
+          {showAll && !showFavorites && (
+            <Button mt={4} variant="outline" onClick={() => setShowAll(false)}>
+              Вернуться к моему отделу
+            </Button>
+          )}
+
           {isSpecialist && !searchQuery && !showFavorites && (
             <Link href="/dashboard/wiki/new">
               <Button
@@ -198,15 +225,36 @@ export default function WikiPage() {
                   )}
 
                   <VStack align="stretch" gap={3}>
-                    {/* Title */}
-                    <Heading
-                      size="sm"
-                      color="fg.default"
-                      lineClamp={2}
-                      pr={article.likedByCurrentUser ? 20 : 0}
-                    >
-                      {article.title}
-                    </Heading>
+                    {/* Title & Category */}
+                    <HStack align="flex-start" justify="space-between" gap={2}>
+                      <Heading
+                        size="sm"
+                        color="fg.default"
+                        lineClamp={2}
+                        pr={article.likedByCurrentUser ? 20 : 0}
+                        flex={1}
+                      >
+                        {article.title}
+                      </Heading>
+                      {article.categoryName && (
+                        <Tooltip
+                          content={
+                            article.departmentName
+                              ? `Категория статей отдела: ${article.departmentName}`
+                              : "Общая категория"
+                          }
+                        >
+                          <Badge
+                            colorPalette="purple"
+                            variant="subtle"
+                            size="sm"
+                            flexShrink={0}
+                          >
+                            {article.categoryName}
+                          </Badge>
+                        </Tooltip>
+                      )}
+                    </HStack>
 
                     {/* Excerpt */}
                     {article.excerpt && (
@@ -215,9 +263,9 @@ export default function WikiPage() {
                       </Text>
                     )}
 
-                    {/* Tags */}
+                    {/* Tags (moved to bottom) */}
                     {article.tags.length > 0 && (
-                      <HStack gap={1} flexWrap="wrap">
+                      <HStack gap={1} flexWrap="wrap" mb={1}>
                         {article.tags.slice(0, 3).map((tag) => (
                           <Badge
                             key={tag}
@@ -237,6 +285,7 @@ export default function WikiPage() {
                     )}
 
                     {/* Meta */}
+
                     <HStack
                       gap={3}
                       fontSize="xs"

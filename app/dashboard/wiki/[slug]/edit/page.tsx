@@ -35,6 +35,10 @@ import { useAuthStore } from "@/stores";
 import { toast } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
 import { AxiosError } from "axios";
+import { useWikiCategoriesQuery } from "@/lib/hooks";
+import { createListCollection } from "@chakra-ui/react";
+import { Select, Portal } from "@chakra-ui/react";
+import { useMemo } from "react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -63,6 +67,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
     title: "",
     content: "",
     excerpt: "",
+    categoryId: undefined,
   });
   const [tagsInput, setTagsInput] = useState("");
   const [formInitialized, setFormInitialized] = useState(false);
@@ -76,6 +81,21 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<
     number | null
   >(null);
+
+  // Fetch categories
+  const { data: categories = [], isLoading: loadingCategories } =
+    useWikiCategoriesQuery();
+
+  const categoryCollection = useMemo(
+    () =>
+      createListCollection({
+        items: categories.map((c) => ({
+          label: c.name,
+          value: c.id.toString(),
+        })),
+      }),
+    [categories]
+  );
 
   // Initialize form when article loads
   useEffect(() => {
@@ -273,6 +293,41 @@ export default function EditWikiArticlePage({ params }: PageProps) {
                 bg="bg.subtle"
                 maxLength={250}
               />
+            </Box>
+
+            {/* Category */}
+            <Box>
+              <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
+                Категория
+              </Text>
+              <Select.Root
+                collection={categoryCollection}
+                value={
+                  formData.categoryId ? [formData.categoryId.toString()] : []
+                }
+                onValueChange={(details) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    categoryId: parseInt(details.value[0]),
+                  }))
+                }
+                disabled={loadingCategories}
+              >
+                <Select.Trigger>
+                  <Select.ValueText placeholder="Выберите категорию" />
+                </Select.Trigger>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {categoryCollection.items.map((item) => (
+                        <Select.Item item={item} key={item.value}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Box>
 
             {/* Excerpt */}

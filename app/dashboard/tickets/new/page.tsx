@@ -20,15 +20,15 @@ import { LuArrowLeft, LuInfo } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
-import { useCategoriesQuery, useAllSupportLinesQuery } from "@/lib/hooks";
+import {
+  useCategoriesQuery,
+  useAllSupportLinesQuery,
+  useCategoryDetailQuery,
+} from "@/lib/hooks";
 import { toast } from "@/lib/utils";
 import axios from "axios";
+import { useEffect } from "react";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
-
-interface Category {
-  id: number;
-  name: string;
-}
 
 interface SupportLineItem {
   label: string;
@@ -58,6 +58,21 @@ export default function NewTicketPage() {
     link1c: "",
     priority: "MEDIUM",
   });
+
+  // Fetch details for the selected category to get recommendation
+  const { data: categoryDetail } = useCategoryDetailQuery(
+    formData.categoryUserId || null
+  );
+
+  // Auto-select support line based on category recommendation
+  useEffect(() => {
+    if (categoryDetail?.recommendedLineId) {
+      setFormData((prev) => ({
+        ...prev,
+        supportLineId: categoryDetail.recommendedLineId!,
+      }));
+    }
+  }, [categoryDetail]);
 
   // Dynamic collection for categories
   const categoryCollection = useMemo(
@@ -312,9 +327,7 @@ export default function NewTicketPage() {
           </Box>
 
           {/* Link 1C */}
-          {/* TODO проверить логику, может можно сделать более надженый способ, например получать категории отдельным маршрутом */}
-          {formData.categoryUserId ===
-            categories.find((c) => c.name.includes("1С"))?.id && (
+          {categoryDetail?.is1ClinkRecommended && (
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
                 Ссылка 1С

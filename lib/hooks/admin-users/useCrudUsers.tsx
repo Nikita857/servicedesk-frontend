@@ -23,7 +23,7 @@ export const useCrudUsers = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 500);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 

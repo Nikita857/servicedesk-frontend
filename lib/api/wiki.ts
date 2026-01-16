@@ -10,6 +10,7 @@ export interface WikiArticle {
   excerpt: string | null;
   categoryId: number | null;
   categoryName: string | null;
+  departmentName: string | null;
   tags: string[];
   createdBy: {
     id: number;
@@ -28,12 +29,36 @@ export interface WikiArticle {
   updatedAt: string;
 }
 
+export interface WikiCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  departmentId: number | null;
+  departmentName: string | null;
+  displayOrder: number;
+}
+
+export interface CreateWikiCategoryRequest {
+  name: string;
+  description?: string;
+  departmentId?: number | null;
+  displayOrder?: number;
+}
+
+export interface UpdateWikiCategoryRequest {
+  name?: string;
+  description?: string;
+  departmentId?: number | null;
+  displayOrder?: number;
+}
+
 export interface WikiArticleListItem {
   id: number;
   title: string;
   slug: string;
   excerpt: string | null;
   categoryName: string | null;
+  departmentName: string | null;
   tags: string[];
   author: {
     id: number;
@@ -76,9 +101,13 @@ export interface PagedWikiArticleList {
 
 export const wikiApi = {
   // List all articles (paginated)
-  list: async (page = 0, size = 20): Promise<PagedWikiArticleList> => {
+  list: async (
+    page = 0,
+    size = 20,
+    showAll = false
+  ): Promise<PagedWikiArticleList> => {
     const response = await api.get<ApiResponse<PagedWikiArticleList>>("/wiki", {
-      params: { page, size },
+      params: { page, size, showAll },
     });
     return response.data.data;
   },
@@ -171,6 +200,58 @@ export const wikiApi = {
       `/wiki/${articleId}/attachments`
     );
     return response.data.data;
+  },
+
+  // Get wiki categories
+  getCategories: async (showAll = false): Promise<WikiCategory[]> => {
+    const response = await api.get<ApiResponse<WikiCategory[]>>(
+      "/wiki/categories",
+      {
+        params: { showAll },
+      }
+    );
+    return response.data.data;
+  },
+
+  // ============ Admin: Wiki Category Management ============
+
+  adminGetCategories: async (): Promise<WikiCategory[]> => {
+    const response = await api.get<ApiResponse<WikiCategory[]>>(
+      "/admin/wiki/categories"
+    );
+    return response.data.data;
+  },
+
+  adminGetCategory: async (id: number): Promise<WikiCategory> => {
+    const response = await api.get<ApiResponse<WikiCategory>>(
+      `/admin/wiki/categories/${id}`
+    );
+    return response.data.data;
+  },
+
+  adminCreateCategory: async (
+    data: CreateWikiCategoryRequest
+  ): Promise<WikiCategory> => {
+    const response = await api.post<ApiResponse<WikiCategory>>(
+      "/admin/wiki/categories",
+      data
+    );
+    return response.data.data;
+  },
+
+  adminUpdateCategory: async (
+    id: number,
+    data: UpdateWikiCategoryRequest
+  ): Promise<WikiCategory> => {
+    const response = await api.put<ApiResponse<WikiCategory>>(
+      `/admin/wiki/categories/${id}`,
+      data
+    );
+    return response.data.data;
+  },
+
+  adminDeleteCategory: async (id: number): Promise<void> => {
+    await api.delete(`/admin/wiki/categories/${id}`);
   },
 };
 

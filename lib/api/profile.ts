@@ -10,6 +10,8 @@ export interface ProfileResponse {
   telegramId: number | null;
   avatarUrl: string | null;
   roles: string[];
+  department: string | null;
+  position: string | null;
   isSpecialist: boolean;
   averageRating: number | null;
   ratedTicketsCount: number | null;
@@ -44,8 +46,13 @@ export const profileApi = {
   /**
    * Обновить профиль (ФИО, email)
    */
-  updateProfile: async (data: UpdateProfileRequest): Promise<ProfileResponse> => {
-    const response = await api.patch<{ data: ProfileResponse }>("/profile", data);
+  updateProfile: async (
+    data: UpdateProfileRequest
+  ): Promise<ProfileResponse> => {
+    const response = await api.patch<{ data: ProfileResponse }>(
+      "/profile",
+      data
+    );
     return response.data.data;
   },
 
@@ -69,9 +76,13 @@ export const profileApi = {
   uploadAvatar: async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post<{ data: string }>("/profile/avatar", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const response = await api.post<{ data: string }>(
+      "/profile/avatar",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     return response.data.data;
   },
 

@@ -29,6 +29,7 @@ import {
   LuTrash2,
   LuSave,
   LuCheck,
+  LuHouse,
 } from "react-icons/lu";
 import { FaTelegram } from "react-icons/fa";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -49,6 +50,9 @@ export default function ProfilePage() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Authenticated user from store
+  const user = useAuthStore((state) => state.user);
 
   // Fetch profile
   const { data: profile, isLoading } = useQuery({
@@ -264,6 +268,21 @@ export default function ProfilePage() {
             </VStack>
 
             <Separator mb={4} />
+
+            <VStack align="start" gap={1} mb={4}>
+              <Text fontSize="sm" color="fg.muted">
+                <Text as="span" color="fg.default" gap={3} mb={4}>
+                  <Icon as={LuHouse} mr={1} color="fg.muted" />
+                  Отдел: {profile.department || "—"}
+                </Text>
+              </Text>
+              <Text fontSize="sm" color="fg.muted">
+                <Text as="span" color="fg.default" gap={3} mb={4}>
+                  <Icon as={LuUser} mr={1} color="fg.muted" />
+                  Должность: {profile.position || "—"}
+                </Text>
+              </Text>
+            </VStack>
 
             {/* Roles */}
             <VStack align="start" gap={3} mb={4}>

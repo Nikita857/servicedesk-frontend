@@ -36,6 +36,7 @@ import { useAuthStore } from "@/stores";
 import { formatDate, toast } from "@/lib/utils";
 import { WikiContent } from "@/components/features/wiki";
 import { API_BASE_URL } from "@/lib/config";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -151,24 +152,44 @@ export default function WikiArticlePage({ params }: PageProps) {
       >
         {/* Header */}
         <VStack align="stretch" gap={4} mb={6}>
-          {/* Category & Tags */}
-          <HStack gap={2} flexWrap="wrap">
-            {article.categoryName && (
-              <Badge colorPalette="purple" size="sm">
-                {article.categoryName}
-              </Badge>
-            )}
-            {article.tags.map((tag) => (
-              <Badge key={tag} colorPalette="blue" variant="subtle" size="sm">
-                {tag}
-              </Badge>
-            ))}
-          </HStack>
+          {article.categoryName && (
+            <HStack>
+              <Tooltip
+                content={
+                  article.departmentName
+                    ? `Категория статей отдела: ${article.departmentName}`
+                    : "Общая категория"
+                }
+              >
+                <Badge colorPalette="purple" size="sm">
+                  {article.categoryName}
+                </Badge>
+              </Tooltip>
+            </HStack>
+          )}
 
-          {/* Title */}
-          <Heading size="xl" color="fg.default">
-            {article.title}
-          </Heading>
+          <VStack align="stretch" gap={2}>
+            {/* Title */}
+            <Heading size="xl" color="fg.default">
+              {article.title}
+            </Heading>
+
+            {/* Tags (Moved under title) */}
+            {article.tags.length > 0 && (
+              <HStack gap={2} flexWrap="wrap">
+                {article.tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    colorPalette="blue"
+                    variant="subtle"
+                    size="sm"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </HStack>
+            )}
+          </VStack>
 
           {/* Meta */}
           <HStack gap={4} fontSize="sm" color="fg.muted" flexWrap="wrap">

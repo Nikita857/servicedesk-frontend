@@ -23,6 +23,8 @@ interface UseWikiArticlesQueryReturn {
   handleSearch: (e: React.FormEvent) => void;
   handleLike: (e: React.MouseEvent, articleId: number) => void;
   likingArticleId: number | null;
+  showAll: boolean;
+  setShowAll: (showAll: boolean) => void;
   refetch: () => void;
 }
 
@@ -41,14 +43,15 @@ export function useWikiArticlesQuery(
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [likingArticleId, setLikingArticleId] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   // Articles query
   const articlesQuery = useQuery({
-    queryKey: queryKeys.wiki.list({ page, search: debouncedSearch }),
+    queryKey: queryKeys.wiki.list({ page, search: debouncedSearch, showAll }),
     queryFn: async () => {
       const response = debouncedSearch
         ? await wikiApi.search(debouncedSearch, page, pageSize)
-        : await wikiApi.list(page, pageSize);
+        : await wikiApi.list(page, pageSize, showAll);
       return response;
     },
     staleTime: 30 * 1000,
@@ -170,6 +173,8 @@ export function useWikiArticlesQuery(
     handleSearch,
     handleLike,
     likingArticleId,
+    showAll,
+    setShowAll,
     refetch: articlesQuery.refetch,
   };
 }
