@@ -14,8 +14,7 @@ export type ActivityStatus =
   | "UNAVAILABLE"
   | "BUSY"
   | "TECHNICAL_ISSUE"
-  | "OFFLINE"
-  | "ON_BREAK";
+  | "OFFLINE";
 
 export interface Specialist {
   id: number;
@@ -149,7 +148,7 @@ export const supportLineApi = {
 export const assignmentApi = {
   /**
    * Get available lines for forwarding based on user role
-   * Respects forwarding rules: SYSADMIN → 1CSUPPORT, etc.
+   * Respects forwarding rules: SYSADMIN → ONE_C_SUPPORT, etc.
    */
   getAvailableForwardingLines: async (): Promise<SupportLine[]> => {
     const response = await api.get<ApiResponse<SupportLine[]>>(

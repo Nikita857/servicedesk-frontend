@@ -12,10 +12,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuRefreshCw } from "react-icons/lu";
-import Link from "next/link";
+import { LuRefreshCw } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type SpecialistWorkload } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 export default function SpecialistWorkloadReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function SpecialistWorkloadReportPage() {
       const result = await reportsApi.getSpecialistWorkload();
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить данные");
+      handleApiError(error, { context: "Получить отчёт по специалистам" });
     } finally {
       setIsLoading(false);
     }
@@ -57,12 +57,7 @@ export default function SpecialistWorkloadReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           Загрузка специалистов
         </Heading>

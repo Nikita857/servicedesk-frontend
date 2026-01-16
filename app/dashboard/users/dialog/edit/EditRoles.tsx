@@ -1,6 +1,6 @@
 import { Tooltip } from "@/components/ui/tooltip";
 import { AdminUser } from "@/lib/api/admin";
-import { userRolesBadges } from "@/types";
+import { userRolesBadges } from "@/types/auth";
 import {
   HStack,
   Badge,

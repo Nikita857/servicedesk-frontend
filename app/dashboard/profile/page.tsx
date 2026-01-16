@@ -34,8 +34,8 @@ import {
 import { FaTelegram } from "react-icons/fa";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileApi, type UpdateProfileRequest } from "@/lib/api/profile";
-import { toast } from "@/lib/utils";
-import { SenderType, userRolesBadges } from "@/types";
+import { handleApiError, toast } from "@/lib/utils";
+import { userRolesBadges } from "@/types/auth";
 import { useAuthStore } from "@/stores";
 
 export default function ProfilePage() {
@@ -99,7 +99,7 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Telegram привязан");
     },
-    onError: () => toast.error("Ошибка при привязке Telegram"),
+    onError: (error) => handleApiError(error),
   });
 
   const uploadAvatarMutation = useMutation({
@@ -109,7 +109,7 @@ export default function ProfilePage() {
       updateUserAvatar(avatarUrl);
       toast.success("Аватар загружен");
     },
-    onError: () => toast.error("Ошибка при загрузке аватара"),
+    onError: (error) => handleApiError(error),
   });
 
   const deleteAvatarMutation = useMutation({
@@ -119,7 +119,7 @@ export default function ProfilePage() {
       updateUserAvatar(null);
       toast.success("Аватар удалён");
     },
-    onError: () => toast.error("Ошибка при удалении аватара"),
+    onError: (error) => handleApiError(error),
   });
 
   // Handlers
@@ -294,7 +294,7 @@ export default function ProfilePage() {
               </HStack>
               <HStack flexWrap="wrap" gap={2}>
                 {profile.roles.map((role) => {
-                  const roleInfo = userRolesBadges[role as SenderType] || {
+                  const roleInfo = userRolesBadges[role] || {
                     name: role,
                     color: "gray",
                   };

@@ -14,7 +14,6 @@ import {
   Link as ChakraLink,
 } from "@chakra-ui/react";
 import {
-  LuArrowLeft,
   LuPencil,
   LuHeart,
   LuEye,
@@ -27,26 +26,20 @@ import {
   LuFileText,
   LuVideo,
 } from "react-icons/lu";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { wikiApi, WikiAttachment } from "@/lib/api/wiki";
 import { attachmentApi } from "@/lib/api/attachments";
 import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
-import { formatDate, toast } from "@/lib/utils";
+import { formatDate, toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiContent } from "@/components/features/wiki";
 import { API_BASE_URL } from "@/lib/config";
 import { Tooltip } from "@/components/ui/tooltip";
+import { BackButton } from "@/components/ui";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-// Helper to format file size
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // Get icon for file type
@@ -94,7 +87,7 @@ export default function WikiArticlePage({ params }: PageProps) {
 
   // Redirect on error
   if (error) {
-    toast.error("Ошибка", "Статья не найдена");
+    handleApiError(error);
     router.push("/dashboard/wiki");
     return null;
   }
@@ -108,8 +101,8 @@ export default function WikiArticlePage({ params }: PageProps) {
       await wikiApi.delete(article.id);
       toast.success("Статья удалена");
       router.push("/dashboard/wiki");
-    } catch {
-      toast.error("Ошибка", "Не удалось удалить статью");
+    } catch (error) {
+      handleApiError(error, { context: "Удалить статью" });
     } finally {
       setIsDeleting(false);
     }
@@ -135,12 +128,7 @@ export default function WikiArticlePage({ params }: PageProps) {
   return (
     <Box maxW="900px" mx="auto">
       {/* Back button */}
-      <Link href="/dashboard/wiki">
-        <Button variant="ghost" size="sm" mb={4}>
-          <LuArrowLeft />
-          Назад к списку
-        </Button>
-      </Link>
+      <BackButton href="/dashboard/wiki" label="Назад к списку" mb={4} />
 
       {/* Article */}
       <Box

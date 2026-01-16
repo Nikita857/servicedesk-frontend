@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
-import axios from 'axios';
-import { messageApi } from '@/lib/api/messages';
-import { useFileUpload } from '@/lib/hooks';
-import { toast, validateFile } from '@/lib/utils';
-import type { Message } from '@/types/message';
+import { useState, useRef } from "react";
+import axios from "axios";
+import { messageApi } from "@/lib/api/messages";
+import { useFileUpload } from "@/lib/hooks";
+import { handleApiError, toast, validateFile } from "@/lib/utils";
+import type { Message } from "@/types/message";
 
 interface UseChatActionsReturn {
   newMessage: string;
@@ -17,10 +17,7 @@ interface UseChatActionsReturn {
   handleRemoveFile: () => void;
   handleEditMessage: (msg: Message) => void;
   handleDeleteMessage: (msgId: number) => Promise<void>;
-  sendMessage: (
-    content: string, 
-    file: File | null
-  ) => Promise<void>;
+  sendMessage: (content: string, file: File | null) => Promise<void>;
 }
 
 export const useChatActions = (
@@ -29,7 +26,7 @@ export const useChatActions = (
   wsSendMessage: (content: string) => boolean,
   isConnected: boolean
 ): UseChatActionsReturn => {
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -42,10 +39,10 @@ export const useChatActions = (
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     const error = validateFile(file);
     if (error) {
-      toast.error('Ошибка', error);
+      toast.error("Ошибка", error);
       return;
     }
     setSelectedFile(file);
@@ -54,7 +51,7 @@ export const useChatActions = (
   // Удаление выбранного файла
   const handleRemoveFile = () => {
     setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   // Установка сообщения для редактирования
@@ -68,9 +65,9 @@ export const useChatActions = (
     try {
       await messageApi.delete(msgId);
       setMessages((prev) => prev.filter((m) => m.id !== msgId));
-      toast.success('Сообщение удалено');
+      toast.success("Сообщение удалено");
     } catch (error) {
-      toast.error('Ошибка', 'Не удалось удалить сообщение');
+      toast.error("Ошибка", "Не удалось удалить сообщение");
     }
   };
 
@@ -78,9 +75,9 @@ export const useChatActions = (
   const sendMessage = async (content: string, file: File | null) => {
     if (!content.trim() && !file) return;
 
-    setNewMessage('');
+    setNewMessage("");
     setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
 
     // Режим редактирования
     if (editingMessage) {
@@ -91,9 +88,9 @@ export const useChatActions = (
         setMessages((prev) =>
           prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m))
         );
-        toast.success('Сообщение обновлено');
+        toast.success("Сообщение обновлено");
       } catch (error) {
-        toast.error('Ошибка', 'Не удалось обновить сообщение');
+        toast.error("Ошибка", "Не удалось обновить сообщение");
         setNewMessage(content);
       } finally {
         setEditingMessage(null);
@@ -123,10 +120,10 @@ export const useChatActions = (
         });
 
         // 2. Загружаем файл в MinIO и привязываем к сообщению
-        const result = await upload(file, 'MESSAGE', message.id);
+        const result = await upload(file, "MESSAGE", message.id);
 
         if (!result) {
-          throw new Error('Upload failed');
+          throw new Error("Upload failed");
         }
 
         // 3. Оптимистично обновляем сообщение, добавляя вложение
@@ -142,30 +139,32 @@ export const useChatActions = (
             return m;
           });
         });
-
       } catch (error) {
         // Откат: удаляем сообщение, если не удалось загрузить файл
         if (messageId) {
           try {
             await messageApi.delete(messageId);
             setMessages((prev) => prev.filter((m) => m.id !== messageId));
-            console.log('Rolled back message due to upload failure');
+            console.log("Rolled back message due to upload failure");
           } catch (rollbackError) {
-            console.error('Failed to rollback message', rollbackError);
+            console.error("Failed to rollback message", rollbackError);
           }
         }
 
-        if (error instanceof Error && error.message === 'Upload failed') {
-            // Ошибка уже обработана в хуке useFileUpload
+        if (error instanceof Error && error.message === "Upload failed") {
+          // Ошибка уже обработана в хуке useFileUpload
         } else if (axios.isAxiosError(error) && error.response) {
-          toast.error('Ошибка загрузки файла', error.response.data.message || 'Не удалось отправить файл');
+          toast.error(
+            "Ошибка загрузки файла",
+            error.response.data.message || "Не удалось отправить файл"
+          );
         } else {
-          toast.error('Ошибка', 'Не удалось отправить файл');
+          toast.error("Ошибка", "Не удалось отправить файл");
         }
       } finally {
         setIsUploading(false);
       }
-    } 
+    }
     // Если только текст, пробуем через WebSocket
     else if (content) {
       if (isConnected && wsSendMessage(content)) return;
@@ -181,11 +180,7 @@ export const useChatActions = (
           return [...prev, message];
         });
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          toast.error('Ошибка', error.response.data.message || 'Не удалось отправить сообщение');
-        } else {
-          toast.error('Ошибка', 'Не удалось отправить сообщение');
-        }
+        handleApiError(error, { context: "Отправить сообщение" });
         setNewMessage(content);
       } finally {
         setIsSending(false);

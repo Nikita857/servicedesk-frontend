@@ -21,7 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/stores";
-import { SenderType, userRolesBadges } from "@/types";
+import { userRolesBadges } from "@/types/auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { ActivityStatusDropdown } from "./ActivityStatusDropdown";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -38,17 +38,17 @@ export function Header({ onMenuClick }: HeaderProps) {
   const rolePriority = [
     "USER",
     "SYSADMIN",
-    "1CSUPPORT",
+    "ONE_C_SUPPORT",
     "DEV1C",
     "DEVELOPER",
     "ADMIN",
   ] as const;
 
   const highestRole =
-    user?.roles?.reduce<SenderType | null>((top, role) => {
-      const currentIdx = rolePriority.indexOf(role as SenderType);
-      const topIdx = top ? rolePriority.indexOf(top) : -1;
-      return currentIdx > topIdx ? (role as SenderType) : top;
+    user?.roles?.reduce<string | null>((top, role) => {
+      const currentIdx = rolePriority.indexOf(role as any);
+      const topIdx = top ? rolePriority.indexOf(top as any) : -1;
+      return currentIdx > topIdx ? role : top;
     }, null) ?? "USER";
 
   const roleBadgeInfo = userRolesBadges[highestRole];

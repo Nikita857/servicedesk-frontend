@@ -1,33 +1,32 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Flex,
   Heading,
-  Text,
   Button,
   Input,
   Textarea,
   HStack,
   VStack,
+  Select,
   Portal,
   createListCollection,
-  Stack,
+  ListCollection,
+  Text,
 } from "@chakra-ui/react";
-import { Select } from "@chakra-ui/react";
-import { LuArrowLeft, LuInfo } from "react-icons/lu";
-import Link from "next/link";
+import { LuInfo, LuX } from "react-icons/lu";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ticketApi } from "@/lib/api/tickets";
 import {
+  useCategoryDetailQuery,
   useCategoriesQuery,
   useAllSupportLinesQuery,
-  useCategoryDetailQuery,
 } from "@/lib/hooks";
-import { toast } from "@/lib/utils";
-import axios from "axios";
-import { useEffect } from "react";
+import { toast, handleApiError } from "@/lib/utils";
+import { DataSelect, BackButton } from "@/components/ui";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
 
 interface SupportLineItem {
@@ -35,6 +34,7 @@ interface SupportLineItem {
   value: string;
   description: string | null;
 }
+
 const priorityCollection = createListCollection({
   items: [
     { label: "Низкий", value: "LOW" },
@@ -59,89 +59,73 @@ export default function NewTicketPage() {
     priority: "MEDIUM",
   });
 
-  // Fetch details for the selected category to get recommendation
+  // Re-fetch category detail when category selection changes to see recommendations
   const { data: categoryDetail } = useCategoryDetailQuery(
-    formData.categoryUserId || null
+    formData.categoryUserId || 0
   );
 
-  // Auto-select support line based on category recommendation
+  // Auto-select support line if recommended by category
   useEffect(() => {
     if (categoryDetail?.recommendedLineId) {
       setFormData((prev) => ({
         ...prev,
-        supportLineId: categoryDetail.recommendedLineId!,
+        supportLineId: categoryDetail.recommendedLineId ?? undefined,
       }));
     }
   }, [categoryDetail]);
 
-  // Dynamic collection for categories
   const categoryCollection = useMemo(
     () =>
       createListCollection({
-        items: categories.map((c) => ({ label: c.name, value: String(c.id) })),
+        items: categories.map((cat) => ({
+          label: cat.name,
+          value: cat.id.toString(),
+        })),
       }),
     [categories]
   );
 
-  // Dynamic collection for support lines (only user-selectable ones: Sysadmins and 1C Support)
   const supportLineCollection = useMemo(
     () =>
-      createListCollection<SupportLineItem>({
-        items: supportLines
-          .filter(
-            (line) =>
-              // Filter to lines users can select (first two lines typically)
-              line.displayOrder <= 2
-          )
-          .sort((a, b) => a.displayOrder - b.displayOrder)
-          .map((line) => ({
-            label: line.name,
-            value: String(line.id),
-            description: line.description,
-          })),
+      createListCollection({
+        items: supportLines.map((line) => ({
+          label: line.name,
+          value: line.id.toString(),
+          description: line.description,
+        })),
       }),
     [supportLines]
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.title.trim() || !formData.description.trim()) {
-      toast.error("Ошибка", "Заполните заголовок и описание");
+    if (!formData.title || !formData.description || !formData.categoryUserId) {
+      toast.error("Ошибка", "Заполните все обязательные поля");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Тикет автоматически направляется на первую линию на бэке
-      const ticket = await ticketApi.create(formData);
+      const ticket = await ticketApi.create({
+        ...formData,
+        categoryUserId: formData.categoryUserId,
+      });
+
       toast.success("Тикет создан", `Тикет #${ticket.id} успешно создан`);
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        toast.error(
-          "Ошибка",
-          error.response.data.message || "Не удалось создать тикет"
-        );
-      } else {
-        toast.error("Ошибка", "Не удалось создать тикет");
-      }
+      handleApiError(error, { context: "создать тикет" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Box>
+    <Box maxW="800px" mx="auto" py={8} px={4}>
       {/* Header */}
       <Box mb={6}>
         <HStack mb={2}>
-          <Link href="/dashboard/tickets">
-            <Button variant="ghost" size="sm">
-              <LuArrowLeft />
-              Назад
-            </Button>
-          </Link>
+          <BackButton href="/dashboard/tickets" />
         </HStack>
         <Heading size="lg" color="fg.default">
           Новый тикет
@@ -151,146 +135,75 @@ export default function NewTicketPage() {
         </Text>
       </Box>
 
-      {/* Form */}
       <Box
-        as="form"
-        onSubmit={handleSubmit}
         bg="bg.surface"
+        p={6}
         borderRadius="xl"
         borderWidth="1px"
         borderColor="border.default"
-        p={6}
-        maxW="800px"
+        boxShadow="sm"
       >
-        <VStack gap={5} align="stretch">
-          {/* Title */}
-          <Box>
-            <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-              Заголовок *
-            </Text>
-            <Input
-              value={formData.title}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Краткое описание проблемы"
-              size="lg"
-              bg="bg.subtle"
-              borderColor="border.default"
-            />
-          </Box>
-
-          {/* Description */}
-          <Box>
-            <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-              Описание *
-            </Text>
-            <Textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              placeholder="Подробно опишите проблему..."
-              minH="150px"
-              bg="bg.subtle"
-              borderColor="border.default"
-            />
-          </Box>
-
-          {/* Priority & Category Row */}
-          <HStack gap={4} align="flex-start">
-            {/* Priority */}
-            <Box flex={1}>
+        <form onSubmit={handleSubmit}>
+          <VStack gap={6} align="stretch">
+            {/* Title */}
+            <Box>
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-                Приоритет
+                Тема обращения сокращенно (Заголовок) *
               </Text>
-              <Select.Root
-                collection={priorityCollection}
-                value={[formData.priority || "MEDIUM"]}
-                onValueChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    priority: e.value[0] as TicketPriority,
-                  }))
+              <Input
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
                 }
-              >
-                <Select.Trigger>
-                  <Select.ValueText />
-                </Select.Trigger>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {priorityCollection.items.map((item) => (
-                        <Select.Item key={item.value} item={item}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
+                placeholder="Например: Не работает принтер"
+                bg="bg.subtle"
+                required
+              />
             </Box>
 
-            {/* Category */}
-            {categories.length > 0 && (
+            <HStack gap={4} align="flex-start">
+              {/* Priority */}
               <Box flex={1}>
-                <Text
-                  mb={1}
-                  fontSize="sm"
-                  fontWeight="medium"
-                  color="fg.default"
-                >
-                  Категория
-                </Text>
-                <Select.Root
-                  collection={categoryCollection}
-                  value={
-                    formData.categoryUserId
-                      ? [String(formData.categoryUserId)]
-                      : []
-                  }
+                <DataSelect
+                  label="Приоритет"
+                  collection={priorityCollection}
+                  value={[formData.priority || "MEDIUM"]}
                   onValueChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      categoryUserId: Number(e.value[0]) || undefined,
+                      priority: e.value[0] as TicketPriority,
                     }))
                   }
-                >
-                  <Select.Trigger>
-                    <Select.ValueText placeholder="Выберите категорию" />
-                  </Select.Trigger>
-                  <Portal>
-                    <Select.Positioner>
-                      <Select.Content>
-                        {categoryCollection.items.map((item) => (
-                          <Select.Item key={item.value} item={item}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Positioner>
-                  </Portal>
-                </Select.Root>
+                />
               </Box>
-            )}
-          </HStack>
 
-          {/* Support Line Selection */}
-          <Box>
-            <HStack mb={1} gap={1}>
-              <Text fontSize="sm" fontWeight="medium" color="fg.default">
-                Линия поддержки
-              </Text>
-              <LuInfo size={14} color="var(--chakra-colors-fg-muted)" />
+              {categories.length > 0 && (
+                <Box flex={1}>
+                  <DataSelect
+                    label="Категория"
+                    collection={categoryCollection}
+                    placeholder="Выберите категорию"
+                    value={
+                      formData.categoryUserId
+                        ? [String(formData.categoryUserId)]
+                        : []
+                    }
+                    onValueChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        categoryUserId: Number(e.value[0]) || undefined,
+                      }))
+                    }
+                  />
+                </Box>
+              )}
             </HStack>
-            <Text fontSize="xs" color="fg.muted" mb={2}>
-              Выберите линию поддержки в зависимости от типа проблемы
-            </Text>
-            <Select.Root
+
+            {/* Support Line Selection */}
+            <DataSelect
+              label="Линия поддержки"
               collection={supportLineCollection}
+              placeholder="Выберите линию поддержки (опционально)"
               value={
                 formData.supportLineId ? [String(formData.supportLineId)] : []
               }
@@ -301,72 +214,74 @@ export default function NewTicketPage() {
                 }))
               }
               disabled={isLoadingLines}
-            >
-              <Select.Trigger>
-                <Select.ValueText placeholder="Выберите линию поддержки (опционально)" />
-              </Select.Trigger>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {supportLineCollection.items.map((item) => (
-                      <Select.Item key={item.value} item={item}>
-                        <VStack align="start" gap={0}>
-                          <Text>{item.label}</Text>
-                          {item.description && (
-                            <Text fontSize="xs" color="fg.muted">
-                              {item.description}
-                            </Text>
-                          )}
-                        </VStack>
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
-          </Box>
+              helperText="Выберите линию поддержки в зависимости от типа проблемы"
+              renderItem={(item) => (
+                <VStack align="start" gap={0}>
+                  <Text>{item.label}</Text>
+                  {item.description && (
+                    <Text fontSize="xs" color="fg.muted">
+                      {item.description}
+                    </Text>
+                  )}
+                </VStack>
+              )}
+            />
 
-          {/* Link 1C */}
-          {categoryDetail?.is1ClinkRecommended && (
+            {/* Link 1C */}
+            {categoryDetail?.is1ClinkRecommended && (
+              <Box>
+                <Text
+                  mb={1}
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="fg.default"
+                >
+                  Ссылка на объект 1С (опционально)
+                </Text>
+                <Input
+                  value={formData.link1c || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, link1c: e.target.value }))
+                  }
+                  placeholder="Напр. e1cib/data/..."
+                  bg="bg.subtle"
+                />
+              </Box>
+            )}
+
+            {/* Description */}
             <Box>
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-                Ссылка 1С
+                Подробное описание проблемы *
               </Text>
-              <Input
-                value={formData.link1c || ""}
+              <Textarea
+                value={formData.description}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, link1c: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
-                placeholder="Ссылка на объект в 1С (опционально)"
+                placeholder="Опишите проблему как можно подробнее..."
                 bg="bg.subtle"
-                borderColor="border.default"
+                rows={6}
+                required
               />
             </Box>
-          )}
-          {/* Info text */}
-          <Text fontSize="xs" color="fg.muted">
-            {formData.supportLineId
-              ? "Тикет будет направлен на выбранную линию поддержки"
-              : "Тикет будет направлен на первую линию поддержки автоматически"}
-          </Text>
 
-          {/* Submit */}
-          <Flex justify="flex-end" gap={3} mt={4}>
-            <Link href="/dashboard/tickets">
-              <Button variant="outline">Отмена</Button>
-            </Link>
-            <Button
-              type="submit"
-              bg="gray.900"
-              color="white"
-              loading={isSubmitting}
-              loadingText="Создание..."
-              _hover={{ bg: "gray.800" }}
-            >
-              Создать тикет
-            </Button>
-          </Flex>
-        </VStack>
+            <Flex justify="flex-end" pt={4}>
+              <Button
+                type="submit"
+                colorPalette="blue"
+                size="lg"
+                loading={isSubmitting}
+                px={8}
+              >
+                Создать тикет
+              </Button>
+            </Flex>
+          </VStack>
+        </form>
       </Box>
     </Box>
   );

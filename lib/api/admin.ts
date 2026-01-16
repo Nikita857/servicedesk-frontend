@@ -22,8 +22,8 @@ export interface AdminUser {
   avatarUrl: string | null;
   telegramId: number | null;
   specialist: boolean;
-  department: string | null;
-  position: string | null;
+  departmentName: string | null;
+  positionName: string | null;
   roles: string[];
   active: boolean;
 }

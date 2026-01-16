@@ -13,7 +13,6 @@ import {
   Icon,
 } from "@chakra-ui/react";
 import {
-  LuArrowLeft,
   LuClock,
   LuTrendingUp,
   LuTrendingDown,
@@ -21,8 +20,9 @@ import {
   LuCheckCheck,
 } from "react-icons/lu";
 import Link from "next/link";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type ResolutionTimeStats } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 export default function ResolutionTimeReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,9 @@ export default function ResolutionTimeReportPage() {
       const result = await reportsApi.getResolutionTimeStats();
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить статистику");
+      handleApiError(error, {
+        context: "Получить статистику по времени решения",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -63,12 +65,7 @@ export default function ResolutionTimeReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           Время решения тикетов
         </Heading>

@@ -18,11 +18,12 @@ import {
   createListCollection,
 } from "@chakra-ui/react";
 import { Select } from "@chakra-ui/react";
-import { LuArrowLeft, LuSave, LuUsers, LuTrash2, LuPlus } from "react-icons/lu";
-import Link from "next/link";
+import { LuSave, LuUsers, LuTrash2, LuPlus } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { type Specialist, type AssignmentMode } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
-import { userRolesBadges } from "@/types/auth";
+import { userRolesBadges, activityStatusConfig } from "@/types/auth";
+import { assignmentModeConfig } from "@/types/ticket";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -38,12 +39,10 @@ const roleCollection = createListCollection({
 });
 
 const assignmentModeCollection = createListCollection({
-  items: [
-    { label: "Первый свободный", value: "FIRST_AVAILABLE" },
-    { label: "Round Robin", value: "ROUND_ROBIN" },
-    { label: "Наименее загруженный", value: "LEAST_LOADED" },
-    { label: "Прямое назначение", value: "DIRECT" },
-  ],
+  items: Object.entries(assignmentModeConfig).map(([value, label]) => ({
+    label,
+    value,
+  })),
 });
 
 export default function SupportLineDetailPage({ params }: PageProps) {
@@ -91,12 +90,7 @@ export default function SupportLineDetailPage({ params }: PageProps) {
   return (
     <Box maxW="900px" mx="auto">
       {/* Back button */}
-      <Link href="/dashboard/admin/support-lines">
-        <Button variant="ghost" size="sm" mb={4}>
-          <LuArrowLeft />
-          Назад к списку
-        </Button>
-      </Link>
+      <BackButton href="/dashboard/admin/support-lines" />
 
       {/* Header */}
       <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
@@ -399,10 +393,12 @@ function SpecialistRow({
         })}
         {specialist.activityStatus && (
           <Badge
-            colorPalette={statusColors[specialist.activityStatus] || "gray"}
+            colorPalette={
+              activityStatusConfig[specialist.activityStatus]?.color || "gray"
+            }
             variant="subtle"
           >
-            {statusLabels[specialist.activityStatus] ||
+            {activityStatusConfig[specialist.activityStatus]?.label ||
               specialist.activityStatus}
           </Badge>
         )}

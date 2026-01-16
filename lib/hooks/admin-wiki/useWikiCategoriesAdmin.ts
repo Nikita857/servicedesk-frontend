@@ -8,7 +8,8 @@ import {
   UpdateWikiCategoryRequest,
 } from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
+import { useAuthStore } from "@/stores";
 
 interface UseWikiCategoriesAdminReturn {
   categories: WikiCategory[];
@@ -42,8 +43,8 @@ export function useWikiCategoriesAdmin(): UseWikiCategoriesAdminReturn {
       queryClient.invalidateQueries({ queryKey: queryKeys.wiki.all });
       toast.success("Категория создана");
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось создать категорию");
+    onError: (error) => {
+      handleApiError(error, { context: "создать категорию" });
     },
   });
 
@@ -63,8 +64,8 @@ export function useWikiCategoriesAdmin(): UseWikiCategoriesAdminReturn {
       queryClient.invalidateQueries({ queryKey: queryKeys.wiki.all });
       toast.success("Категория обновлена");
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось обновить категорию");
+    onError: (error) => {
+      handleApiError(error, { context: "обновить категорию" });
     },
   });
 
@@ -78,8 +79,8 @@ export function useWikiCategoriesAdmin(): UseWikiCategoriesAdminReturn {
       queryClient.invalidateQueries({ queryKey: queryKeys.wiki.all });
       toast.success("Категория удалена");
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось удалить категорию");
+    onError: (error) => {
+      handleApiError(error, { context: "удалить категорию" });
     },
   });
 

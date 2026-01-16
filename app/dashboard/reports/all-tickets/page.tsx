@@ -13,51 +13,11 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuChevronLeft, LuChevronRight } from "react-icons/lu";
-import Link from "next/link";
+import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type PagedTicketReport } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
-
-// Маппинг статусов на цвета
-const statusColors: Record<string, string> = {
-  NEW: "blue",
-  OPEN: "green",
-  PENDING: "yellow",
-  ESCALATED: "orange",
-  RESOLVED: "teal",
-  PENDING_CLOSURE: "purple",
-  CLOSED: "gray",
-  REOPENED: "red",
-  REJECTED: "red",
-  CANCELLED: "gray",
-};
-
-const statusLabels: Record<string, string> = {
-  NEW: "Новый",
-  OPEN: "Открыт",
-  PENDING: "Ожидание",
-  ESCALATED: "Эскалация",
-  RESOLVED: "Решён",
-  PENDING_CLOSURE: "Ожид. закрытия",
-  CLOSED: "Закрыт",
-  REOPENED: "Переоткрыт",
-  REJECTED: "Отклонён",
-  CANCELLED: "Отменён",
-};
-
-const priorityColors: Record<string, string> = {
-  LOW: "gray",
-  MEDIUM: "blue",
-  HIGH: "orange",
-  URGENT: "red",
-};
-
-const priorityLabels: Record<string, string> = {
-  LOW: "Низкий",
-  MEDIUM: "Средний",
-  HIGH: "Высокий",
-  URGENT: "Срочный",
-};
+import { handleApiError, toast } from "@/lib/utils";
+import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
 
 export default function AllTicketsReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +32,9 @@ export default function AllTicketsReportPage() {
       setData(result);
       setPage(pageNum);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить данные");
+      handleApiError(error, {
+        context: "Получить тикеты",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -95,12 +57,7 @@ export default function AllTicketsReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           Все тикеты
         </Heading>
@@ -178,21 +135,32 @@ export default function AllTicketsReportPage() {
                         </Table.Cell>
                         <Table.Cell>
                           <Badge
-                            colorPalette={statusColors[row.status] || "gray"}
+                            colorPalette={
+                              ticketStatusConfig[
+                                row.status as keyof typeof ticketStatusConfig
+                              ]?.color || "gray"
+                            }
+                            variant="subtle"
                             size="sm"
                           >
-                            {statusLabels[row.status] || row.status}
+                            {ticketStatusConfig[
+                              row.status as keyof typeof ticketStatusConfig
+                            ]?.label || row.status}
                           </Badge>
                         </Table.Cell>
                         <Table.Cell>
                           <Badge
                             colorPalette={
-                              priorityColors[row.priority] || "gray"
+                              ticketPriorityConfig[
+                                row.priority as keyof typeof ticketPriorityConfig
+                              ]?.color || "gray"
                             }
                             size="sm"
                             variant="subtle"
                           >
-                            {priorityLabels[row.priority] || row.priority}
+                            {ticketPriorityConfig[
+                              row.priority as keyof typeof ticketPriorityConfig
+                            ]?.label || row.priority}
                           </Badge>
                         </Table.Cell>
                         <Table.Cell fontSize="sm">

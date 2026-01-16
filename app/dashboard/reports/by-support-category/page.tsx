@@ -13,10 +13,11 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuRefreshCw } from "react-icons/lu";
+import { LuRefreshCw } from "react-icons/lu";
 import Link from "next/link";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketStatsByCategory } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 // Маппинг типов категорий
 const categoryTypeColors: Record<string, string> = {
@@ -43,7 +44,9 @@ export default function BySupportCategoryReportPage() {
       const result = await reportsApi.getStatsBySupportCategory();
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить статистику");
+      handleApiError(error, {
+        context: "Получить статистику по категориям поддержки",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -60,12 +63,7 @@ export default function BySupportCategoryReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           По категориям поддержки
         </Heading>

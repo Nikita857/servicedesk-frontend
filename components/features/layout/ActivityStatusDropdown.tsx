@@ -3,7 +3,8 @@
 import { Box, Flex, Text, Menu, Spinner, Circle } from "@chakra-ui/react";
 import { LuChevronDown, LuCircle } from "react-icons/lu";
 import { useUserStatusQuery } from "@/lib/hooks/useUserStatusQuery";
-import { activityStatusConfig, type UserActivityStatus } from "@/lib/api/users";
+import { activityStatusConfig } from "@/types/auth";
+import type { UserActivityStatus } from "@/lib/api/users";
 import { useAuthStore } from "@/stores";
 
 const statusOrder: UserActivityStatus[] = [

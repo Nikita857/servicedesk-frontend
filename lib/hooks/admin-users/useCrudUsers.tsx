@@ -1,5 +1,5 @@
 import { adminApi, AdminUser, CreateUserParams } from "@/lib/api/admin";
-import { toast } from "@/lib/utils/toast";
+import { handleApiError, toast } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -86,8 +86,8 @@ export const useCrudUsers = () => {
       });
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось создать пользователя");
+    onError: (error) => {
+      handleApiError(error, { context: "создать пользователя" });
     },
   });
 
@@ -102,8 +102,8 @@ export const useCrudUsers = () => {
       );
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось изменить статус");
+    onError: (error) => {
+      handleApiError(error, { context: "изменить статус" });
     },
   });
 
@@ -115,8 +115,8 @@ export const useCrudUsers = () => {
       setIsEditRolesOpen(false);
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось обновить роли");
+    onError: (error) => {
+      handleApiError(error, { context: "обновить роли" });
     },
   });
 
@@ -128,8 +128,8 @@ export const useCrudUsers = () => {
       setIsEditFioOpen(false);
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось обновить ФИО");
+    onError: (error) => {
+      handleApiError(error, { context: "обновить ФИО" });
     },
   });
 
@@ -141,8 +141,8 @@ export const useCrudUsers = () => {
       setIsChangePasswordOpen(false);
       setNewPassword("");
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось изменить пароль");
+    onError: (error) => {
+      handleApiError(error, { context: "изменить пароль" });
     },
   });
 
@@ -153,8 +153,8 @@ export const useCrudUsers = () => {
       setIsDeleteOpen(false);
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось удалить пользователя");
+    onError: (error) => {
+      handleApiError(error, { context: "удалить пользователя" });
     },
   });
 

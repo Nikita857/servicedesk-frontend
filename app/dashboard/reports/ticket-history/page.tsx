@@ -14,44 +14,12 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import {
-  LuArrowLeft,
-  LuSearch,
-  LuClock,
-  LuUser,
-  LuLayers,
-} from "react-icons/lu";
-import Link from "next/link";
+import { LuSearch, LuClock, LuUser, LuLayers } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketHistory } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
-
-// Маппинг статусов на цвета
-const statusColors: Record<string, string> = {
-  NEW: "blue",
-  OPEN: "green",
-  PENDING: "yellow",
-  ESCALATED: "orange",
-  RESOLVED: "teal",
-  PENDING_CLOSURE: "purple",
-  CLOSED: "gray",
-  REOPENED: "red",
-  REJECTED: "red",
-  CANCELLED: "gray",
-};
-
-// Маппинг статусов на русские названия
-const statusLabels: Record<string, string> = {
-  NEW: "Новый",
-  OPEN: "Открыт",
-  PENDING: "Ожидание",
-  ESCALATED: "Эскалация",
-  RESOLVED: "Решён",
-  PENDING_CLOSURE: "Ожидание закрытия",
-  CLOSED: "Закрыт",
-  REOPENED: "Переоткрыт",
-  REJECTED: "Отклонён",
-  CANCELLED: "Отменён",
-};
+import { handleApiError, toast } from "@/lib/utils";
+import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
+import { ApiError } from "next/dist/server/api-utils";
 
 export default function TicketHistoryReportPage() {
   const [ticketId, setTicketId] = useState("");
@@ -72,7 +40,7 @@ export default function TicketHistoryReportPage() {
       const result = await reportsApi.getTicketHistory(id);
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Тикет не найден или недоступен");
+      handleApiError(error, { context: "Получить историю тикета" });
       setData(null);
     } finally {
       setIsLoading(false);
@@ -104,12 +72,7 @@ export default function TicketHistoryReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           История тикета
         </Heading>
@@ -177,12 +140,33 @@ export default function TicketHistoryReportPage() {
               <Heading size="md" color="fg.default">
                 Тикет #{data.ticketId}
               </Heading>
-              <Badge
-                colorPalette={statusColors[data.status] || "gray"}
-                size="lg"
-              >
-                {statusLabels[data.status] || data.status}
-              </Badge>
+              <HStack>
+                <Badge
+                  colorPalette={
+                    ticketPriorityConfig[
+                      data.priority as keyof typeof ticketPriorityConfig
+                    ]?.color || "gray"
+                  }
+                  size="md"
+                  variant="subtle"
+                >
+                  {ticketPriorityConfig[
+                    data.priority as keyof typeof ticketPriorityConfig
+                  ]?.label || data.priority}
+                </Badge>
+                <Badge
+                  colorPalette={
+                    ticketStatusConfig[
+                      data.status as keyof typeof ticketStatusConfig
+                    ]?.color || "gray"
+                  }
+                  size="lg"
+                >
+                  {ticketStatusConfig[
+                    data.status as keyof typeof ticketStatusConfig
+                  ]?.label || data.status}
+                </Badge>
+              </HStack>
             </HStack>
 
             <Text fontSize="lg" fontWeight="medium" color="fg.default" mb={4}>
@@ -333,10 +317,16 @@ export default function TicketHistoryReportPage() {
                     <Table.Row key={row.id}>
                       <Table.Cell>
                         <Badge
-                          colorPalette={statusColors[row.status] || "gray"}
+                          colorPalette={
+                            ticketStatusConfig[
+                              row.status as keyof typeof ticketStatusConfig
+                            ]?.color || "gray"
+                          }
                           size="sm"
                         >
-                          {statusLabels[row.status] || row.status}
+                          {ticketStatusConfig[
+                            row.status as keyof typeof ticketStatusConfig
+                          ]?.label || row.status}
                         </Badge>
                       </Table.Cell>
                       <Table.Cell fontSize="sm">

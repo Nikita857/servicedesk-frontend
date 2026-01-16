@@ -24,7 +24,8 @@ import {
   LuChevronRight,
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { SenderType, User, userRolesBadges } from "@/types";
+import { User, userRolesBadges } from "@/types";
+import { userRolesBadges as userRolesConfig } from "@/types/auth";
 import { AdminUser } from "@/lib/api/admin";
 
 interface UsersTableProps {
@@ -42,7 +43,11 @@ interface UsersTableProps {
   user: User | null;
 }
 const getRoleBadge = (role: string) => {
-  const roleData = userRolesBadges[role as SenderType];
+  const roleData = userRolesConfig[role] || {
+    name: role,
+    description: "",
+    color: "gray",
+  };
   return (
     <Tooltip content={roleData.description}>
       <Badge
@@ -119,24 +124,24 @@ export default function UsersTable({
                       <VStack align="start" gap={0}>
                         <Text fontWeight="medium">{u.fio || "—"}</Text>
                         <Text fontSize="sm" color="fg.muted">
-                          @{u.username}
+                          @{u.username}{" "}
+                          {u.specialist && (
+                            <Tooltip content="Пользователь способный обрабатывать тикеты">
+                              <Badge
+                                colorPalette="orange"
+                                size="sm"
+                                variant="outline"
+                              >
+                                Специалист
+                              </Badge>
+                            </Tooltip>
+                          )}
                         </Text>
                       </VStack>
                     </Table.Cell>
                     <Table.Cell>
                       <HStack gap={1} flexWrap="wrap">
                         {u.roles.map((role) => getRoleBadge(role))}
-                        {u.specialist && (
-                          <Tooltip content="Пользователь способный обрабатывать тикеты">
-                            <Badge
-                              colorPalette="orange"
-                              size="sm"
-                              variant="outline"
-                            >
-                              Специалист
-                            </Badge>
-                          </Tooltip>
-                        )}
                       </HStack>
                     </Table.Cell>
                     <Table.Cell>

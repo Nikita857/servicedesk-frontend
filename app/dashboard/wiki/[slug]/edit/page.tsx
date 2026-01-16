@@ -14,14 +14,7 @@ import {
   Spinner,
   IconButton,
 } from "@chakra-ui/react";
-import {
-  LuArrowLeft,
-  LuSave,
-  LuPaperclip,
-  LuX,
-  LuFile,
-  LuTrash,
-} from "react-icons/lu";
+import { LuSave, LuPaperclip, LuX, LuFile, LuTrash } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -30,25 +23,21 @@ import {
   type WikiAttachment,
 } from "@/lib/api/wiki";
 import { attachmentApi } from "@/lib/api/attachments";
-import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
-import { toast } from "@/lib/utils";
+import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { AxiosError } from "axios";
-import { useWikiCategoriesQuery } from "@/lib/hooks";
+import {
+  useWikiCategoriesQuery,
+  useWikiArticleQuery,
+  useFileUpload,
+} from "@/lib/hooks";
+import { BackButton } from "@/components/ui";
 import { createListCollection } from "@chakra-ui/react";
 import { Select, Portal } from "@chakra-ui/react";
 import { useMemo } from "react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-// Helper to format file size
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function EditWikiArticlePage({ params }: PageProps) {
@@ -127,7 +116,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
 
   // Error handling
   if (error) {
-    toast.error("Ошибка", "Статья не найдена");
+    handleApiError(error);
     router.push("/dashboard/wiki");
     return null;
   }
@@ -179,7 +168,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
       );
       toast.success("Вложение удалено");
     } catch (error) {
-      toast.error("Ошибка", "Не удалось удалить вложение");
+      handleApiError(error, { context: "Удалить вложение" });
     } finally {
       setDeletingAttachmentId(null);
     }
@@ -235,9 +224,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
 
       router.push(`/dashboard/wiki/${updated.slug}`);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        toast.error("Ошибка", error.response?.data.message);
-      }
+      handleApiError(error, { context: "обновить статью" });
     } finally {
       setIsSubmitting(false);
     }
@@ -258,12 +245,11 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   return (
     <Box maxW="900px" mx="auto">
       {/* Back button */}
-      <Link href={`/dashboard/wiki/${slug}`}>
-        <Button variant="ghost" size="sm" mb={4}>
-          <LuArrowLeft />
-          Назад к статье
-        </Button>
-      </Link>
+      <BackButton
+        href={`/dashboard/wiki/${slug}`}
+        label="Назад к статье"
+        mb={4}
+      />
 
       {/* Form */}
       <Box

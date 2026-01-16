@@ -8,8 +8,8 @@ export interface User {
   avatarUrl: string | null;
   specialist: boolean;
   roles: string[];
-  department: string | null;
-  position: string | null;
+  departmentName: string | null;
+  positionName: string | null;
   active: boolean;
 }
 
@@ -27,7 +27,7 @@ export interface AuthResponse {
 }
 
 export const userRolesBadges: Record<
-  SenderType,
+  string,
   { name: string; color: string; description: string }
 > = {
   USER: {
@@ -36,19 +36,19 @@ export const userRolesBadges: Record<
     description: "Может создавать заявки и общаться со специалистами",
   },
   SYSADMIN: {
-    name: "Системный администратор",
+    name: "Сисадмин",
     color: "green",
     description:
       "Специалист 1-й линии поддержки. Решает базовые технические вопросы",
   },
-  "1CSUPPORT": {
+  ONE_C_SUPPORT: {
     name: "1С Поддержка",
     color: "blue",
     description: "Специалист по поддержке продуктов 1С",
   },
   DEV1C: {
-    name: "Программист 1С",
-    color: "blue",
+    name: "Разработчик 1С",
+    color: "orange",
     description: "Разработчик 1С. Решает сложные задачи по 1С",
   },
   DEVELOPER: {
@@ -61,5 +61,37 @@ export const userRolesBadges: Record<
     color: "red",
     description:
       "Полный доступ к системе. Управление пользователями и настройками",
+  },
+};
+
+// Activity Status labels and colors
+export const activityStatusConfig: Record<
+  string,
+  { label: string; color: string; description: string }
+> = {
+  AVAILABLE: {
+    label: "Доступен",
+    color: "green",
+    description: "Готов принимать новые тикеты",
+  },
+  UNAVAILABLE: {
+    label: "Недоступен",
+    color: "gray",
+    description: "Временно отсутствует на месте",
+  },
+  BUSY: {
+    label: "Занят",
+    color: "red",
+    description: "Выполняет сложную задачу или на встрече",
+  },
+  TECHNICAL_ISSUE: {
+    label: "Техн. проблемы",
+    color: "orange",
+    description: "Проблемы с интернетом или оборудованием",
+  },
+  OFFLINE: {
+    label: "Оффлайн",
+    color: "gray",
+    description: "Не на работе",
   },
 };

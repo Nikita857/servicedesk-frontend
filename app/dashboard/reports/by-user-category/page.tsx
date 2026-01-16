@@ -12,10 +12,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuRefreshCw } from "react-icons/lu";
-import Link from "next/link";
+import { LuRefreshCw } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketStatsByCategory } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 export default function ByUserCategoryReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +27,9 @@ export default function ByUserCategoryReportPage() {
       const result = await reportsApi.getStatsByUserCategory();
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить статистику");
+      handleApiError(error, {
+        context: "Получить статистику по категориям пользователей",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -44,12 +46,7 @@ export default function ByUserCategoryReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           По категориям пользователя
         </Heading>

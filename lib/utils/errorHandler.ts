@@ -21,7 +21,9 @@ interface HandleApiErrorOptions {
   /** Не показывать toast (для кастомной обработки) */
   silent?: boolean;
   /** Кастомные обработчики по статус-коду */
-  handlers?: Partial<Record<number, (error: AxiosError<ApiErrorResponse>) => void>>;
+  handlers?: Partial<
+    Record<number, (error: AxiosError<ApiErrorResponse>) => void>
+  >;
 }
 
 /**
@@ -30,18 +32,18 @@ interface HandleApiErrorOptions {
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiErrorResponse | undefined;
-    
+
     // Приоритет: message > error > status text
     if (data?.message) return data.message;
     if (data?.error) return data.error;
     if (error.response?.statusText) return error.response.statusText;
     if (error.message) return error.message;
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   return "Неизвестная ошибка";
 }
 
@@ -57,7 +59,7 @@ export function getErrorStatus(error: unknown): number | null {
 
 /**
  * Централизованная обработка ошибок API
- * 
+ *
  * @example
  * try {
  *   await ticketApi.create(data);
@@ -85,27 +87,33 @@ export function handleApiError(
   // Обработка стандартных статусов
   switch (status) {
     case 400:
-      toast.error("Ошибка валидации", message);
+      toast.warning("Ошибка валидации", message);
       break;
     case 401:
-      toast.error("Не авторизован", "Войдите в систему");
+      toast.error("Не авторизован", "Пожалуйста, войдите в систему");
       break;
     case 403:
-      toast.error("Доступ запрещён", message || "Недостаточно прав");
+      toast.error(
+        "Доступ запрещён",
+        message || "Недостаточно прав для выполнения операции"
+      );
       break;
     case 404:
-      toast.error("Не найдено", message || "Ресурс не существует");
+      toast.warning("Не найдено", message || "Ресурс не существует");
       break;
     case 409:
-      toast.error("Конфликт", message);
+      toast.warning("Конфликт", message);
       break;
     case 422:
-      toast.error("Ошибка данных", message);
+      toast.warning("Ошибка данных", message);
       break;
     case 500:
     case 502:
     case 503:
-      toast.error("Ошибка сервера", "Попробуйте позже");
+      toast.error(
+        "Ошибка сервера",
+        "На сервере произошла ошибка. Сообщите администратору о проблеме"
+      );
       break;
     default:
       // Fallback с контекстом
@@ -119,7 +127,7 @@ export function handleApiError(
 
 /**
  * Обёртка для async функций с автоматической обработкой ошибок
- * 
+ *
  * @example
  * const result = await withErrorHandling(
  *   () => ticketApi.create(data),

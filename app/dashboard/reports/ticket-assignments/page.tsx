@@ -14,31 +14,11 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuSearch, LuArrowRight } from "react-icons/lu";
-import Link from "next/link";
+import { LuSearch, LuArrowRight } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type ReassignmentHistory } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
-
-// Маппинг статусов назначений
-const assignmentStatusColors: Record<string, string> = {
-  PENDING: "yellow",
-  ACCEPTED: "green",
-  REJECTED: "red",
-};
-
-const assignmentStatusLabels: Record<string, string> = {
-  PENDING: "Ожидает",
-  ACCEPTED: "Принято",
-  REJECTED: "Отклонено",
-};
-
-// Маппинг режимов назначения
-const modeLabels: Record<string, string> = {
-  FIRST_AVAILABLE: "Первый свободный",
-  ROUND_ROBIN: "По очереди",
-  LEAST_LOADED: "Наименее загружен",
-  DIRECT: "Напрямую",
-};
+import { handleApiError, toast } from "@/lib/utils";
+import { assignmentStatusConfig, assignmentModeConfig } from "@/types/ticket";
 
 export default function TicketAssignmentsReportPage() {
   const [ticketId, setTicketId] = useState("");
@@ -59,7 +39,7 @@ export default function TicketAssignmentsReportPage() {
       const result = await reportsApi.getReassignmentHistory(id);
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Тикет не найден или недоступен");
+      handleApiError(error, { context: "Получить историю переназначений" });
       setData(null);
     } finally {
       setIsLoading(false);
@@ -81,12 +61,7 @@ export default function TicketAssignmentsReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           История переназначений
         </Heading>
@@ -238,17 +213,21 @@ export default function TicketAssignmentsReportPage() {
                     </Table.Cell>
                     <Table.Cell>
                       <Text fontSize="sm">
-                        {modeLabels[row.mode] || row.mode}
+                        {assignmentModeConfig[row.mode] || row.mode}
                       </Text>
                     </Table.Cell>
                     <Table.Cell>
                       <Badge
                         colorPalette={
-                          assignmentStatusColors[row.status] || "gray"
+                          assignmentStatusConfig[
+                            row.status as keyof typeof assignmentStatusConfig
+                          ]?.color || "gray"
                         }
                         size="sm"
                       >
-                        {assignmentStatusLabels[row.status] || row.status}
+                        {assignmentStatusConfig[
+                          row.status as keyof typeof assignmentStatusConfig
+                        ]?.label || row.status}
                       </Badge>
                     </Table.Cell>
                     <Table.Cell>

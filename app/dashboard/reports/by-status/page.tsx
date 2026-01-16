@@ -13,38 +13,11 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuRefreshCw } from "react-icons/lu";
-import Link from "next/link";
+import { LuRefreshCw } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketStatsByStatus } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
-
-// Маппинг статусов на цвета
-const statusColors: Record<string, string> = {
-  NEW: "blue",
-  OPEN: "green",
-  PENDING: "yellow",
-  ESCALATED: "orange",
-  RESOLVED: "teal",
-  PENDING_CLOSURE: "purple",
-  CLOSED: "gray",
-  REOPENED: "red",
-  REJECTED: "red",
-  CANCELLED: "gray",
-};
-
-// Маппинг статусов на русские названия
-const statusLabels: Record<string, string> = {
-  NEW: "Новый",
-  OPEN: "Открыт",
-  PENDING: "Ожидание",
-  ESCALATED: "Эскалация",
-  RESOLVED: "Решён",
-  PENDING_CLOSURE: "Ожидание закрытия",
-  CLOSED: "Закрыт",
-  REOPENED: "Переоткрыт",
-  REJECTED: "Отклонён",
-  CANCELLED: "Отменён",
-};
+import { handleApiError, toast } from "@/lib/utils";
+import { ticketStatusConfig } from "@/types/ticket";
 
 export default function ByStatusReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +29,9 @@ export default function ByStatusReportPage() {
       const result = await reportsApi.getStatsByStatus();
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить статистику");
+      handleApiError(error, {
+        context: "Получить статистику по статусам",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -73,12 +48,7 @@ export default function ByStatusReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           По статусам
         </Heading>
@@ -161,10 +131,16 @@ export default function ByStatusReportPage() {
                   <Table.Row key={row.status}>
                     <Table.Cell>
                       <Badge
-                        colorPalette={statusColors[row.status] || "gray"}
-                        size="md"
+                        colorPalette={
+                          ticketStatusConfig[
+                            row.status as keyof typeof ticketStatusConfig
+                          ]?.color || "gray"
+                        }
+                        variant="subtle"
                       >
-                        {statusLabels[row.status] || row.status}
+                        {ticketStatusConfig[
+                          row.status as keyof typeof ticketStatusConfig
+                        ]?.label || row.status}
                       </Badge>
                     </Table.Cell>
                     <Table.Cell textAlign="right" fontWeight="medium">
@@ -176,7 +152,11 @@ export default function ByStatusReportPage() {
                           w={`${Math.min(row.percentage, 100)}%`}
                           maxW="100px"
                           h="10px"
-                          bg={`${statusColors[row.status] || "gray"}.500`}
+                          bg={
+                            ticketStatusConfig[
+                              row.status as keyof typeof ticketStatusConfig
+                            ]?.color || "gray.200"
+                          }
                           borderRadius="full"
                         />
                         <Text fontSize="sm" fontWeight="medium" w="55px">

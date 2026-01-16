@@ -13,10 +13,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuArrowLeft, LuSearch } from "react-icons/lu";
-import Link from "next/link";
+import { LuSearch } from "react-icons/lu";
+import { BackButton } from "@/components/ui";
 import { reportsApi, type TimeReportByLine } from "@/lib/api/reports";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 export default function TimeByLineReportPage() {
   // Дефолтные даты: последние 30 дней
@@ -49,7 +49,7 @@ export default function TimeByLineReportPage() {
       const result = await reportsApi.getTimeByLine(fromDate, toDate);
       setData(result);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось загрузить отчёт");
+      handleApiError(error, { context: "Получить отчёт по линиям" });
     } finally {
       setIsLoading(false);
     }
@@ -76,12 +76,7 @@ export default function TimeByLineReportPage() {
     <Box>
       {/* Header */}
       <Box mb={6}>
-        <Link href="/dashboard/reports">
-          <Button variant="ghost" size="sm" mb={2}>
-            <LuArrowLeft />
-            Назад к отчётам
-          </Button>
-        </Link>
+        <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
           Время по линиям поддержки
         </Heading>

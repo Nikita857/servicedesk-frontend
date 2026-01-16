@@ -129,12 +129,14 @@ export interface PagedTicketList {
 }
 
 // Status labels and colors
-export const ticketStatusConfig: Record<
-  TicketStatus,
-  { label: string; color: string }
-> = {
+export interface StatusConfig {
+  label: string;
+  color: string;
+}
+
+export const ticketStatusConfig: Record<TicketStatus, StatusConfig> = {
   NEW: { label: "Новый", color: "blue" },
-  OPEN: { label: "Открыт", color: "green" },
+  OPEN: { label: "В работе", color: "green" },
   PENDING: { label: "Ожидание", color: "yellow" },
   ESCALATED: { label: "Эскалирован", color: "orange" },
   RESOLVED: { label: "Решён", color: "teal" },
@@ -143,6 +145,23 @@ export const ticketStatusConfig: Record<
   REOPENED: { label: "Переоткрыт", color: "purple" },
   REJECTED: { label: "Отклонён", color: "red" },
   CANCELLED: { label: "Отменён", color: "gray" },
+};
+
+// Assignment Status configuration
+export type AssignmentStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+
+export const assignmentStatusConfig: Record<AssignmentStatus, StatusConfig> = {
+  PENDING: { label: "Ожидает", color: "yellow" },
+  ACCEPTED: { label: "Принято", color: "green" },
+  REJECTED: { label: "Отклонено", color: "red" },
+};
+
+// Assignment Mode configuration
+export const assignmentModeConfig: Record<string, string> = {
+  FIRST_AVAILABLE: "Первый свободный",
+  ROUND_ROBIN: "По очереди",
+  LEAST_LOADED: "Наименее загружен",
+  DIRECT: "Напрямую",
 };
 
 export const ticketPriorityConfig: Record<

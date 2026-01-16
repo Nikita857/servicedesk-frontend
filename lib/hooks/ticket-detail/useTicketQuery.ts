@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
 
 interface UseTicketQueryReturn {
@@ -28,7 +28,7 @@ export function useTicketQuery(ticketId: number): UseTicketQueryReturn {
       try {
         return await ticketApi.get(ticketId);
       } catch (error) {
-        toast.error("Ошибка", "Не удалось загрузить тикет");
+        handleApiError(error, { context: "Загрузить тикет" });
         router.push("/dashboard/tickets");
         throw error;
       }

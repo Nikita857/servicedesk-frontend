@@ -14,25 +14,17 @@ import {
   HStack,
   IconButton,
 } from "@chakra-ui/react";
-import { LuArrowLeft, LuSave, LuPaperclip, LuX, LuFile } from "react-icons/lu";
+import { LuSave, LuPaperclip, LuX, LuFile } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
-import { useFileUpload } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
-import { toast } from "@/lib/utils";
+import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { AxiosError } from "axios";
-import { useWikiCategoriesQuery } from "@/lib/hooks";
+import { useWikiCategoriesQuery, useFileUpload } from "@/lib/hooks";
+import { BackButton } from "@/components/ui";
 import { createListCollection } from "@chakra-ui/react";
 import { Select, Portal } from "@chakra-ui/react";
-
-// Helper to format file size
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default function NewWikiArticlePage() {
   const router = useRouter();
@@ -145,11 +137,7 @@ export default function NewWikiArticlePage() {
 
       router.push(`/dashboard/wiki/${article.slug}`);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        toast.error("Ошибка", error.response?.data.message);
-      } else {
-        toast.error("Ошибка", "Не удалось создать статью");
-      }
+      handleApiError(error, { context: "создать статью" });
     } finally {
       setIsSubmitting(false);
     }
@@ -162,12 +150,7 @@ export default function NewWikiArticlePage() {
   return (
     <Box maxW="900px" mx="auto">
       {/* Back button */}
-      <Link href="/dashboard/wiki">
-        <Button variant="ghost" size="sm" mb={4}>
-          <LuArrowLeft />
-          Назад к списку
-        </Button>
-      </Link>
+      <BackButton href="/dashboard/wiki" label="Назад к списку" mb={4} />
 
       {/* Form */}
       <Box
