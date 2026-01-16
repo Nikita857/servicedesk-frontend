@@ -17,9 +17,13 @@ import { Table } from "@chakra-ui/react";
 import { LuSearch, LuClock, LuUser, LuLayers } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketHistory } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import {
+  handleApiError,
+  toast,
+  formatDate,
+  formatDurationFull,
+} from "@/lib/utils";
 import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
-import { ApiError } from "next/dist/server/api-utils";
 
 export default function TicketHistoryReportPage() {
   const [ticketId, setTicketId] = useState("");
@@ -45,27 +49,6 @@ export default function TicketHistoryReportPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}с`;
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}ч ${minutes}м`;
-    }
-    return `${minutes}м`;
-  };
-
-  const formatDate = (dateStr: string | null): string => {
-    if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleString("ru-RU", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
@@ -233,7 +216,7 @@ export default function TicketHistoryReportPage() {
                   Время до первого ответа
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="blue.600">
-                  {formatTime(data.firstResponseTimeSeconds)}
+                  {formatDurationFull(data.firstResponseTimeSeconds)}
                 </Text>
               </VStack>
               <VStack align="start" gap={0}>
@@ -241,7 +224,7 @@ export default function TicketHistoryReportPage() {
                   Без назначения
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="orange.600">
-                  {formatTime(data.totalUnassignedSeconds)}
+                  {formatDurationFull(data.totalUnassignedSeconds)}
                 </Text>
               </VStack>
               <VStack align="start" gap={0}>
@@ -249,7 +232,7 @@ export default function TicketHistoryReportPage() {
                   Активная работа
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="green.600">
-                  {formatTime(data.totalActiveSeconds)}
+                  {formatDurationFull(data.totalActiveSeconds)}
                 </Text>
               </VStack>
               {data.resolvedAt && (
@@ -330,14 +313,16 @@ export default function TicketHistoryReportPage() {
                         </Badge>
                       </Table.Cell>
                       <Table.Cell fontSize="sm">
-                        {formatDate(row.enteredAt)}
+                        {row.enteredAt ? formatDate(row.enteredAt) : "—"}
                       </Table.Cell>
                       <Table.Cell fontSize="sm">
-                        {formatDate(row.exitedAt)}
+                        {row.exitedAt ? formatDate(row.exitedAt) : "—"}
                       </Table.Cell>
                       <Table.Cell textAlign="right" fontWeight="medium">
                         {row.durationFormatted ||
-                          formatTime(row.durationSeconds)}
+                          (row.durationSeconds !== null
+                            ? formatDurationFull(row.durationSeconds)
+                            : "—")}
                       </Table.Cell>
                       <Table.Cell fontSize="sm">
                         {row.changedByFio || row.changedByUsername || "—"}

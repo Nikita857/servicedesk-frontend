@@ -16,7 +16,7 @@ import { Table } from "@chakra-ui/react";
 import { LuSearch } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type TimeReportByLine } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError, toast, formatDurationFull } from "@/lib/utils";
 
 export default function TimeByLineReportPage() {
   // Дефолтные даты: последние 30 дней
@@ -62,15 +62,6 @@ export default function TimeByLineReportPage() {
     data?.reduce((sum, row) => sum + row.ticketCount, 0) || 0;
   const totalSpecialists =
     data?.reduce((sum, row) => sum + row.specialistCount, 0) || 0;
-
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}ч ${minutes}м`;
-    }
-    return `${minutes}м`;
-  };
 
   return (
     <Box>
@@ -193,7 +184,7 @@ export default function TimeByLineReportPage() {
                     Общее время
                   </Text>
                   <Text fontSize="lg" fontWeight="semibold" color="purple.600">
-                    {formatTime(totalSeconds)}
+                    {formatDurationFull(totalSeconds)}
                   </Text>
                 </VStack>
               </HStack>
@@ -237,7 +228,8 @@ export default function TimeByLineReportPage() {
                         fontWeight="medium"
                         color="purple.600"
                       >
-                        {row.formattedTime || formatTime(row.totalSeconds)}
+                        {row.formattedTime ||
+                          formatDurationFull(row.totalSeconds)}
                       </Table.Cell>
                     </Table.Row>
                   ))}

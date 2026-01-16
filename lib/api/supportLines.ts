@@ -3,11 +3,7 @@ import type { ApiResponse } from "@/types/api";
 
 // ==================== Types ====================
 
-export type AssignmentMode =
-  | "FIRST_AVAILABLE"
-  | "ROUND_ROBIN"
-  | "LEAST_LOADED"
-  | "DIRECT";
+import type { AssignmentMode } from "@/types/ticket";
 
 export type ActivityStatus =
   | "AVAILABLE"

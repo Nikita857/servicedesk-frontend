@@ -157,7 +157,13 @@ export const assignmentStatusConfig: Record<AssignmentStatus, StatusConfig> = {
 };
 
 // Assignment Mode configuration
-export const assignmentModeConfig: Record<string, string> = {
+export type AssignmentMode =
+  | "FIRST_AVAILABLE"
+  | "ROUND_ROBIN"
+  | "LEAST_LOADED"
+  | "DIRECT";
+
+export const assignmentModeConfig: Record<AssignmentMode, string> = {
   FIRST_AVAILABLE: "Первый свободный",
   ROUND_ROBIN: "По очереди",
   LEAST_LOADED: "Наименее загружен",
@@ -217,3 +223,15 @@ export const specialistStatusTransitions: Record<TicketStatus, TicketStatus[]> =
     REJECTED: [],
     CANCELLED: [],
   };
+// Status history entry
+export interface TicketStatusHistory {
+  id: number;
+  status: string;
+  enteredAt: string;
+  exitedAt: string | null;
+  durationSeconds: number | null;
+  durationFormatted: string | null;
+  changedByUsername: string | null;
+  changedByFio: string | null;
+  comment: string | null;
+}

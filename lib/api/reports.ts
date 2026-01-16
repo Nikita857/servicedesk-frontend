@@ -1,5 +1,6 @@
-import api from './client';
-import type { ApiResponse } from '@/types/api';
+import api from "./client";
+import type { ApiResponse } from "@/types/api";
+import type { TicketStatusHistory } from "@/types/ticket";
 
 /**
  * Reports API
@@ -25,18 +26,6 @@ export interface TimeReportByLine {
   ticketCount: number;
   specialistCount: number;
   formattedTime: string;
-}
-
-export interface TicketStatusHistory {
-  id: number;
-  status: string;
-  enteredAt: string;
-  exitedAt: string | null;
-  durationSeconds: number;
-  durationFormatted: string;
-  changedByUsername: string;
-  changedByFio: string;
-  comment: string | null;
 }
 
 export interface TicketHistory {
@@ -137,9 +126,12 @@ export const reportsApi = {
   /**
    * Отчёт по времени по специалистам
    */
-  getTimeBySpecialist: async (from: string, to: string): Promise<TimeReportBySpecialist[]> => {
+  getTimeBySpecialist: async (
+    from: string,
+    to: string
+  ): Promise<TimeReportBySpecialist[]> => {
     const response = await api.get<ApiResponse<TimeReportBySpecialist[]>>(
-      '/reports/time/by-specialist',
+      "/reports/time/by-specialist",
       { params: { from, to } }
     );
     return response.data.data;
@@ -148,9 +140,12 @@ export const reportsApi = {
   /**
    * Отчёт по времени по линиям поддержки
    */
-  getTimeByLine: async (from: string, to: string): Promise<TimeReportByLine[]> => {
+  getTimeByLine: async (
+    from: string,
+    to: string
+  ): Promise<TimeReportByLine[]> => {
     const response = await api.get<ApiResponse<TimeReportByLine[]>>(
-      '/reports/time/by-line',
+      "/reports/time/by-line",
       { params: { from, to } }
     );
     return response.data.data;
@@ -169,7 +164,9 @@ export const reportsApi = {
   /**
    * История переназначений тикета
    */
-  getReassignmentHistory: async (ticketId: number): Promise<ReassignmentHistory[]> => {
+  getReassignmentHistory: async (
+    ticketId: number
+  ): Promise<ReassignmentHistory[]> => {
     const response = await api.get<ApiResponse<ReassignmentHistory[]>>(
       `/reports/tickets/${ticketId}/assignments`
     );
@@ -181,7 +178,7 @@ export const reportsApi = {
    */
   getResolutionTimeStats: async (): Promise<ResolutionTimeStats> => {
     const response = await api.get<ApiResponse<ResolutionTimeStats>>(
-      '/reports/tickets/resolution-time'
+      "/reports/tickets/resolution-time"
     );
     return response.data.data;
   },
@@ -191,7 +188,7 @@ export const reportsApi = {
    */
   getStatsByUserCategory: async (): Promise<TicketStatsByCategory[]> => {
     const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      '/reports/tickets/by-user-category'
+      "/reports/tickets/by-user-category"
     );
     return response.data.data;
   },
@@ -201,7 +198,7 @@ export const reportsApi = {
    */
   getStatsBySupportCategory: async (): Promise<TicketStatsByCategory[]> => {
     const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      '/reports/tickets/by-support-category'
+      "/reports/tickets/by-support-category"
     );
     return response.data.data;
   },
@@ -211,7 +208,7 @@ export const reportsApi = {
    */
   getStatsByStatus: async (): Promise<TicketStatsByStatus[]> => {
     const response = await api.get<ApiResponse<TicketStatsByStatus[]>>(
-      '/reports/tickets/by-status'
+      "/reports/tickets/by-status"
     );
     return response.data.data;
   },
@@ -221,7 +218,7 @@ export const reportsApi = {
    */
   getAllTickets: async (page = 0, size = 20): Promise<PagedTicketReport> => {
     const response = await api.get<ApiResponse<PagedTicketReport>>(
-      '/reports/tickets/all',
+      "/reports/tickets/all",
       { params: { page, size } }
     );
     return response.data.data;
@@ -232,7 +229,7 @@ export const reportsApi = {
    */
   getSpecialistWorkload: async (): Promise<SpecialistWorkload[]> => {
     const response = await api.get<ApiResponse<SpecialistWorkload[]>>(
-      '/reports/specialists/workload'
+      "/reports/specialists/workload"
     );
     return response.data.data;
   },

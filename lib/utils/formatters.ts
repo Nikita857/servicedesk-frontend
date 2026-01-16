@@ -61,10 +61,15 @@ export function formatDuration(seconds: number): string {
  * Форматирование длительности в полном формате
  */
 export function formatDurationFull(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+  const days = Math.floor(seconds / (24 * 3600));
+  const remainingSecondsAfterDays = seconds % (24 * 3600);
+  const hours = Math.floor(remainingSecondsAfterDays / 3600);
+  const minutes = Math.floor((remainingSecondsAfterDays % 3600) / 60);
+  const secs = Math.floor(remainingSecondsAfterDays % 60);
 
+  if (days > 0) {
+    return `${days} д ${hours} ч`;
+  }
   if (hours > 0) {
     return `${hours} ч ${minutes} мин`;
   }

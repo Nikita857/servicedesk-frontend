@@ -7,6 +7,7 @@ import type {
   UpdateTicketRequest,
   ChangeStatusRequest,
   TicketStatus,
+  TicketStatusHistory,
 } from "@/types/ticket";
 
 export const ticketApi = {
@@ -226,17 +227,4 @@ export const ticketApi = {
 export interface RateTicketRequest {
   rating: number; // 1-5
   feedback?: string;
-}
-
-// Status history response type
-export interface TicketStatusHistory {
-  id: number;
-  status: string;
-  enteredAt: string;
-  exitedAt: string | null;
-  durationSeconds: number | null;
-  durationFormatted: string | null;
-  changedByUsername: string | null;
-  changedByFio: string | null;
-  comment: string | null;
 }

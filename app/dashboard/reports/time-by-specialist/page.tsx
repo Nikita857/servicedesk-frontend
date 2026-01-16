@@ -14,10 +14,9 @@ import {
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
 import { LuSearch } from "react-icons/lu";
-import Link from "next/link";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type TimeReportBySpecialist } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError, toast, formatDurationFull } from "@/lib/utils";
 
 export default function TimeBySpecialistReportPage() {
   // Дефолтные даты: последние 30 дней
@@ -61,15 +60,6 @@ export default function TimeBySpecialistReportPage() {
     data?.reduce((sum, row) => sum + row.totalSeconds, 0) || 0;
   const totalTickets =
     data?.reduce((sum, row) => sum + row.ticketCount, 0) || 0;
-
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}ч ${minutes}м`;
-    }
-    return `${minutes}м`;
-  };
 
   return (
     <Box>
@@ -184,7 +174,7 @@ export default function TimeBySpecialistReportPage() {
                     Общее время
                   </Text>
                   <Text fontSize="lg" fontWeight="semibold" color="blue.600">
-                    {formatTime(totalSeconds)}
+                    {formatDurationFull(totalSeconds)}
                   </Text>
                 </VStack>
               </HStack>
@@ -218,7 +208,8 @@ export default function TimeBySpecialistReportPage() {
                         fontWeight="medium"
                         color="blue.600"
                       >
-                        {row.formattedTime || formatTime(row.totalSeconds)}
+                        {row.formattedTime ||
+                          formatDurationFull(row.totalSeconds)}
                       </Table.Cell>
                     </Table.Row>
                   ))}

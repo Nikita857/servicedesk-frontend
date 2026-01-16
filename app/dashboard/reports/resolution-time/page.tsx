@@ -22,7 +22,7 @@ import {
 import Link from "next/link";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type ResolutionTimeStats } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError, toast, formatDurationFull } from "@/lib/utils";
 
 export default function ResolutionTimeReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -45,21 +45,6 @@ export default function ResolutionTimeReportPage() {
   useEffect(() => {
     loadData();
   }, []);
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${Math.round(seconds)}с`;
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 24) {
-      const days = Math.floor(hours / 24);
-      const remainingHours = hours % 24;
-      return `${days}д ${remainingHours}ч`;
-    }
-    if (hours > 0) {
-      return `${hours}ч ${minutes}м`;
-    }
-    return `${minutes}м`;
-  };
 
   return (
     <Box>
@@ -124,7 +109,8 @@ export default function ResolutionTimeReportPage() {
                 </Text>
               </Flex>
               <Text fontSize="2xl" fontWeight="bold" color="blue.600">
-                {data.formattedAvgTime || formatTime(data.avgResolutionSeconds)}
+                {data.formattedAvgTime ||
+                  formatDurationFull(data.avgResolutionSeconds)}
               </Text>
             </Box>
 
@@ -145,7 +131,7 @@ export default function ResolutionTimeReportPage() {
                 </Text>
               </Flex>
               <Text fontSize="2xl" fontWeight="bold" color="purple.600">
-                {formatTime(data.medianResolutionSeconds)}
+                {formatDurationFull(data.medianResolutionSeconds)}
               </Text>
             </Box>
 
@@ -166,7 +152,7 @@ export default function ResolutionTimeReportPage() {
                 </Text>
               </Flex>
               <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                {formatTime(data.minResolutionSeconds)}
+                {formatDurationFull(data.minResolutionSeconds)}
               </Text>
             </Box>
 
@@ -187,7 +173,7 @@ export default function ResolutionTimeReportPage() {
                 </Text>
               </Flex>
               <Text fontSize="2xl" fontWeight="bold" color="red.600">
-                {formatTime(data.maxResolutionSeconds)}
+                {formatDurationFull(data.maxResolutionSeconds)}
               </Text>
             </Box>
           </SimpleGrid>
