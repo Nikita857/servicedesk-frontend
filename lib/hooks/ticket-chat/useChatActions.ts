@@ -14,6 +14,7 @@ interface UseChatActionsReturn {
   editingMessage: Message | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePasteFile: (file: File) => void;
   handleRemoveFile: () => void;
   handleEditMessage: (msg: Message) => void;
   handleDeleteMessage: (msgId: number) => Promise<void>;
@@ -24,7 +25,7 @@ export const useChatActions = (
   ticketId: number,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   wsSendMessage: (content: string) => boolean,
-  isConnected: boolean
+  isConnected: boolean,
 ): UseChatActionsReturn => {
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -46,6 +47,17 @@ export const useChatActions = (
       return;
     }
     setSelectedFile(file);
+  };
+
+  // Обработка вставки файла из буфера обмена
+  const handlePasteFile = (file: File) => {
+    const error = validateFile(file);
+    if (error) {
+      toast.error("Ошибка", error);
+      return;
+    }
+    setSelectedFile(file);
+    toast.info("Изображение", `Добавлено: ${file.name}`);
   };
 
   // Удаление выбранного файла
@@ -86,7 +98,7 @@ export const useChatActions = (
           content,
         });
         setMessages((prev) =>
-          prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m))
+          prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m)),
         );
         toast.success("Сообщение обновлено");
       } catch (error) {
@@ -154,10 +166,7 @@ export const useChatActions = (
         if (error instanceof Error && error.message === "Upload failed") {
           // Ошибка уже обработана в хуке useFileUpload
         } else if (axios.isAxiosError(error) && error.response) {
-          toast.error(
-            "Ошибка загрузки файла",
-            error.response.data.message || "Не удалось отправить файл"
-          );
+          handleApiError(error, { context: "Отправить файл" });
         } else {
           toast.error("Ошибка", "Не удалось отправить файл");
         }
@@ -197,6 +206,7 @@ export const useChatActions = (
     editingMessage,
     fileInputRef,
     handleFileSelect,
+    handlePasteFile,
     handleRemoveFile,
     handleEditMessage,
     handleDeleteMessage,

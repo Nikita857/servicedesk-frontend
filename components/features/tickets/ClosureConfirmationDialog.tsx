@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { LuCheck, LuRotateCcw, LuCircleAlert } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 import { suppressTicketToast } from "@/lib/hooks";
 import type { Ticket } from "@/types/ticket";
 import { useAuthStore } from "@/stores";
@@ -81,7 +81,7 @@ export function ClosureConfirmationDialog({
       // Показываем окно оценки после успешного закрытия
       setShowRatingToast(true);
     } catch (error) {
-      toast.error("Ошибка", "Не удалось закрыть тикет");
+      handleApiError(error);
     } finally {
       setIsConfirming(false);
     }

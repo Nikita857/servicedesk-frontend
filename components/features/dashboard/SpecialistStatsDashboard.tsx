@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Box,
   Grid,
@@ -11,10 +12,85 @@ import {
   HStack,
   Spinner,
 } from "@chakra-ui/react";
-import { LuUsers, LuSparkles, LuUserX, LuArchive } from "react-icons/lu";
-import { useLineStatsQuery, type LineTicketStats } from "@/lib/hooks";
+import { LuUsers, LuSparkles, LuUserX } from "react-icons/lu";
+import { useQuery } from "@tanstack/react-query";
+import {
+  statsApi,
+  type LineTicketStats,
+  type TicketPageResponse,
+} from "@/lib/api/stats";
+import { queryKeys } from "@/lib/queryKeys";
+import { TicketListModal } from "./TicketListModal";
 
-function LineStatsCard({ line }: { line: LineTicketStats }) {
+type ModalState = {
+  isOpen: boolean;
+  title: string;
+  data?: TicketPageResponse;
+};
+
+interface StatBoxProps {
+  label: string;
+  value: number;
+  color: string;
+  onClick?: () => void;
+}
+
+function StatBox({ label, value, color, onClick }: StatBoxProps) {
+  return (
+    <Box
+      textAlign="center"
+      p={3}
+      bg="bg.subtle"
+      borderRadius="lg"
+      cursor={onClick ? "pointer" : "default"}
+      onClick={onClick}
+      _hover={onClick ? { bg: "bg.muted", transform: "scale(1.02)" } : {}}
+      transition="all 0.15s"
+    >
+      <Text fontSize="2xl" fontWeight="bold" color={color}>
+        {value}
+      </Text>
+      <Text fontSize="xs" color="fg.muted">
+        {label}
+      </Text>
+    </Box>
+  );
+}
+
+function LineStatsCard({
+  line,
+  onStatClick,
+}: {
+  line: LineTicketStats;
+  onStatClick: (title: string, statusKey: string) => void;
+}) {
+  const stats = [
+    {
+      label: "Новых",
+      value: line.newTickets,
+      color: "blue.500",
+      statusKey: "NEW",
+    },
+    {
+      label: "В работе",
+      value: line.open,
+      color: "orange.500",
+      statusKey: "OPEN",
+    },
+    {
+      label: "Закрыто",
+      value: line.closed,
+      color: "gray.500",
+      statusKey: "CLOSED",
+    },
+    {
+      label: "Без назначения",
+      value: line.unassigned,
+      color: "yellow.500",
+      statusKey: "NEW",
+    },
+  ];
+
   return (
     <Box
       bg="bg.surface"
@@ -37,38 +113,23 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
         templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
         gap={3}
       >
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-            {line.newTickets}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Новых
-          </Text>
-        </Box>
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-            {line.open}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            В работе
-          </Text>
-        </Box>
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="2xl" fontWeight="bold" color="gray.500">
-            {line.closed}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Закрыто
-          </Text>
-        </Box>
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="2xl" fontWeight="bold" color="yellow.500">
-            {line.unassigned}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Без назначения
-          </Text>
-        </Box>
+        {stats.map((stat) => (
+          <StatBox
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+            onClick={
+              line.ticketsByStatus?.[stat.statusKey]
+                ? () =>
+                    onStatClick(
+                      `${line.lineName} — ${stat.label}`,
+                      stat.statusKey,
+                    )
+                : undefined
+            }
+          />
+        ))}
       </Grid>
     </Box>
   );
@@ -79,7 +140,33 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
  * Показывает статистику по их линиям поддержки
  */
 export function SpecialistStatsDashboard() {
-  const { data: lineStats, isLoading } = useLineStatsQuery();
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    title: "",
+  });
+  const [currentLine, setCurrentLine] = useState<LineTicketStats | null>(null);
+
+  // Fetch stats WITH tickets
+  const { data: lineStats, isLoading } = useQuery({
+    queryKey: [...queryKeys.stats.byAllLines(), { includeTickets: true }],
+    queryFn: () =>
+      statsApi.getStatsByAllLines({ includeTickets: true, pageSize: 10 }),
+    staleTime: 60 * 1000,
+  });
+
+  const handleStatClick = (
+    line: LineTicketStats,
+    title: string,
+    statusKey: string,
+  ) => {
+    if (!line.ticketsByStatus?.[statusKey]) return;
+    setCurrentLine(line);
+    setModal({
+      isOpen: true,
+      title,
+      data: line.ticketsByStatus[statusKey],
+    });
+  };
 
   if (isLoading) {
     return (
@@ -99,7 +186,13 @@ export function SpecialistStatsDashboard() {
       {lineStats && lineStats.length > 0 ? (
         <VStack align="stretch" gap={4}>
           {lineStats.map((line) => (
-            <LineStatsCard key={line.lineId} line={line} />
+            <LineStatsCard
+              key={line.lineId}
+              line={line}
+              onStatClick={(title, statusKey) =>
+                handleStatClick(line, title, statusKey)
+              }
+            />
           ))}
         </VStack>
       ) : (
@@ -117,6 +210,13 @@ export function SpecialistStatsDashboard() {
           </Text>
         </Box>
       )}
+
+      <TicketListModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        title={modal.title}
+        initialData={modal.data}
+      />
     </Box>
   );
 }

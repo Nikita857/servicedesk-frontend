@@ -61,7 +61,7 @@ export default function NewTicketPage() {
 
   // Re-fetch category detail when category selection changes to see recommendations
   const { data: categoryDetail } = useCategoryDetailQuery(
-    formData.categoryUserId || 0
+    formData.categoryUserId || 0,
   );
 
   // Auto-select support line if recommended by category
@@ -82,7 +82,7 @@ export default function NewTicketPage() {
           value: cat.id.toString(),
         })),
       }),
-    [categories]
+    [categories],
   );
 
   const supportLineCollection = useMemo(
@@ -94,7 +94,7 @@ export default function NewTicketPage() {
           description: line.description,
         })),
       }),
-    [supportLines]
+    [supportLines],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -272,10 +272,11 @@ export default function NewTicketPage() {
             <Flex justify="flex-end" pt={4}>
               <Button
                 type="submit"
-                colorPalette="blue"
-                size="lg"
+                size="md"
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
                 loading={isSubmitting}
-                px={8}
               >
                 Создать тикет
               </Button>

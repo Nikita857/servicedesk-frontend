@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Box,
   Grid,
@@ -12,9 +13,123 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { LuUsers, LuGlobe, LuInbox } from "react-icons/lu";
-import { useLineStatsQuery, type LineTicketStats } from "@/lib/hooks";
+import { useQuery } from "@tanstack/react-query";
+import {
+  statsApi,
+  type LineTicketStats,
+  type TicketPageResponse,
+} from "@/lib/api/stats";
+import { queryKeys } from "@/lib/queryKeys";
+import { TicketListModal } from "./TicketListModal";
 
-function LineStatsCard({ line }: { line: LineTicketStats }) {
+type ModalState = {
+  isOpen: boolean;
+  title: string;
+  data?: TicketPageResponse;
+};
+
+interface StatBoxProps {
+  label: string;
+  value: number;
+  color: string;
+  bgColor: string;
+  darkBgColor: string;
+  onClick?: () => void;
+}
+
+function StatBox({
+  label,
+  value,
+  color,
+  bgColor,
+  darkBgColor,
+  onClick,
+}: StatBoxProps) {
+  return (
+    <Box
+      textAlign="center"
+      p={4}
+      bg={bgColor}
+      borderRadius="lg"
+      _dark={{ bg: darkBgColor }}
+      cursor={onClick ? "pointer" : "default"}
+      onClick={onClick}
+      _hover={onClick ? { transform: "scale(1.02)", opacity: 0.9 } : {}}
+      transition="all 0.15s"
+    >
+      <Text fontSize="3xl" fontWeight="bold" color={color}>
+        {value}
+      </Text>
+      <Text fontSize="sm" color="fg.muted">
+        {label}
+      </Text>
+    </Box>
+  );
+}
+
+interface LineStatBoxProps {
+  label: string;
+  value: number;
+  color: string;
+  onClick?: () => void;
+}
+
+function LineStatBox({ label, value, color, onClick }: LineStatBoxProps) {
+  return (
+    <Box
+      textAlign="center"
+      p={3}
+      bg="bg.subtle"
+      borderRadius="lg"
+      cursor={onClick ? "pointer" : "default"}
+      onClick={onClick}
+      _hover={onClick ? { bg: "bg.muted", transform: "scale(1.02)" } : {}}
+      transition="all 0.15s"
+    >
+      <Text fontSize="xl" fontWeight="bold" color={color}>
+        {value}
+      </Text>
+      <Text fontSize="xs" color="fg.muted">
+        {label}
+      </Text>
+    </Box>
+  );
+}
+
+function LineStatsCard({
+  line,
+  onStatClick,
+}: {
+  line: LineTicketStats;
+  onStatClick: (title: string, statusKey: string) => void;
+}) {
+  const stats = [
+    {
+      label: "Новых",
+      value: line.newTickets,
+      color: "blue.500",
+      statusKey: "NEW",
+    },
+    {
+      label: "В работе",
+      value: line.open,
+      color: "orange.500",
+      statusKey: "OPEN",
+    },
+    {
+      label: "Закрыто",
+      value: line.closed,
+      color: "gray.500",
+      statusKey: "CLOSED",
+    },
+    {
+      label: "Без назначения",
+      value: line.unassigned,
+      color: "yellow.500",
+      statusKey: "NEW",
+    },
+  ];
+
   return (
     <Box
       bg="bg.surface"
@@ -37,39 +152,23 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
         templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
         gap={3}
       >
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="xl" fontWeight="bold" color="blue.500">
-            {line.newTickets}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Новых
-          </Text>
-        </Box>
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="xl" fontWeight="bold" color="orange.500">
-            {line.open}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            В работе
-          </Text>
-        </Box>
-
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="xl" fontWeight="bold" color="gray.500">
-            {line.closed}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Закрыто
-          </Text>
-        </Box>
-        <Box textAlign="center" p={3} bg="bg.subtle" borderRadius="lg">
-          <Text fontSize="xl" fontWeight="bold" color="yellow.500">
-            {line.unassigned}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            Без назначения
-          </Text>
-        </Box>
+        {stats.map((stat) => (
+          <LineStatBox
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+            onClick={
+              line.ticketsByStatus?.[stat.statusKey]
+                ? () =>
+                    onStatClick(
+                      `${line.lineName} — ${stat.label}`,
+                      stat.statusKey,
+                    )
+                : undefined
+            }
+          />
+        ))}
       </Grid>
     </Box>
   );
@@ -80,7 +179,31 @@ function LineStatsCard({ line }: { line: LineTicketStats }) {
  * Показывает статистику по ВСЕМ линиям поддержки
  */
 export function AdminStatsDashboard() {
-  const { data: lineStats, isLoading } = useLineStatsQuery();
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    title: "",
+  });
+
+  // Fetch stats WITH tickets
+  const { data: lineStats, isLoading } = useQuery({
+    queryKey: [...queryKeys.stats.byAllLines(), { includeTickets: true }],
+    queryFn: () =>
+      statsApi.getStatsByAllLines({ includeTickets: true, pageSize: 10 }),
+    staleTime: 60 * 1000,
+  });
+
+  const handleLineStatClick = (
+    line: LineTicketStats,
+    title: string,
+    statusKey: string,
+  ) => {
+    if (!line.ticketsByStatus?.[statusKey]) return;
+    setModal({
+      isOpen: true,
+      title,
+      data: line.ticketsByStatus[statusKey],
+    });
+  };
 
   if (isLoading) {
     return (
@@ -100,8 +223,39 @@ export function AdminStatsDashboard() {
       closed: acc.closed + line.closed,
       unassigned: acc.unassigned + line.unassigned,
     }),
-    { total: 0, newTickets: 0, open: 0, resolved: 0, closed: 0, unassigned: 0 }
+    { total: 0, newTickets: 0, open: 0, resolved: 0, closed: 0, unassigned: 0 },
   );
+
+  const totalStats = [
+    {
+      label: "Новых",
+      value: totals?.newTickets || 0,
+      color: "blue.500",
+      bgColor: "blue.50",
+      darkBgColor: "blue.900/20",
+    },
+    {
+      label: "В работе",
+      value: totals?.open || 0,
+      color: "orange.500",
+      bgColor: "orange.50",
+      darkBgColor: "orange.900/20",
+    },
+    {
+      label: "Закрыто",
+      value: totals?.closed || 0,
+      color: "gray.500",
+      bgColor: "gray.50",
+      darkBgColor: "gray.900/20",
+    },
+    {
+      label: "Без назначения",
+      value: totals?.unassigned || 0,
+      color: "yellow.500",
+      bgColor: "yellow.50",
+      darkBgColor: "yellow.900/20",
+    },
+  ];
 
   return (
     <VStack align="stretch" gap={6}>
@@ -126,63 +280,16 @@ export function AdminStatsDashboard() {
             templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
             gap={4}
           >
-            <Box
-              textAlign="center"
-              p={4}
-              bg="blue.50"
-              borderRadius="lg"
-              _dark={{ bg: "blue.900/20" }}
-            >
-              <Text fontSize="3xl" fontWeight="bold" color="blue.500">
-                {totals.newTickets}
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                Новых
-              </Text>
-            </Box>
-            <Box
-              textAlign="center"
-              p={4}
-              bg="orange.50"
-              borderRadius="lg"
-              _dark={{ bg: "orange.900/20" }}
-            >
-              <Text fontSize="3xl" fontWeight="bold" color="orange.500">
-                {totals.open}
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                В работе
-              </Text>
-            </Box>
-
-            <Box
-              textAlign="center"
-              p={4}
-              bg="gray.50"
-              borderRadius="lg"
-              _dark={{ bg: "gray.900/20" }}
-            >
-              <Text fontSize="3xl" fontWeight="bold" color="gray.500">
-                {totals.closed}
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                Закрыто
-              </Text>
-            </Box>
-            <Box
-              textAlign="center"
-              p={4}
-              bg="yellow.50"
-              borderRadius="lg"
-              _dark={{ bg: "yellow.900/20" }}
-            >
-              <Text fontSize="3xl" fontWeight="bold" color="yellow.500">
-                {totals.unassigned}
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                Без назначения
-              </Text>
-            </Box>
+            {totalStats.map((stat) => (
+              <StatBox
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+                color={stat.color}
+                bgColor={stat.bgColor}
+                darkBgColor={stat.darkBgColor}
+              />
+            ))}
           </Grid>
         </Box>
       )}
@@ -197,7 +304,13 @@ export function AdminStatsDashboard() {
         {lineStats && lineStats.length > 0 ? (
           <VStack align="stretch" gap={4}>
             {lineStats.map((line) => (
-              <LineStatsCard key={line.lineId} line={line} />
+              <LineStatsCard
+                key={line.lineId}
+                line={line}
+                onStatClick={(title, statusKey) =>
+                  handleLineStatClick(line, title, statusKey)
+                }
+              />
             ))}
           </VStack>
         ) : (
@@ -213,6 +326,13 @@ export function AdminStatsDashboard() {
           </Box>
         )}
       </Box>
+
+      <TicketListModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        title={modal.title}
+        initialData={modal.data}
+      />
     </VStack>
   );
 }

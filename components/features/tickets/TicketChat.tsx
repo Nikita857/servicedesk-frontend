@@ -9,7 +9,13 @@ import {
   Portal,
   CloseButton,
 } from "@chakra-ui/react";
-import { LuWifi, LuWifiOff, LuPaperclip, LuX } from "react-icons/lu";
+import {
+  LuWifi,
+  LuWifiOff,
+  LuPaperclip,
+  LuX,
+  LuDownload,
+} from "react-icons/lu";
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
@@ -55,6 +61,7 @@ export function TicketChat({
     editingMessage,
     fileInputRef,
     handleFileSelect,
+    handlePasteFile,
     handleRemoveFile,
     handleEditMessage,
     handleDeleteMessage,
@@ -214,6 +221,7 @@ export function TicketChat({
               selectedFile={selectedFile}
               isChatInactive={false}
               isEditing={!!editingMessage}
+              onPasteFile={handlePasteFile}
             />
           ) : (
             <ChatInput
@@ -254,16 +262,38 @@ export function TicketChat({
               justifyContent="center"
               onClick={() => setLightboxImage(null)}
             >
-              <CloseButton
-                position="absolute"
-                top={4}
-                right={4}
-                color="white"
-                size="lg"
-                onClick={() => setLightboxImage(null)}
-                zIndex={10}
-                _hover={{ bg: "whiteAlpha.200" }}
-              />
+              {/* Lightbox Controls */}
+              <HStack position="absolute" top={4} right={4} zIndex={10} gap={2}>
+                {/* Download Button */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="white"
+                  _hover={{ bg: "whiteAlpha.200" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (lightboxImage) {
+                      // Create a temporary link to download
+                      const link = document.createElement("a");
+                      link.href = lightboxImage;
+                      link.download = `image-${Date.now()}.png`;
+                      link.target = "_blank";
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  }}
+                >
+                  <LuDownload size={20} />
+                </Button>
+                {/* Close Button */}
+                <CloseButton
+                  color="white"
+                  size="lg"
+                  onClick={() => setLightboxImage(null)}
+                  _hover={{ bg: "whiteAlpha.200" }}
+                />
+              </HStack>
               {lightboxImage && (
                 <img
                   src={lightboxImage}

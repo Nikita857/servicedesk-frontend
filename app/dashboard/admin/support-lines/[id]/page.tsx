@@ -20,10 +20,10 @@ import {
 import { Select } from "@chakra-ui/react";
 import { LuSave, LuUsers, LuTrash2, LuPlus } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
-import { type Specialist, type AssignmentMode } from "@/lib/api/supportLines";
+import { Specialist } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
 import { userRolesBadges, activityStatusConfig } from "@/types/auth";
-import { assignmentModeConfig } from "@/types/ticket";
+import { AssignmentMode, assignmentModeConfig } from "@/types/ticket";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -262,7 +262,7 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   }
                   onValueChange={(e) =>
                     selection.setSelectedUserId(
-                      e.value[0] ? parseInt(e.value[0]) : null
+                      e.value[0] ? parseInt(e.value[0]) : null,
                     )
                   }
                   disabled={!selection.selectedRole || isLoadingUsers}
@@ -273,10 +273,10 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                         isLoadingUsers
                           ? "Загрузка..."
                           : !selection.selectedRole
-                          ? "Сначала выберите роль"
-                          : availableSpecialists.length === 0
-                          ? "Нет доступных пользователей"
-                          : "Выберите пользователя"
+                            ? "Сначала выберите роль"
+                            : availableSpecialists.length === 0
+                              ? "Нет доступных пользователей"
+                              : "Выберите пользователя"
                       }
                     />
                   </Select.Trigger>

@@ -6,6 +6,8 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 import type { TicketListItem, PagedTicketList } from "@/types/ticket";
 
+const FILTER_STORAGE_KEY = "servicedesk-tickets-filter";
+
 export type FilterType =
   | "unprocessed"
   | "my"
@@ -37,7 +39,7 @@ interface UseTicketsQueryReturn {
 }
 
 export function useTicketsQuery(
-  options: UseTicketsQueryOptions = {}
+  options: UseTicketsQueryOptions = {},
 ): UseTicketsQueryReturn {
   const { pageSize = 5 } = options;
   const { user } = useAuthStore();
@@ -45,9 +47,21 @@ export function useTicketsQuery(
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(0);
-  const [rawFilter, setRawFilter] = useState<FilterType>(
-    options.initialFilter ?? (isSpecialist ? "unprocessed" : "my")
-  );
+  // Load saved filter from localStorage on first render
+  const [rawFilter, setRawFilter] = useState<FilterType>(() => {
+    // Priority: URL param > localStorage > default
+    if (options.initialFilter) return options.initialFilter;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (
+        saved &&
+        ["unprocessed", "my", "assigned", "pending", "closed"].includes(saved)
+      ) {
+        return saved as FilterType;
+      }
+    }
+    return isSpecialist ? "unprocessed" : "my";
+  });
 
   // Derived state: non-specialists are forced to "my" filter
   const filter = isSpecialist ? rawFilter : "my";
@@ -65,7 +79,7 @@ export function useTicketsQuery(
           return {
             ...response,
             content: response.content.filter(
-              (t) => t.status !== "CLOSED" && t.status !== "CANCELLED"
+              (t) => t.status !== "CLOSED" && t.status !== "CANCELLED",
             ),
           };
         }
@@ -105,10 +119,10 @@ export function useTicketsQuery(
             content: [ticket, ...old.content],
             totalElements: old.totalElements + 1,
           };
-        }
+        },
       );
     },
-    [queryClient, filter, page]
+    [queryClient, filter, page],
   );
 
   const updateTicketInList = useCallback(
@@ -120,13 +134,13 @@ export function useTicketsQuery(
           return {
             ...old,
             content: old.content.map((t) =>
-              t.id === updatedTicket.id ? updatedTicket : t
+              t.id === updatedTicket.id ? updatedTicket : t,
             ),
           };
-        }
+        },
       );
     },
-    [queryClient, filter, page]
+    [queryClient, filter, page],
   );
 
   const removeTicket = useCallback(
@@ -140,10 +154,10 @@ export function useTicketsQuery(
             content: old.content.filter((t) => t.id !== ticketId),
             totalElements: old.totalElements - 1,
           };
-        }
+        },
       );
     },
-    [queryClient, filter, page]
+    [queryClient, filter, page],
   );
 
   const handleSetFilter = useCallback(
@@ -151,9 +165,13 @@ export function useTicketsQuery(
       if (isSpecialist) {
         setRawFilter(newFilter);
         setPage(0);
+        // Persist filter to localStorage
+        if (typeof window !== "undefined") {
+          localStorage.setItem(FILTER_STORAGE_KEY, newFilter);
+        }
       }
     },
-    [isSpecialist]
+    [isSpecialist],
   );
 
   const refetch = useCallback(() => {

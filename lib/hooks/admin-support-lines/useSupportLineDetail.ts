@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supportLineApi, type AssignmentMode } from "@/lib/api/supportLines";
+import { supportLineApi } from "@/lib/api/supportLines";
 import { adminApi } from "@/lib/api/admin";
 import { toast } from "@/lib/utils";
+import { AssignmentMode } from "@/types/ticket";
 
 /**
  * Hook for managing the detail and editing of a specific support line.
@@ -109,7 +110,7 @@ export function useSupportLineDetail(lineId: number) {
 
   const availableSpecialists =
     availableUsers?.content.filter(
-      (u) => u.active && !line?.specialists.some((s) => s.id === u.id)
+      (u) => u.active && !line?.specialists.some((s) => s.id === u.id),
     ) || [];
 
   const handleFieldChange = useCallback(
@@ -117,7 +118,7 @@ export function useSupportLineDetail(lineId: number) {
       setter(val);
       setIsFormDirty(true);
     },
-    []
+    [],
   );
 
   return {

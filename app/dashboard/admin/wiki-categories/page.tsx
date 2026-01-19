@@ -74,7 +74,7 @@ export default function WikiCategoriesPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<WikiCategory | null>(
-    null
+    null,
   );
   const [formData, setFormData] = useState<CreateWikiCategoryRequest>({
     name: "",
@@ -104,7 +104,7 @@ export default function WikiCategoriesPage() {
           })),
         ],
       }),
-    [departments]
+    [departments],
   );
 
   const handleCreateNew = () => {
@@ -158,7 +158,7 @@ export default function WikiCategoriesPage() {
       .filter(
         (c) =>
           c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          c.description?.toLowerCase().includes(searchTerm.toLowerCase())
+          c.description?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
       .sort((a, b) => {
         const aValue = a[sortConfig.key];
@@ -260,7 +260,7 @@ export default function WikiCategoriesPage() {
                     <Badge colorPalette="blue" variant="subtle">
                       <LuBuilding size={12} style={{ marginRight: "4px" }} />
                       {departments.find(
-                        (d: Department) => d.id === category.departmentId
+                        (d: Department) => d.id === category.departmentId,
                       )?.name || "Отдел"}
                     </Badge>
                   ) : (
@@ -374,6 +374,8 @@ export default function WikiCategoriesPage() {
                         }))
                       }
                       helperText="Если отдел не выбран, категория будет публичной"
+                      disabled={isLoadingDepts}
+                      portalled={false}
                     />
                   </Box>
 

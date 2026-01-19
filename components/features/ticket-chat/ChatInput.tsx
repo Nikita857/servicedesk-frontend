@@ -1,5 +1,5 @@
 import { Button, Flex, Input, Text } from "@chakra-ui/react";
-import { RefObject } from "react";
+import { RefObject, useCallback } from "react";
 import { LuPaperclip, LuSend } from "react-icons/lu";
 import { CustomEmojiPicker } from "./CustomEmojiPicker";
 
@@ -14,6 +14,7 @@ interface ChatInputProps {
   selectedFile: File | null;
   isChatInactive: boolean;
   isEditing?: boolean;
+  onPasteFile?: (file: File) => void;
 }
 
 export default function ChatInput({
@@ -26,6 +27,7 @@ export default function ChatInput({
   isSending,
   isChatInactive,
   isEditing,
+  onPasteFile,
 }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -33,6 +35,37 @@ export default function ChatInput({
       handleSend();
     }
   };
+
+  // Handle paste event for images from clipboard
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items || !onPasteFile) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        // Check if the pasted item is an image
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            // Create a new file with a proper name
+            const extension = item.type.split("/")[1] || "png";
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const namedFile = new File(
+              [file],
+              `pasted-image-${timestamp}.${extension}`,
+              { type: file.type },
+            );
+            onPasteFile(namedFile);
+          }
+          break;
+        }
+      }
+    },
+    [onPasteFile],
+  );
+
   return !isChatInactive ? (
     <Flex gap={2} align="center">
       <input
@@ -55,7 +88,8 @@ export default function ChatInput({
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Введите сообщение..."
+        onPaste={handlePaste}
+        placeholder="Введите сообщение... (Ctrl+V для вставки изображения)"
         bg="bg.surface"
         borderColor="border.default"
         _focus={{ borderColor: "gray.400" }}

@@ -24,7 +24,7 @@ import {
   LuMinus,
 } from "react-icons/lu";
 import { wikiImageApi } from "@/lib/api/wikiImages";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 import "./wiki-editor.css";
 
@@ -354,7 +354,7 @@ export default function WikiEditor({
         toast.success("Изображение загружено");
       } catch (error) {
         console.error("Image upload failed:", error);
-        toast.error("Ошибка", "Не удалось загрузить изображение");
+        handleApiError(error, {context: "Ошибка загрузки изображения"});
       } finally {
         isUploading.current = false;
         setUploadingState(false);

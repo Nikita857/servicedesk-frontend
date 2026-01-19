@@ -39,7 +39,7 @@ export default function DashboardPage() {
     (_ticket: TicketListItem) => {
       refetch();
     },
-    [refetch]
+    [refetch],
   );
 
   // WebSocket for real-time new tickets
@@ -63,9 +63,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <Box>
+    <Flex direction="column" h="full">
       {/* Page Header */}
-      <Flex mb={6} justify="space-between" align="center">
+      <Flex mb={4} justify="space-between" align="center" flexShrink={0}>
         <Box>
           <Heading size="lg" color="fg.default" mb={1}>
             Дашборд
@@ -76,13 +76,10 @@ export default function DashboardPage() {
         </Box>
       </Flex>
 
-      {/* Stats Dashboard based on role */}
-      <Box mb={8}>{renderStatsDashboard()}</Box>
-
-      {/* Секция невзятые тикеты (только для специалистов/админов) */}
+      {/* Секция невзятые тикеты (только для специалистов/админов) - СНИЗУ ВВЕРХ */}
       {(isSpecialist || isAdmin) && (
-        <Box>
-          <Flex justify="space-between" align="center" mb={4}>
+        <Flex direction="column" flex={1} minH={0} mb={6}>
+          <Flex justify="space-between" align="center" mb={4} flexShrink={0}>
             <Heading size="md" color="fg.default">
               Невзятые тикеты
             </Heading>
@@ -94,36 +91,73 @@ export default function DashboardPage() {
             </Link>
           </Flex>
 
-          {isLoading ? (
-            <Flex justify="center" align="center" h="200px">
-              <Spinner />
-            </Flex>
-          ) : recentTickets.length === 0 ? (
-            <Box
-              bg="bg.surface"
-              borderRadius="xl"
-              borderWidth="1px"
-              borderColor="border.default"
-              p={8}
-              textAlign="center"
-            >
-              <Text color="fg.muted">Нет невзятых тикетов</Text>
-            </Box>
-          ) : (
-            <VStack gap={3} align="stretch">
-              {recentTickets
-                .sort(
-                  (a, b) =>
-                    new Date(b.createdAt).getTime() -
-                    new Date(a.createdAt).getTime()
-                )
-                .map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} />
-                ))}
-            </VStack>
-          )}
-        </Box>
+          <Box
+            flex={1}
+            overflowY="auto"
+            pr={2}
+            css={{
+              "&::-webkit-scrollbar": { width: "4px" },
+              "&::-webkit-scrollbar-track": { background: "transparent" },
+              "&::-webkit-scrollbar-thumb": {
+                background: "gray.300",
+                borderRadius: "10px",
+              },
+            }}
+          >
+            {isLoading ? (
+              <Flex justify="center" align="center" py={10}>
+                <Spinner />
+              </Flex>
+            ) : recentTickets.length === 0 ? (
+              <Box
+                bg="bg.surface"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="border.default"
+                p={8}
+                textAlign="center"
+              >
+                <Text color="fg.muted">Нет невзятых тикетов</Text>
+              </Box>
+            ) : (
+              <VStack gap={3} align="stretch" pb={4}>
+                {recentTickets
+                  .sort(
+                    (a, b) =>
+                      new Date(b.createdAt).getTime() -
+                      new Date(a.createdAt).getTime(),
+                  )
+                  .map((ticket) => (
+                    <TicketCard key={ticket.id} ticket={ticket} />
+                  ))}
+              </VStack>
+            )}
+          </Box>
+        </Flex>
       )}
-    </Box>
+
+      {/* Дашборд статистики */}
+      <Box
+        flexShrink={0}
+        mt="auto"
+        maxH={isAdmin ? "40vh" : undefined}
+        overflowY={isAdmin ? "auto" : undefined}
+        pr={isAdmin ? 2 : 0}
+        css={
+          isAdmin
+            ? {
+                "&::-webkit-scrollbar": { width: "4px" },
+                "&::-webkit-scrollbar-track": { background: "transparent" },
+                "&::-webkit-scrollbar-thumb": {
+                  background: "gray.300",
+                  borderRadius: "10px",
+                },
+              }
+            : undefined
+        }
+      >
+        {renderStatsDashboard()}
+      </Box>
+    </Flex>
   );
 }

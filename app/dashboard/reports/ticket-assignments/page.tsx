@@ -213,7 +213,9 @@ export default function TicketAssignmentsReportPage() {
                     </Table.Cell>
                     <Table.Cell>
                       <Text fontSize="sm">
-                        {assignmentModeConfig[row.mode] || row.mode}
+                        {assignmentModeConfig[
+                          row.mode as keyof typeof assignmentModeConfig
+                        ] || row.mode}
                       </Text>
                     </Table.Cell>
                     <Table.Cell>
