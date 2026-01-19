@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, ReactNode } from "react";
 import {
   Box,
   Flex,
@@ -12,6 +12,7 @@ import {
   Badge,
   Menu,
   Portal,
+  Link,
 } from "@chakra-ui/react";
 import { LuPencil, LuTrash2, LuCopy } from "react-icons/lu";
 import { getSenderConfig, type Message } from "@/types/message";
@@ -41,7 +42,7 @@ const formatDate = (dateStr: string) =>
 
 const getInitials = (
   name: string | null | undefined,
-  username: string | undefined
+  username: string | undefined,
 ) => {
   if (name)
     return name
@@ -52,6 +53,38 @@ const getInitials = (
       .toUpperCase();
   if (username) return username.slice(0, 2).toUpperCase();
   return "??";
+};
+
+// URL regex pattern for detecting links
+const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/gi;
+
+// Parse text and convert URLs to clickable links
+const linkifyText = (text: string, isOwn: boolean): ReactNode[] => {
+  const parts = text.split(URL_REGEX);
+
+  return parts.map((part, index) => {
+    if (URL_REGEX.test(part)) {
+      // Reset regex lastIndex for next test
+      URL_REGEX.lastIndex = 0;
+      return (
+        <Link
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          color={isOwn ? "blue.200" : "blue.500"}
+          textDecoration="underline"
+          _hover={{ color: isOwn ? "blue.100" : "blue.600" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      );
+    }
+    // Reset regex lastIndex
+    URL_REGEX.lastIndex = 0;
+    return part;
+  });
 };
 
 export function ChatMessageList({
@@ -164,7 +197,7 @@ export function ChatMessageList({
                       </Badge>
                     )}
                     <Text fontSize="sm" whiteSpace="pre-wrap">
-                      {msg.content}
+                      {linkifyText(msg.content, isOwn)}
                     </Text>
                     {/* Attachments */}
                     {msg.attachments && msg.attachments.length > 0 && (
