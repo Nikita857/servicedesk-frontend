@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { userApi, type UserActivityStatus, type UserStatusResponse } from "@/lib/api/users";
+import {
+  userApi,
+  type UserActivityStatus,
+  type UserStatusResponse,
+} from "@/lib/api/users";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 interface UseUserStatusQueryReturn {
   status: UserActivityStatus | null;
@@ -24,18 +28,23 @@ export function useUserStatusQuery(): UseUserStatusQueryReturn {
     queryKey: queryKeys.users.myStatus(),
     queryFn: () => userApi.getMyStatus(),
     staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 15 * 60 * 1000, // 15 minutes background sync
     retry: 1, // Don't retry much - user may not have status
   });
 
   // Mutation to update status
   const mutation = useMutation({
-    mutationFn: (newStatus: UserActivityStatus) => userApi.updateMyStatus(newStatus),
+    mutationFn: (newStatus: UserActivityStatus) =>
+      userApi.updateMyStatus(newStatus),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.users.myStatus(), data);
-      toast.success("Статус обновлён", `Ваш статус: ${getStatusLabel(data.status)}`);
+      toast.success(
+        "Статус обновлён",
+        `Ваш статус: ${getStatusLabel(data.status)}`,
+      );
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось обновить статус");
+    onError: (error) => {
+      handleApiError(error, { context: "обновить статус" });
     },
   });
 
