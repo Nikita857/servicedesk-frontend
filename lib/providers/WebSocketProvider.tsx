@@ -19,6 +19,7 @@ import type {
   TypingIndicator,
   AttachmentWS,
   AssignmentWS,
+  UserStatusWS,
 } from "@/types/websocket";
 
 // Re-export types for convenience
@@ -26,6 +27,7 @@ export type {
   ChatMessageWS,
   TypingIndicator,
   AttachmentWS,
+  UserStatusWS,
 } from "@/types/websocket";
 
 // ==================== Types ====================
@@ -47,49 +49,58 @@ interface WebSocketContextValue {
   subscribeToNewTickets: (callback: (ticket: Ticket) => void) => () => void;
   subscribeToTicketUpdates: (
     ticketId: number,
-    callback: (ticket: Ticket) => void
+    callback: (ticket: Ticket) => void,
   ) => () => void;
   subscribeToTicketDeleted: (
     ticketId: number,
-    callback: (data: { id: number }) => void
+    callback: (data: { id: number }) => void,
   ) => () => void;
   subscribeToSlaBreach: (callback: (ticket: Ticket) => void) => () => void;
   // Chat (for tickets)
   sendMessage: (
     ticketId: number,
     content: string,
-    internal?: boolean
+    internal?: boolean,
   ) => boolean;
   sendTyping: (ticketId: number, typing: boolean) => void;
   subscribeToChatMessages: (
     ticketId: number,
-    callback: (message: ChatMessageWS) => void
+    callback: (message: ChatMessageWS) => void,
   ) => () => void;
   subscribeToInternalComments: (
     ticketId: number,
-    callback: (message: ChatMessageWS) => void
+    callback: (message: ChatMessageWS) => void,
   ) => () => void;
   subscribeToTyping: (
     ticketId: number,
-    callback: (indicator: TypingIndicator) => void
+    callback: (indicator: TypingIndicator) => void,
   ) => () => void;
   subscribeToAttachments: (
     ticketId: number,
-    callback: (attachment: AttachmentWS) => void
+    callback: (attachment: AttachmentWS) => void,
   ) => () => void;
   // User subscriptions
   subscribeToUserNotifications: (
     userId: number,
-    callback: (notification: Notification) => void
+    callback: (notification: Notification) => void,
   ) => () => void;
   // Assignment subscriptions (user-specific topics)
   subscribeToAssignments: (
     userId: number,
-    callback: (assignment: AssignmentWS) => void
+    callback: (assignment: AssignmentWS) => void,
   ) => () => void;
   subscribeToAssignmentRejected: (
     userId: number,
-    callback: (assignment: AssignmentWS) => void
+    callback: (assignment: AssignmentWS) => void,
+  ) => () => void;
+  // Status subscriptions
+  subscribeToUserStatus: (
+    userId: number,
+    callback: (payload: UserStatusWS) => void,
+  ) => () => void;
+  subscribeToLineStatus: (
+    lineId: number,
+    callback: (payload: UserStatusWS) => void,
   ) => () => void;
 }
 
@@ -184,7 +195,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const subscribe = useCallback(
     (
       destination: string,
-      callback: (message: IMessage) => void
+      callback: (message: IMessage) => void,
     ): (() => void) => {
       const client = clientRef.current;
 
@@ -192,7 +203,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (!client || !client.connected) {
         console.warn(
           "[WS] Нет подключения. Невозможно подписаться на: ",
-          destination
+          destination,
         );
         return () => {};
       }
@@ -213,7 +224,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         subscriptionsRef.current.delete(existingKey);
       };
     },
-    []
+    [],
   );
 
   // ==================== Ticket Subscriptions ====================
@@ -229,7 +240,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToTicketUpdates = useCallback(
@@ -243,7 +254,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToTicketDeleted = useCallback(
@@ -257,7 +268,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToSlaBreach = useCallback(
@@ -271,7 +282,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   // ==================== Chat Subscriptions ====================
@@ -287,7 +298,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToInternalComments = useCallback(
@@ -301,7 +312,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToTyping = useCallback(
@@ -315,7 +326,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToAttachments = useCallback(
@@ -329,7 +340,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   // ==================== User Subscriptions ====================
@@ -343,12 +354,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.error(
             "[WS] Ошибка подписки на уведомления пользователя: ",
-            e
+            e,
           );
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToAssignments = useCallback(
@@ -363,7 +374,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [subscribe]
+    [subscribe],
   );
 
   const subscribeToAssignmentRejected = useCallback(
@@ -378,10 +389,40 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           } catch (e) {
             console.error("[WS] Ошибка подписки на отклонение назначения: ", e);
           }
-        }
+        },
       );
     },
-    [subscribe]
+    [subscribe],
+  );
+
+  // ==================== Status Subscriptions ====================
+
+  const subscribeToUserStatus = useCallback(
+    (userId: number, callback: (payload: UserStatusWS) => void) => {
+      return subscribe(`/topic/user/${userId}/status`, (message) => {
+        try {
+          const payload: UserStatusWS = JSON.parse(message.body);
+          callback(payload);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на статус пользователя: ", e);
+        }
+      });
+    },
+    [subscribe],
+  );
+
+  const subscribeToLineStatus = useCallback(
+    (lineId: number, callback: (payload: UserStatusWS) => void) => {
+      return subscribe(`/topic/line/${lineId}/status`, (message) => {
+        try {
+          const payload: UserStatusWS = JSON.parse(message.body);
+          callback(payload);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на статус линии: ", e);
+        }
+      });
+    },
+    [subscribe],
   );
 
   // ==================== Send Methods ====================
@@ -401,7 +442,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
       return true;
     },
-    []
+    [],
   );
 
   const sendTyping = useCallback((ticketId: number, typing: boolean) => {
@@ -431,6 +472,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     subscribeToInternalComments,
     subscribeToTyping,
     subscribeToAttachments,
+    subscribeToUserStatus,
+    subscribeToLineStatus,
   };
 
   return (

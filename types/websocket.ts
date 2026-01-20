@@ -115,3 +115,17 @@ export interface AssignmentWS {
   note: string | null;
   createdAt: string;
 }
+
+// ==================== Status Types ====================
+
+/**
+ * Информация об изменении статуса пользователя через WebSocket
+ */
+export interface UserStatusWS {
+  userId: number;
+  username: string;
+  fio: string;
+  status: string;
+  oldStatus: string;
+  lineIds: number[];
+}

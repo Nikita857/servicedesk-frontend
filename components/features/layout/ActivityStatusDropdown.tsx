@@ -3,6 +3,7 @@
 import { Box, Flex, Text, Menu, Spinner, Circle } from "@chakra-ui/react";
 import { LuChevronDown, LuCircle } from "react-icons/lu";
 import { useUserStatusQuery } from "@/lib/hooks/useUserStatusQuery";
+import { useStatusWebSocket } from "@/lib/hooks/useStatusWebSocket";
 import { activityStatusConfig } from "@/types/auth";
 import type { UserActivityStatus } from "@/lib/api/users";
 import { useAuthStore } from "@/stores";
@@ -21,6 +22,9 @@ const statusOrder: UserActivityStatus[] = [
 export function ActivityStatusDropdown() {
   const { user } = useAuthStore();
   const { status, isLoading, isUpdating, updateStatus } = useUserStatusQuery();
+
+  // Enable real-time status updates via WebSocket
+  useStatusWebSocket();
 
   // Only show for specialists
   const isSpecialist = user?.specialist || false;
