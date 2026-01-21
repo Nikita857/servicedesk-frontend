@@ -43,6 +43,7 @@ export const queryKeys = {
       search?: string;
       categoryId?: number;
       showAll?: boolean;
+      filter?: string;
     }) => [...queryKeys.wiki.lists(), params] as const,
     details: () => [...queryKeys.wiki.all, "detail"] as const,
     detail: (slug: string) => [...queryKeys.wiki.details(), slug] as const,

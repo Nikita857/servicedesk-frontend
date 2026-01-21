@@ -46,6 +46,8 @@ export default function WikiPage() {
     handleSearch,
     handleLike,
     likingArticleId,
+    filter,
+    setFilter,
     showAll,
     setShowAll,
   } = useWikiArticlesQuery();
@@ -91,15 +93,21 @@ export default function WikiPage() {
           </Button>
 
           <SegmentedControl
-            value={showAll ? "all" : "department"}
+            value={filter}
             onValueChange={(e) => {
-              const isAll = e.value === "all";
-              setShowAll(isAll);
-              if (isAll) setShowFavorites(false);
+              const val = e.value as any;
+              setFilter(val);
+              if (val === "all") {
+                setShowAll(true);
+              } else {
+                setShowAll(false);
+              }
+              if (val !== "all") setShowFavorites(false);
             }}
             items={[
-              { value: "department", label: "Мой отдел" },
-              { value: "all", label: "Все отделы" },
+              { value: "my", label: "Мой отдел" },
+              { value: "public", label: "Публичные" },
+              { value: "all", label: "Все статьи" },
             ]}
             size="sm"
           />
@@ -118,19 +126,26 @@ export default function WikiPage() {
       {/* Search */}
       <Box mb={6}>
         <form onSubmit={onSearch}>
-          <Flex gap={2}>
-            <Input
-              placeholder="Поиск по статьям..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              bg="bg.surface"
-              flex={1}
-            />
-            <Button type="submit" variant="outline">
-              <LuSearch />
-              Найти
-            </Button>
-          </Flex>
+          <VStack align="stretch" gap={2}>
+            <Flex gap={2}>
+              <Input
+                placeholder="Поиск по статьям..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                bg="bg.surface"
+                flex={1}
+              />
+              <Button type="submit" variant="outline">
+                <LuSearch />
+                Найти
+              </Button>
+            </Flex>
+            {filter === "all" && (
+              <Text fontSize="xs" color="fg.muted" ml={1}>
+                Поиск выполняется по всей базе знаний (включая другие отделы)
+              </Text>
+            )}
+          </VStack>
         </form>
       </Box>
 
@@ -153,8 +168,8 @@ export default function WikiPage() {
             {showFavorites
               ? "У вас пока нет избранных статей"
               : searchQuery
-              ? "Статьи не найдены"
-              : "Нет статей в базе знаний"}
+                ? "Статьи не найдены"
+                : "Нет статей в базе знаний"}
           </Text>
           {showFavorites && (
             <Button
@@ -165,8 +180,8 @@ export default function WikiPage() {
               Показать все статьи
             </Button>
           )}
-          {showAll && !showFavorites && (
-            <Button mt={4} variant="outline" onClick={() => setShowAll(false)}>
+          {filter !== "my" && !showFavorites && (
+            <Button mt={4} variant="outline" onClick={() => setFilter("my")}>
               Вернуться к моему отделу
             </Button>
           )}

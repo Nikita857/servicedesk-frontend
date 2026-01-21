@@ -104,10 +104,12 @@ export const wikiApi = {
   list: async (
     page = 0,
     size = 20,
-    showAll = false
+    showAll = false,
+    onlyMyDepartment = false,
+    onlyPublic = false,
   ): Promise<PagedWikiArticleList> => {
     const response = await api.get<ApiResponse<PagedWikiArticleList>>("/wiki", {
-      params: { page, size, showAll },
+      params: { page, size, showAll, onlyMyDepartment, onlyPublic },
     });
     return response.data.data;
   },
@@ -127,11 +129,11 @@ export const wikiApi = {
   // Update article
   update: async (
     id: number,
-    data: UpdateWikiArticleRequest
+    data: UpdateWikiArticleRequest,
   ): Promise<WikiArticle> => {
     const response = await api.put<ApiResponse<WikiArticle>>(
       `/wiki/${id}`,
-      data
+      data,
     );
     return response.data.data;
   },
@@ -155,24 +157,29 @@ export const wikiApi = {
   search: async (
     query: string,
     page = 0,
-    size = 20
+    size = 20,
+    showAll = false,
   ): Promise<PagedWikiArticleList> => {
     const response = await api.get<ApiResponse<PagedWikiArticleList>>(
       "/wiki/search",
       {
-        params: { q: query, page, size },
-      }
+        params: { q: query, page, size, showAll },
+      },
     );
     return response.data.data;
   },
 
   // Get popular articles
-  getPopular: async (page = 0, size = 10): Promise<PagedWikiArticleList> => {
+  getPopular: async (
+    page = 0,
+    size = 10,
+    showAll = false,
+  ): Promise<PagedWikiArticleList> => {
     const response = await api.get<ApiResponse<PagedWikiArticleList>>(
       "/wiki/popular",
       {
-        params: { page, size },
-      }
+        params: { page, size, showAll },
+      },
     );
     return response.data.data;
   },
@@ -181,13 +188,13 @@ export const wikiApi = {
   getByCategory: async (
     categoryId: number,
     page = 0,
-    size = 20
+    size = 20,
   ): Promise<PagedWikiArticleList> => {
     const response = await api.get<ApiResponse<PagedWikiArticleList>>(
       `/wiki/category/${categoryId}`,
       {
         params: { page, size },
-      }
+      },
     );
     return response.data.data;
   },
@@ -197,7 +204,7 @@ export const wikiApi = {
   // Get attachments for article
   getAttachments: async (articleId: number): Promise<WikiAttachment[]> => {
     const response = await api.get<ApiResponse<WikiAttachment[]>>(
-      `/wiki/${articleId}/attachments`
+      `/wiki/${articleId}/attachments`,
     );
     return response.data.data;
   },
@@ -208,7 +215,7 @@ export const wikiApi = {
       "/wiki/categories",
       {
         params: { showAll },
-      }
+      },
     );
     return response.data.data;
   },
@@ -217,35 +224,35 @@ export const wikiApi = {
 
   adminGetCategories: async (): Promise<WikiCategory[]> => {
     const response = await api.get<ApiResponse<WikiCategory[]>>(
-      "/admin/wiki/categories"
+      "/admin/wiki/categories",
     );
     return response.data.data;
   },
 
   adminGetCategory: async (id: number): Promise<WikiCategory> => {
     const response = await api.get<ApiResponse<WikiCategory>>(
-      `/admin/wiki/categories/${id}`
+      `/admin/wiki/categories/${id}`,
     );
     return response.data.data;
   },
 
   adminCreateCategory: async (
-    data: CreateWikiCategoryRequest
+    data: CreateWikiCategoryRequest,
   ): Promise<WikiCategory> => {
     const response = await api.post<ApiResponse<WikiCategory>>(
       "/admin/wiki/categories",
-      data
+      data,
     );
     return response.data.data;
   },
 
   adminUpdateCategory: async (
     id: number,
-    data: UpdateWikiCategoryRequest
+    data: UpdateWikiCategoryRequest,
   ): Promise<WikiCategory> => {
     const response = await api.put<ApiResponse<WikiCategory>>(
       `/admin/wiki/categories/${id}`,
-      data
+      data,
     );
     return response.data.data;
   },

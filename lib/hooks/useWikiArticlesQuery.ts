@@ -12,6 +12,8 @@ interface UseWikiArticlesQueryOptions {
   pageSize?: number;
 }
 
+export type WikiFilter = "my" | "public" | "all";
+
 interface UseWikiArticlesQueryReturn {
   articles: WikiArticleListItem[];
   isLoading: boolean;
@@ -23,6 +25,8 @@ interface UseWikiArticlesQueryReturn {
   handleSearch: (e: React.FormEvent) => void;
   handleLike: (e: React.MouseEvent, articleId: number) => void;
   likingArticleId: number | null;
+  filter: WikiFilter;
+  setFilter: (filter: WikiFilter) => void;
   showAll: boolean;
   setShowAll: (showAll: boolean) => void;
   refetch: () => void;
@@ -33,7 +37,7 @@ interface UseWikiArticlesQueryReturn {
  * Replaces legacy useState + useEffect pattern in wiki page
  */
 export function useWikiArticlesQuery(
-  options: UseWikiArticlesQueryOptions = {}
+  options: UseWikiArticlesQueryOptions = {},
 ): UseWikiArticlesQueryReturn {
   const { pageSize = 12 } = options;
   const queryClient = useQueryClient();
@@ -44,15 +48,33 @@ export function useWikiArticlesQuery(
   const [page, setPage] = useState(0);
   const [likingArticleId, setLikingArticleId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [filter, setFilterState] = useState<WikiFilter>("my");
+
+  const setFilter = useCallback((newFilter: WikiFilter) => {
+    setFilterState(newFilter);
+    setPage(0);
+  }, []);
 
   // Articles query
   const articlesQuery = useQuery({
-    queryKey: queryKeys.wiki.list({ page, search: debouncedSearch, showAll }),
+    queryKey: queryKeys.wiki.list({
+      page,
+      search: debouncedSearch,
+      showAll,
+      filter,
+    }),
     queryFn: async () => {
-      const response = debouncedSearch
-        ? await wikiApi.search(debouncedSearch, page, pageSize)
-        : await wikiApi.list(page, pageSize, showAll);
-      return response;
+      if (debouncedSearch) {
+        return await wikiApi.search(debouncedSearch, page, pageSize, showAll);
+      }
+
+      return await wikiApi.list(
+        page,
+        pageSize,
+        showAll,
+        filter === "my",
+        filter === "public",
+      );
     },
     staleTime: 30 * 1000,
   });
@@ -81,7 +103,7 @@ export function useWikiArticlesQuery(
 
       // Snapshot previous value
       const previousData = queryClient.getQueryData(
-        queryKeys.wiki.list({ page, search: debouncedSearch })
+        queryKeys.wiki.list({ page, search: debouncedSearch }),
       );
 
       // Optimistically update
@@ -100,10 +122,10 @@ export function useWikiArticlesQuery(
                       ? Math.max(0, a.likeCount - 1)
                       : a.likeCount + 1,
                   }
-                : a
+                : a,
             ),
           };
-        }
+        },
       );
 
       setLikingArticleId(articleId);
@@ -113,7 +135,7 @@ export function useWikiArticlesQuery(
       toast.success(
         isLiked
           ? "Статья удалена из избранного"
-          : "Статья добавлена в избранное"
+          : "Статья добавлена в избранное",
       );
     },
     onError: (error, _, context) => {
@@ -121,7 +143,7 @@ export function useWikiArticlesQuery(
       if (context?.previousData) {
         queryClient.setQueryData(
           queryKeys.wiki.list({ page, search: debouncedSearch }),
-          context.previousData
+          context.previousData,
         );
       }
       const errorMessage =
@@ -140,7 +162,7 @@ export function useWikiArticlesQuery(
       setPage(0);
       setDebouncedSearch(searchQuery);
     },
-    [searchQuery]
+    [searchQuery],
   );
 
   // Handle like button click
@@ -150,7 +172,7 @@ export function useWikiArticlesQuery(
       e.stopPropagation();
 
       const article = articlesQuery.data?.content.find(
-        (a) => a.id === articleId
+        (a) => a.id === articleId,
       );
       if (!article) return;
 
@@ -159,7 +181,7 @@ export function useWikiArticlesQuery(
         isLiked: article.likedByCurrentUser,
       });
     },
-    [articlesQuery.data?.content, likeMutation]
+    [articlesQuery.data?.content, likeMutation],
   );
 
   return {
@@ -173,6 +195,8 @@ export function useWikiArticlesQuery(
     handleSearch,
     handleLike,
     likingArticleId,
+    filter,
+    setFilter,
     showAll,
     setShowAll,
     refetch: articlesQuery.refetch,
