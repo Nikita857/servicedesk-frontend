@@ -20,18 +20,19 @@ import {
   LuShield,
   LuKey,
   LuTrash,
+  LuBuilding2,
   LuChevronLeft,
   LuChevronRight,
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { User, userRolesBadges } from "@/types";
+import { userRolesBadges } from "@/types";
 import { userRolesBadges as userRolesConfig } from "@/types/auth";
 import { AdminUser } from "@/lib/api/admin";
 
 interface UsersTableProps {
   isLoading: boolean;
   searchQuery: string;
-  users: User[];
+  users: AdminUser[];
   handleToggleActive: (arg: AdminUser) => void;
   openEditFio: (arg: AdminUser) => void;
   openEditRoles: (arg: AdminUser) => void;
@@ -40,7 +41,8 @@ interface UsersTableProps {
   totalPages: number;
   page: number;
   setPage: (arg: number) => void;
-  user: User | null;
+  user: AdminUser | null;
+  openEditOrg: (arg: AdminUser) => void;
 }
 const getRoleBadge = (role: string) => {
   const roleData = userRolesConfig[role] || {
@@ -75,6 +77,7 @@ export default function UsersTable({
   page,
   setPage,
   user,
+  openEditOrg,
 }: UsersTableProps) {
   return (
     <>
@@ -137,6 +140,13 @@ export default function UsersTable({
                             </Tooltip>
                           )}
                         </Text>
+                        {(u.departmentName || u.positionName) && (
+                          <Text fontSize="xs" color="fg.muted">
+                            {u.departmentName}
+                            {u.departmentName && u.positionName && " / "}
+                            {u.positionName}
+                          </Text>
+                        )}
                       </VStack>
                     </Table.Cell>
                     <Table.Cell>
@@ -180,6 +190,16 @@ export default function UsersTable({
                             aria-label="Редактировать ФИО"
                           >
                             <LuPencil />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Организация (отдел/должность)">
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditOrg(u)}
+                            aria-label="Редактировать организацию"
+                          >
+                            <LuBuilding2 />
                           </IconButton>
                         </Tooltip>
                         <Tooltip content="Управление ролями">

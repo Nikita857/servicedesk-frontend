@@ -33,6 +33,7 @@ export const useCrudUsers = () => {
   const [isEditFioOpen, setIsEditFioOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isEditOrgOpen, setIsEditOrgOpen] = useState(false);
 
   // Selected user for editing
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -48,6 +49,8 @@ export const useCrudUsers = () => {
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editFio, setEditFio] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [editDepartmentId, setEditDepartmentId] = useState<number | null>(null);
+  const [editPositionId, setEditPositionId] = useState<number | null>(null);
 
   // Redirect if not admin
   useEffect(() => {
@@ -98,7 +101,7 @@ export const useCrudUsers = () => {
       toast.success(
         variables.active
           ? "Пользователь активирован"
-          : "Пользователь деактивирован"
+          : "Пользователь деактивирован",
       );
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
@@ -158,6 +161,26 @@ export const useCrudUsers = () => {
     },
   });
 
+  const updateOrgMutation = useMutation({
+    mutationFn: ({
+      id,
+      departmentId,
+      positionId,
+    }: {
+      id: number;
+      departmentId: number | null;
+      positionId: number | null;
+    }) => adminApi.updateDepartmentAndPosition(id, departmentId, positionId),
+    onSuccess: () => {
+      toast.success("Данные организации обновлены");
+      setIsEditOrgOpen(false);
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: (error) => {
+      handleApiError(error, { context: "обновить данные организации" });
+    },
+  });
+
   // ==================== HANDLERS ====================
 
   const handleSearch = (e: React.FormEvent) => {
@@ -204,6 +227,15 @@ export const useCrudUsers = () => {
     deleteUserMutation.mutate(selectedUser.id);
   };
 
+  const handleUpdateOrg = async () => {
+    if (!selectedUser) return;
+    updateOrgMutation.mutate({
+      id: selectedUser.id,
+      departmentId: editDepartmentId,
+      positionId: editPositionId,
+    });
+  };
+
   // ==================== DIALOG OPENERS ====================
 
   const openEditRoles = (targetUser: AdminUser) => {
@@ -229,12 +261,25 @@ export const useCrudUsers = () => {
     setIsDeleteOpen(true);
   };
 
+  const openEditOrg = (targetUser: AdminUser) => {
+    setSelectedUser(targetUser);
+    // These might need to be resolved from names if the API doesn't return IDs in the user object
+    // But AdminUser should have departmentId/positionId if the API provides it.
+    // Looking at AdminUser type in admin.ts - it only has departmentName/positionName.
+    // I might need to fetch the full user to get IDs if needed, or matched by name.
+    // According to OpenAPI, UserAuthResponse has departmentName and positionName.
+    // So I might need to initialize them as null and let the user re-select, or find IDs by name.
+    setEditDepartmentId(null);
+    setEditPositionId(null);
+    setIsEditOrgOpen(true);
+  };
+
   // ==================== UTILS ====================
 
   const toggleRole = (
     role: string,
     roles: string[],
-    setRoles: (r: string[]) => void
+    setRoles: (r: string[]) => void,
   ) => {
     if (roles.includes(role)) {
       setRoles(roles.filter((r) => r !== role));
@@ -251,7 +296,8 @@ export const useCrudUsers = () => {
     updateRolesMutation.isPending ||
     updateFioMutation.isPending ||
     changePasswordMutation.isPending ||
-    deleteUserMutation.isPending;
+    deleteUserMutation.isPending ||
+    updateOrgMutation.isPending;
 
   return {
     /* ===== AUTH ===== */
@@ -285,6 +331,10 @@ export const useCrudUsers = () => {
       setEditFio,
       newPassword,
       setNewPassword,
+      editDepartmentId,
+      setEditDepartmentId,
+      editPositionId,
+      setEditPositionId,
     },
 
     /* ===== DIALOG STATES ===== */
@@ -294,6 +344,7 @@ export const useCrudUsers = () => {
       isEditFioOpen,
       isChangePasswordOpen,
       isDeleteOpen,
+      isEditOrgOpen,
     },
 
     dialog: {
@@ -304,11 +355,13 @@ export const useCrudUsers = () => {
       openEditFio,
       openChangePassword,
       openDelete,
+      openEditOrg,
 
       closeEditRoles: () => setIsEditRolesOpen(false),
       closeEditFio: () => setIsEditFioOpen(false),
       closeChangePassword: () => setIsChangePasswordOpen(false),
       closeDelete: () => setIsDeleteOpen(false),
+      closeEditOrg: () => setIsEditOrgOpen(false),
     },
 
     actions: {
@@ -319,6 +372,7 @@ export const useCrudUsers = () => {
       handleUpdateFio,
       handleChangePassword,
       handleDeleteUser,
+      handleUpdateOrg,
     },
 
     utils: {

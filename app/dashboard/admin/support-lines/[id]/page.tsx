@@ -18,7 +18,7 @@ import {
   createListCollection,
 } from "@chakra-ui/react";
 import { Select } from "@chakra-ui/react";
-import { LuSave, LuUsers, LuTrash2, LuPlus } from "react-icons/lu";
+import { LuSave, LuUsers, LuTrash2, LuPlus, LuCheck } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { Specialist } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
@@ -170,6 +170,27 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 />
               </Box>
             </HStack>
+
+            <Box>
+              <Text fontWeight="medium" mb={2}>
+                ID чата поддержки в Telegram{" "}
+                {form.telegramChatId && (
+                  <Badge variant="subtle" colorPalette="green">
+                    Привязан <LuCheck />
+                  </Badge>
+                )}
+              </Text>
+              <HStack gap={2}>
+                <Input
+                  placeholder="-100123456789"
+                  value={form.telegramChatId}
+                  onChange={(e) => form.setTelegramChatId(e.target.value)}
+                />
+              </HStack>
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                ID чата или группы для отправки уведомлений о новых тикетах
+              </Text>
+            </Box>
 
             <Box>
               <Text fontWeight="medium" mb={2}>

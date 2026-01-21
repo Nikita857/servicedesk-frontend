@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supportLineApi } from "@/lib/api/supportLines";
 import { adminApi } from "@/lib/api/admin";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 import { AssignmentMode } from "@/types/ticket";
 
 /**
@@ -17,6 +17,7 @@ export function useSupportLineDetail(lineId: number) {
   const [assignmentMode, setAssignmentMode] =
     useState<AssignmentMode>("FIRST_AVAILABLE");
   const [displayOrder, setDisplayOrder] = useState(0);
+  const [telegramChatId, setTelegramChatId] = useState<string>("");
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -46,6 +47,7 @@ export function useSupportLineDetail(lineId: number) {
       setSlaMinutes(line.slaMinutes);
       setAssignmentMode(line.assignmentMode);
       setDisplayOrder(line.displayOrder);
+      setTelegramChatId(line.telegramChatId?.toString() || "");
       setIsInitialized(true);
     }
   }, [line, isInitialized]);
@@ -66,7 +68,15 @@ export function useSupportLineDetail(lineId: number) {
         assignmentMode,
         displayOrder,
       }),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Also link telegram if ID is provided/changed
+      if (telegramChatId) {
+        try {
+          await supportLineApi.linkTelegram(lineId, parseInt(telegramChatId));
+        } catch (e) {
+          console.error("Failed to link telegram", e);
+        }
+      }
       queryClient.setQueryData(["support-line", lineId], data);
       queryClient.invalidateQueries({ queryKey: ["support-lines"] });
       toast.success("Линия обновлена");
@@ -106,6 +116,17 @@ export function useSupportLineDetail(lineId: number) {
     },
   });
 
+  const linkTelegramMutation = useMutation({
+    mutationFn: (chatId: number) => supportLineApi.linkTelegram(lineId, chatId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["support-line", lineId], data);
+      toast.success("Telegram Chat ID привязан");
+    },
+    onError: (error) => {
+      handleApiError(error, { context: "привязать Telegram ID чата" });
+    },
+  });
+
   // --- Derived State ---
 
   const availableSpecialists =
@@ -140,6 +161,9 @@ export function useSupportLineDetail(lineId: number) {
       setAssignmentMode: (val: AssignmentMode) =>
         handleFieldChange(setAssignmentMode, val),
       setDisplayOrder: (val: number) => handleFieldChange(setDisplayOrder, val),
+      telegramChatId,
+      setTelegramChatId: (val: string) =>
+        handleFieldChange(setTelegramChatId, val),
     },
 
     // Selection State
@@ -163,5 +187,7 @@ export function useSupportLineDetail(lineId: number) {
     isUpdating: updateMutation.isPending,
     isAddingSpecialist: addSpecialistMutation.isPending,
     isRemovingSpecialist: removeSpecialistMutation.isPending,
+    isLinkingTelegram: linkTelegramMutation.isPending,
+    linkTelegram: (chatId: number) => linkTelegramMutation.mutate(chatId),
   };
 }

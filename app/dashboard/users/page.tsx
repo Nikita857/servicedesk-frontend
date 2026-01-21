@@ -18,6 +18,7 @@ import EditRoles from "./dialog/edit/EditRoles";
 import EditFio from "./dialog/edit/EditFio";
 import ChangePassword from "./dialog/edit/ChangePassword";
 import DeleteUser from "./dialog/delete/DeleteUser";
+import EditOrgModal from "./dialog/edit/EditOrgModal";
 
 export default function UsersPage() {
   const { user } = useAuthStore();
@@ -53,6 +54,7 @@ export default function UsersPage() {
     isEditFioOpen,
     isChangePasswordOpen,
     isDeleteOpen,
+    isEditOrgOpen,
   } = dialogState;
 
   const {
@@ -62,10 +64,12 @@ export default function UsersPage() {
     openEditFio,
     openChangePassword,
     openDelete,
+    openEditOrg,
     closeEditRoles,
     closeEditFio,
     closeChangePassword,
     closeDelete,
+    closeEditOrg,
   } = dialog;
 
   const {
@@ -77,6 +81,10 @@ export default function UsersPage() {
     setEditFio,
     newPassword,
     setNewPassword,
+    editDepartmentId,
+    setEditDepartmentId,
+    editPositionId,
+    setEditPositionId,
   } = forms;
 
   const {
@@ -87,6 +95,7 @@ export default function UsersPage() {
     handleUpdateFio,
     handleChangePassword,
     handleDeleteUser,
+    handleUpdateOrg,
   } = actions;
 
   const { toggleRole } = utils;
@@ -158,6 +167,7 @@ export default function UsersPage() {
         page={page}
         setPage={setPage}
         user={user}
+        openEditOrg={openEditOrg}
       />
 
       {/* Create User Dialog */}
@@ -212,6 +222,19 @@ export default function UsersPage() {
         handleDeleteUser={handleDeleteUser}
         isSubmitting={isSubmitting}
         selectedUser={selectedUser}
+      />
+
+      {/* Edit Organization Modal */}
+      <EditOrgModal
+        isOpen={isEditOrgOpen}
+        onClose={closeEditOrg}
+        selectedUser={selectedUser}
+        departmentId={editDepartmentId}
+        setDepartmentId={setEditDepartmentId}
+        positionId={editPositionId}
+        setPositionId={setEditPositionId}
+        handleSave={handleUpdateOrg}
+        isSubmitting={isSubmitting}
       />
     </Box>
   );

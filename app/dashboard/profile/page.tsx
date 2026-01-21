@@ -1,46 +1,33 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Box,
   Heading,
   Text,
-  VStack,
-  HStack,
-  Input,
-  Button,
   Spinner,
   Flex,
-  Badge,
-  Avatar,
-  Icon,
-  Separator,
   Grid,
   GridItem,
-  Field,
+  SimpleGrid,
+  createListCollection,
 } from "@chakra-ui/react";
-import {
-  LuUser,
-  LuLock,
-  LuCamera,
-  LuStar,
-  LuCalendar,
-  LuShield,
-  LuTrash2,
-  LuSave,
-  LuCheck,
-  LuHouse,
-} from "react-icons/lu";
-import { FaTelegram } from "react-icons/fa";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileApi, type UpdateProfileRequest } from "@/lib/api/profile";
+import { adminApi } from "@/lib/api/admin";
 import { handleApiError, toast } from "@/lib/utils";
-import { userRolesBadges } from "@/types/auth";
 import { useAuthStore } from "@/stores";
+
+// Components
+import { ProfileSidebar } from "./components/ProfileSidebar";
+import { PersonalInfoCard } from "./components/PersonalInfoCard";
+import { OrganizationCard } from "./components/OrganizationCard";
+import { TelegramCard } from "./components/TelegramCard";
+import { PasswordCard } from "./components/PasswordCard";
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const updateUserAvatar = useAuthStore((state) => state.updateUserAvatar);
 
   // Form states
@@ -50,9 +37,10 @@ export default function ProfilePage() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [departmentId, setDepartmentId] = useState<number | null>(null);
+  const [positionId, setPositionId] = useState<number | null>(null);
 
-  // Authenticated user from store
-  const user = useAuthStore((state) => state.user);
+  const hasInitializedOrg = useRef(false);
 
   // Fetch profile
   const { data: profile, isLoading } = useQuery({
@@ -61,13 +49,69 @@ export default function ProfilePage() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  // Fetch departments
+  const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
+    queryKey: ["admin", "departments"],
+    queryFn: () => adminApi.getDepartments(),
+  });
+
+  // Fetch positions for selected department
+  const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
+    queryKey: ["admin", "positions", departmentId],
+    queryFn: () => adminApi.getPositionsByDepartment(departmentId!),
+    enabled: !!departmentId,
+  });
+
+  const deptCollection = useMemo(
+    () =>
+      createListCollection({
+        items: departments.map((d) => ({
+          label: d.name,
+          value: d.id.toString(),
+        })),
+      }),
+    [departments],
+  );
+
+  const posCollection = useMemo(
+    () =>
+      createListCollection({
+        items: positions.map((p) => ({
+          label: p.name,
+          value: p.id.toString(),
+        })),
+      }),
+    [positions],
+  );
+
+  // Initialize org IDs from profile names
+  useEffect(() => {
+    if (profile && departments.length > 0 && !hasInitializedOrg.current) {
+      const dept = departments.find((d) => d.name === profile.department);
+      if (dept) {
+        setDepartmentId(dept.id);
+      } else {
+        hasInitializedOrg.current = true;
+      }
+    }
+  }, [profile, departments]);
+
+  useEffect(() => {
+    if (profile && positions.length > 0 && !hasInitializedOrg.current) {
+      const pos = positions.find((p) => p.name === profile.position);
+      if (pos) {
+        setPositionId(pos.id);
+      }
+      hasInitializedOrg.current = true;
+    }
+  }, [profile, positions]);
+
   // Initialize form with profile data
   useEffect(() => {
     if (profile) {
       setFio(profile.fio || "");
       setEmail(profile.email || "");
       setTelegramId(profile.telegramId?.toString() || "");
-      console.log("[Profile] avatarUrl:", profile.avatarUrl);
     }
   }, [profile]);
 
@@ -120,6 +164,20 @@ export default function ProfilePage() {
       toast.success("Аватар удалён");
     },
     onError: (error) => handleApiError(error),
+  });
+
+  const updateOrgMutation = useMutation({
+    mutationFn: () =>
+      adminApi.updateDepartmentAndPosition(
+        profile?.id || 0,
+        departmentId,
+        positionId,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Данные организации обновлены");
+    },
+    onError: (error) => handleApiError(error, { context: "обновить отдел" }),
   });
 
   // Handlers
@@ -195,295 +253,64 @@ export default function ProfilePage() {
         <Text color="fg.muted">Управление профилем и настройками аккаунта</Text>
       </Box>
 
-      <Grid templateColumns={{ base: "1fr", lg: "340px 1fr" }} gap={6}>
-        {/* Left column - Avatar & Info */}
+      <Grid templateColumns={{ base: "1fr", lg: "300px 1fr" }} gap={8}>
+        {/* Left column - Avatar & Identity */}
         <GridItem>
-          <Box
-            bg="bg.surface"
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor="border.default"
-            p={6}
-          >
-            {/* Avatar */}
-            <VStack gap={4} mb={6}>
-              <Box position="relative">
-                <Avatar.Root
-                  size="2xl"
-                  w="130px"
-                  h="130px"
-                  cursor="pointer"
-                  onClick={handleAvatarClick}
-                >
-                  <Avatar.Fallback name={profile.fio || profile.username} />
-                  {profile.avatarUrl && (
-                    <Avatar.Image src={profile.avatarUrl} />
-                  )}
-                </Avatar.Root>
-                <Box
-                  position="absolute"
-                  bottom={0}
-                  right={0}
-                  bg="blue.500"
-                  borderRadius="full"
-                  w={8}
-                  h={8}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  cursor="pointer"
-                  onClick={handleAvatarClick}
-                  _hover={{ bg: "blue.600" }}
-                >
-                  <Icon as={LuCamera} color="white" boxSize={4} />
-                </Box>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
-              </Box>
-
-              {profile.avatarUrl && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  colorPalette="red"
-                  onClick={() => deleteAvatarMutation.mutate()}
-                  loading={deleteAvatarMutation.isPending}
-                >
-                  <Icon as={LuTrash2} mr={1} />
-                  Удалить аватар
-                </Button>
-              )}
-
-              <Text fontSize="xl" fontWeight="semibold" color="fg.default">
-                {profile.fio || profile.username}
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                @{profile.username}
-              </Text>
-            </VStack>
-
-            <Separator mb={4} />
-
-            <VStack align="start" gap={1} mb={4}>
-              <Text fontSize="sm" color="fg.muted">
-                <Text as="span" color="fg.default" gap={3} mb={4}>
-                  <Icon as={LuHouse} mr={1} color="fg.muted" />
-                  Отдел: {profile.department || "—"}
-                </Text>
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
-                <Text as="span" color="fg.default" gap={3} mb={4}>
-                  <Icon as={LuUser} mr={1} color="fg.muted" />
-                  Должность: {profile.position || "—"}
-                </Text>
-              </Text>
-            </VStack>
-
-            {/* Roles */}
-            <VStack align="start" gap={3} mb={4}>
-              <HStack gap={2}>
-                <Icon as={LuShield} color="fg.muted" />
-                <Text fontSize="sm" color="fg.muted">
-                  Роли:
-                </Text>
-              </HStack>
-              <HStack flexWrap="wrap" gap={2}>
-                {profile.roles.map((role) => {
-                  const roleInfo = userRolesBadges[role] || {
-                    name: role,
-                    color: "gray",
-                  };
-                  return (
-                    <Badge key={role} colorPalette={roleInfo.color} size="sm">
-                      {roleInfo.name}
-                    </Badge>
-                  );
-                })}
-              </HStack>
-            </VStack>
-
-            {/* Specialist Rating */}
-            {profile.isSpecialist && profile.averageRating !== null && (
-              <HStack gap={2} mb={4}>
-                <Icon as={LuStar} color="yellow.500" />
-                <Text fontSize="sm">
-                  Средняя оценка:{" "}
-                  <Text as="span" fontWeight="semibold">
-                    {profile.averageRating.toFixed(1)}
-                  </Text>
-                  <Text as="span" color="fg.muted">
-                    {" "}
-                    ({profile.ratedTicketsCount} отзывов)
-                  </Text>
-                </Text>
-              </HStack>
-            )}
-
-            {/* Registration date */}
-            <HStack gap={2}>
-              <Icon as={LuCalendar} color="fg.muted" />
-              <Text fontSize="sm" color="fg.muted">
-                Зарегистрирован:{" "}
-                {new Date(profile.createdAt).toLocaleDateString("ru-RU")}
-              </Text>
-            </HStack>
-          </Box>
+          <ProfileSidebar
+            profile={profile}
+            onAvatarClick={handleAvatarClick}
+            onDeleteAvatar={() => deleteAvatarMutation.mutate()}
+            isDeletingAvatar={deleteAvatarMutation.isPending}
+            fileInputRef={fileInputRef}
+            onFileChange={handleFileChange}
+          />
         </GridItem>
 
-        {/* Right column - Forms */}
+        {/* Right column - Grid of Settings Cards */}
         <GridItem>
-          <VStack gap={6} align="stretch">
-            {/* Profile Info */}
-            <Box
-              bg="bg.surface"
-              borderRadius="xl"
-              borderWidth="1px"
-              borderColor="border.default"
-              p={6}
-            >
-              <HStack mb={4}>
-                <Icon as={LuUser} color="blue.500" />
-                <Heading size="md">Основная информация</Heading>
-              </HStack>
+          <SimpleGrid columns={{ base: 1, xl: 2 }} gap={6} alignItems="stretch">
+            <PersonalInfoCard
+              profile={profile}
+              fio={fio}
+              setFio={setFio}
+              email={email}
+              setEmail={setEmail}
+              onSave={handleSaveProfile}
+              isPending={updateProfileMutation.isPending}
+            />
 
-              <VStack gap={4} align="stretch">
-                <Field.Root>
-                  <Field.Label>ФИО</Field.Label>
-                  <Input
-                    value={fio}
-                    onChange={(e) => setFio(e.target.value)}
-                    placeholder="Иванов Иван Иванович"
-                  />
-                </Field.Root>
+            <OrganizationCard
+              departmentId={departmentId}
+              setDepartmentId={setDepartmentId}
+              positionId={positionId}
+              setPositionId={setPositionId}
+              deptCollection={deptCollection}
+              posCollection={posCollection}
+              isLoadingDepts={isLoadingDepts}
+              isLoadingPositions={isLoadingPositions}
+              onUpdate={() => updateOrgMutation.mutate()}
+              isPending={updateOrgMutation.isPending}
+            />
 
-                <Field.Root>
-                  <Field.Label>Email</Field.Label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@example.com"
-                  />
-                </Field.Root>
+            <TelegramCard
+              profile={profile}
+              telegramId={telegramId}
+              setTelegramId={setTelegramId}
+              onUpdate={handleUpdateTelegram}
+              isPending={updateTelegramMutation.isPending}
+            />
 
-                <Button
-                  colorPalette="blue"
-                  onClick={handleSaveProfile}
-                  loading={updateProfileMutation.isPending}
-                  disabled={
-                    fio === (profile.fio || "") &&
-                    email === (profile.email || "")
-                  }
-                >
-                  <Icon as={LuSave} mr={2} />
-                  Сохранить изменения
-                </Button>
-              </VStack>
-            </Box>
-
-            {/* Telegram */}
-            <Box
-              bg="bg.surface"
-              borderRadius="xl"
-              borderWidth="1px"
-              borderColor="border.default"
-              p={6}
-            >
-              <HStack mb={4}>
-                <Icon as={FaTelegram} color="blue.400" />
-                <Heading size="md">Telegram</Heading>
-                {profile.telegramId && (
-                  <Badge colorPalette="green" size="sm">
-                    <Icon as={LuCheck} mr={1} />
-                    Привязан
-                  </Badge>
-                )}
-              </HStack>
-
-              <Text fontSize="sm" color="fg.muted" mb={4}>
-                Привяжите Telegram для получения уведомлений. Ваш Telegram ID
-                можно узнать у бота @userinfobot
-              </Text>
-
-              <HStack gap={3}>
-                <Input
-                  value={telegramId}
-                  onChange={(e) => setTelegramId(e.target.value)}
-                  placeholder="Telegram ID"
-                  type="number"
-                  flex={1}
-                />
-                <Button
-                  colorPalette="blue"
-                  onClick={handleUpdateTelegram}
-                  loading={updateTelegramMutation.isPending}
-                >
-                  Привязать
-                </Button>
-              </HStack>
-            </Box>
-
-            {/* Password */}
-            <Box
-              bg="bg.surface"
-              borderRadius="xl"
-              borderWidth="1px"
-              borderColor="border.default"
-              p={6}
-            >
-              <HStack mb={4}>
-                <Icon as={LuLock} color="orange.500" />
-                <Heading size="md">Изменение пароля</Heading>
-              </HStack>
-
-              <VStack gap={4} align="stretch">
-                <Field.Root>
-                  <Field.Label>Текущий пароль</Field.Label>
-                  <Input
-                    type="password"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </Field.Root>
-
-                <Field.Root>
-                  <Field.Label>Новый пароль</Field.Label>
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </Field.Root>
-
-                <Field.Root>
-                  <Field.Label>Подтверждение пароля</Field.Label>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </Field.Root>
-
-                <Button
-                  colorPalette="orange"
-                  onClick={handleChangePassword}
-                  loading={changePasswordMutation.isPending}
-                  disabled={!oldPassword || !newPassword || !confirmPassword}
-                >
-                  <Icon as={LuLock} mr={2} />
-                  Сменить пароль
-                </Button>
-              </VStack>
-            </Box>
-          </VStack>
+            <PasswordCard
+              oldPassword={oldPassword}
+              setOldPassword={setOldPassword}
+              newPassword={newPassword}
+              setNewPassword={setNewPassword}
+              confirmPassword={confirmPassword}
+              setConfirmPassword={setConfirmPassword}
+              onUpdate={handleChangePassword}
+              isPending={changePasswordMutation.isPending}
+            />
+          </SimpleGrid>
         </GridItem>
       </Grid>
     </Box>

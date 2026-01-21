@@ -44,6 +44,13 @@ export interface Department {
   positionCount: number;
 }
 
+export interface Position {
+  id: number;
+  name: string;
+  departmentId: number;
+  departmentName: string;
+}
+
 // ==================== API ====================
 
 export const adminApi = {
@@ -51,7 +58,7 @@ export const adminApi = {
   getUsers: async (
     page: number = 0,
     size: number = 20,
-    search?: string
+    search?: string,
   ): Promise<AdminPaginatedResponse<AdminUser>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
@@ -68,7 +75,7 @@ export const adminApi = {
   getUsersByRole: async (
     role: string,
     page: number = 0,
-    size: number = 50
+    size: number = 50,
   ): Promise<AdminPaginatedResponse<AdminUser>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
@@ -83,7 +90,7 @@ export const adminApi = {
   // Get user by ID
   getUser: async (id: number): Promise<AdminUser> => {
     const response = await api.get<ApiResponse<AdminUser>>(
-      `/admin/users/${id}`
+      `/admin/users/${id}`,
     );
     return response.data.data;
   },
@@ -101,7 +108,7 @@ export const adminApi = {
       queryParams.append("active", params.active.toString());
 
     const response = await api.post<ApiResponse<AdminUser>>(
-      `/admin/users?${queryParams.toString()}`
+      `/admin/users?${queryParams.toString()}`,
     );
     return response.data.data;
   },
@@ -115,8 +122,8 @@ export const adminApi = {
   changePassword: async (id: number, newPassword: string): Promise<void> => {
     await api.put(
       `/admin/users/${id}/password?newPassword=${encodeURIComponent(
-        newPassword
-      )}`
+        newPassword,
+      )}`,
     );
   },
 
@@ -126,7 +133,7 @@ export const adminApi = {
     roles.forEach((role) => queryParams.append("roles", role));
 
     const response = await api.patch<ApiResponse<AdminUser>>(
-      `/admin/users/${id}/roles?${queryParams.toString()}`
+      `/admin/users/${id}/roles?${queryParams.toString()}`,
     );
     return response.data.data;
   },
@@ -134,7 +141,7 @@ export const adminApi = {
   // Update user FIO
   updateFio: async (id: number, fio: string): Promise<AdminUser> => {
     const response = await api.patch<ApiResponse<AdminUser>>(
-      `/admin/users/${id}/fio?fio=${encodeURIComponent(fio)}`
+      `/admin/users/${id}/fio?fio=${encodeURIComponent(fio)}`,
     );
     return response.data.data;
   },
@@ -142,7 +149,31 @@ export const adminApi = {
   // Toggle user active status
   toggleActive: async (id: number, active: boolean): Promise<AdminUser> => {
     const response = await api.patch<ApiResponse<AdminUser>>(
-      `/admin/users/${id}/active?active=${active}`
+      `/admin/users/${id}/active?active=${active}`,
+    );
+    return response.data.data;
+  },
+
+  // Update user department and position
+  updateDepartmentAndPosition: async (
+    id: number,
+    departmentId?: number | null,
+    positionId?: number | null,
+  ): Promise<AdminUser> => {
+    const queryParams = new URLSearchParams();
+    if (departmentId !== undefined)
+      queryParams.append(
+        "departmentId",
+        departmentId === null ? "" : departmentId.toString(),
+      );
+    if (positionId !== undefined)
+      queryParams.append(
+        "positionId",
+        positionId === null ? "" : positionId.toString(),
+      );
+
+    const response = await api.patch<ApiResponse<AdminUser>>(
+      `/admin/users/${id}/department-position?${queryParams.toString()}`,
     );
     return response.data.data;
   },
@@ -152,7 +183,7 @@ export const adminApi = {
   // Get all NEW (unclaimed) tickets
   getNewTickets: async (
     page: number = 0,
-    size: number = 20
+    size: number = 20,
   ): Promise<AdminPaginatedResponse<TicketListItem>> => {
     const response = await api.get<
       ApiResponse<AdminPaginatedResponse<TicketListItem>>
@@ -163,7 +194,7 @@ export const adminApi = {
   // Get all CLOSED tickets
   getClosedTickets: async (
     page: number = 0,
-    size: number = 20
+    size: number = 20,
   ): Promise<AdminPaginatedResponse<TicketListItem>> => {
     const response = await api.get<
       ApiResponse<AdminPaginatedResponse<TicketListItem>>
@@ -174,8 +205,25 @@ export const adminApi = {
   // ==================== Departments ====================
 
   getDepartments: async (): Promise<Department[]> => {
-    const response = await api.get<ApiResponse<Department[]>>(
-      "/admin/departments"
+    const response =
+      await api.get<ApiResponse<Department[]>>("/admin/departments");
+    return response.data.data;
+  },
+
+  // Get all positions
+  getAllPositions: async (): Promise<Position[]> => {
+    const response = await api.get<ApiResponse<Position[]>>(
+      "/admin/departments/positions",
+    );
+    return response.data.data;
+  },
+
+  // Get positions by department
+  getPositionsByDepartment: async (
+    departmentId: number,
+  ): Promise<Position[]> => {
+    const response = await api.get<ApiResponse<Position[]>>(
+      `/admin/departments/${departmentId}/positions`,
     );
     return response.data.data;
   },
