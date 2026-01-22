@@ -25,7 +25,6 @@ import {
   LuChevronRight,
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { userRolesBadges } from "@/types";
 import { userRolesBadges as userRolesConfig } from "@/types/auth";
 import { AdminUser } from "@/lib/api/admin";
 

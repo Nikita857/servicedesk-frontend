@@ -1,10 +1,12 @@
+import { DataSelect } from "@/components/ui";
 import { Tooltip } from "@/components/ui/tooltip";
-import { CreateUserParams } from "@/lib/api/admin";
-import { userRolesBadges } from "@/types";
+import { adminApi, CreateUserParams } from "@/lib/api/admin";
+import { SenderType, userRolesBadges } from "@/types";
 import {
   Badge,
   Button,
   CloseButton,
+  createListCollection,
   Dialog,
   Field,
   HStack,
@@ -13,6 +15,8 @@ import {
   Spinner,
   VStack,
 } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { LuCheck } from "react-icons/lu";
 
 interface CreateUserProps {
@@ -21,12 +25,16 @@ interface CreateUserProps {
   newUser: CreateUserParams;
   setNewUser: (newUser: CreateUserParams) => void;
   handleCreateUser: () => void;
-  isSubmitting: boolean;
   toggleRole: (
     roleKey: string,
     roles: string[],
-    callback: (updatedRoles: string[]) => void
+    callback: (updatedRoles: string[]) => void,
   ) => void;
+  departmentId: number | null;
+  setDepartmentId: (id: number | null) => void;
+  positionId: number | null;
+  setPositionId: (id: number | null) => void;
+  isSubmitting: boolean;
 }
 
 export default function CreateUser({
@@ -35,9 +43,48 @@ export default function CreateUser({
   newUser,
   setNewUser,
   handleCreateUser,
-  isSubmitting,
   toggleRole,
+  departmentId,
+  setDepartmentId,
+  positionId,
+  setPositionId,
+  isSubmitting,
 }: CreateUserProps) {
+  const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
+    queryKey: ["admin", "departments"],
+    queryFn: () => adminApi.getDepartments(),
+    enabled: isCreateOpen,
+  });
+
+  // Fetch positions for selected department
+  const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
+    queryKey: ["admin", "positions", departmentId],
+    queryFn: () => adminApi.getPositionsByDepartment(departmentId!),
+    enabled: isCreateOpen && !!departmentId,
+  });
+
+  const deptCollection = useMemo(
+    () =>
+      createListCollection({
+        items: departments.map((d) => ({
+          label: d.name,
+          value: d.id.toString(),
+        })),
+      }),
+    [departments],
+  );
+
+  const posCollection = useMemo(
+    () =>
+      createListCollection({
+        items: positions.map((p) => ({
+          label: p.name,
+          value: p.id.toString(),
+        })),
+      }),
+    [positions],
+  );
+
   return (
     <Dialog.Root
       open={isCreateOpen}
@@ -76,6 +123,18 @@ export default function CreateUser({
                 </Field.Root>
 
                 <Field.Root>
+                  <Field.Label>E-mail</Field.Label>
+                  <Input
+                    type="email"
+                    value={newUser.email || ""}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, email: e.target.value })
+                    }
+                    placeholder="E-mail"
+                  />
+                </Field.Root>
+
+                <Field.Root>
                   <Field.Label>ФИО</Field.Label>
                   <Input
                     value={newUser.fio || ""}
@@ -87,6 +146,47 @@ export default function CreateUser({
                 </Field.Root>
 
                 <Field.Root>
+                  <VStack w="full" gap={3}>
+                    <DataSelect
+                      label="Отдел"
+                      placeholder={
+                        isLoadingDepts ? "Загрузка..." : "Выберите отдел"
+                      }
+                      collection={deptCollection}
+                      value={departmentId ? [departmentId.toString()] : []}
+                      onValueChange={(e) => {
+                        const id = e.value[0] ? parseInt(e.value[0]) : null;
+                        setDepartmentId(id);
+                        setPositionId(null);
+                      }}
+                      disabled={isLoadingDepts}
+                      portalled={false}
+                      width="100%"
+                    />
+
+                    <DataSelect
+                      label="Должность"
+                      placeholder={
+                        !departmentId
+                          ? "Сначала выберите отдел"
+                          : isLoadingPositions
+                            ? "Загрузка..."
+                            : "Выберите должность"
+                      }
+                      collection={posCollection}
+                      value={positionId ? [positionId.toString()] : []}
+                      onValueChange={(e) => {
+                        const id = e.value[0] ? parseInt(e.value[0]) : null;
+                        setPositionId(id);
+                      }}
+                      disabled={!departmentId || isLoadingPositions}
+                      portalled={false}
+                      width="100%"
+                    />
+                  </VStack>
+                </Field.Root>
+
+                <Field.Root>
                   <Field.Label>Роли</Field.Label>
                   <HStack gap={2} flexWrap="wrap">
                     {Object.entries(userRolesBadges).map(
@@ -95,24 +195,27 @@ export default function CreateUser({
                           <Badge
                             colorPalette={roleData.color}
                             variant={
-                              newUser.roles?.includes(roleKey)
+                              newUser.roles?.includes(roleKey as SenderType)
                                 ? "solid"
                                 : "outline"
                             }
                             cursor="pointer"
                             onClick={() =>
                               toggleRole(roleKey, newUser.roles || [], (r) =>
-                                setNewUser({ ...newUser, roles: r })
+                                setNewUser({
+                                  ...newUser,
+                                  roles: r as SenderType[],
+                                }),
                               )
                             }
                           >
-                            {newUser.roles?.includes(roleKey) && (
+                            {newUser.roles?.includes(roleKey as SenderType) && (
                               <LuCheck size={12} />
                             )}
                             {roleData.name}
                           </Badge>
                         </Tooltip>
-                      )
+                      ),
                     )}
                   </HStack>
                 </Field.Root>

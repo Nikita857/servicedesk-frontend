@@ -1,6 +1,8 @@
+import { SenderType } from "@/types";
 import api from "./client";
 import type { ApiResponse } from "@/types/api";
 import type { TicketListItem } from "@/types/ticket";
+import { handleApiError } from "../utils";
 
 // ==================== Types ====================
 
@@ -31,10 +33,12 @@ export interface AdminUser {
 export interface CreateUserParams {
   username: string;
   password: string;
-  fio?: string;
-  email?: string;
-  roles?: string[];
-  active?: boolean;
+  fio: string | null;
+  email: string | null;
+  roles: SenderType[] | null;
+  active: boolean;
+  departmentId: number | null;
+  positionId: number | null;
 }
 
 export interface Department {
@@ -97,21 +101,29 @@ export const adminApi = {
 
   // Create new user
   createUser: async (params: CreateUserParams): Promise<AdminUser> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("username", params.username);
-    queryParams.append("password", params.password);
-    if (params.fio) queryParams.append("fio", params.fio);
-    if (params.email) queryParams.append("email", params.email);
-    if (params.roles)
-      params.roles.forEach((role) => queryParams.append("roles", role));
-    if (params.active !== undefined)
-      queryParams.append("active", params.active.toString());
 
+  const payload: Partial<CreateUserParams> = {
+    username: params.username,
+    password: params.password,
+    fio: params.fio,           
+    email: params.email ?? null,
+    roles: params.roles ?? [],       
+    active: params.active,
+    departmentId: params.departmentId ?? null,
+    positionId: params.positionId ?? null,
+  };
+
+  try {
     const response = await api.post<ApiResponse<AdminUser>>(
-      `/admin/users?${queryParams.toString()}`,
+      "/admin/users",           // без query-параметров
+      payload                   // ← JSON в теле
     );
     return response.data.data;
-  },
+  } catch (error) {
+    handleApiError(error, {context: "создать пользователя"})
+    throw error;
+  }
+},
 
   // Delete user
   deleteUser: async (id: number): Promise<void> => {

@@ -40,11 +40,14 @@ export const useCrudUsers = () => {
 
   // Form states
   const [newUser, setNewUser] = useState<CreateUserParams>({
-    username: "",
-    password: "",
-    fio: "",
-    roles: ["USER"],
-    active: true,
+        username: "",
+        password: "",
+        fio: "",
+        email: "",
+        roles: ["USER"],
+        active: true,
+        departmentId: null,
+        positionId: null
   });
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editFio, setEditFio] = useState("");
@@ -84,8 +87,11 @@ export const useCrudUsers = () => {
         username: "",
         password: "",
         fio: "",
+        email: "",
         roles: ["USER"],
         active: true,
+        departmentId: null,
+        positionId: null
       });
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
