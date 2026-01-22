@@ -179,6 +179,10 @@ export default function UsersPage() {
         handleCreateUser={handleCreateUser}
         isSubmitting={isSubmitting}
         toggleRole={toggleRole}
+        departmentId={editDepartmentId}
+        setDepartmentId={setEditDepartmentId}
+        positionId={editPositionId}
+        setPositionId={setEditPositionId}
       />
 
       {/* Edit Roles Dialog */}
