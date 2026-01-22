@@ -39,16 +39,6 @@ export const useCrudUsers = () => {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   // Form states
-  const [newUser, setNewUser] = useState<CreateUserParams>({
-    username: "",
-    password: "",
-    fio: "",
-    email: "",
-    roles: ["USER"],
-    active: true,
-    departmentId: null,
-    positionId: null,
-  });
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editFio, setEditFio] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -83,16 +73,6 @@ export const useCrudUsers = () => {
     onSuccess: () => {
       toast.success("Пользователь создан");
       setIsCreateOpen(false);
-      setNewUser({
-        username: "",
-        password: "",
-        fio: "",
-        email: "",
-        roles: ["USER"],
-        active: true,
-        departmentId: null,
-        positionId: null,
-      });
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
     onError: (error) => {
@@ -195,12 +175,8 @@ export const useCrudUsers = () => {
     // Query will automatically refetch due to searchQuery change
   };
 
-  const handleCreateUser = async () => {
-    if (!newUser.username || !newUser.password) {
-      toast.error("Ошибка", "Заполните обязательные поля");
-      return;
-    }
-    createUserMutation.mutate(newUser);
+  const handleCreateUser = async (params: CreateUserParams) => {
+    createUserMutation.mutate(params);
   };
 
   const handleToggleActive = useCallback(
@@ -332,8 +308,6 @@ export const useCrudUsers = () => {
 
     /* ===== FORMS ===== */
     forms: {
-      newUser,
-      setNewUser,
       editRoles,
       setEditRoles,
       editFio,

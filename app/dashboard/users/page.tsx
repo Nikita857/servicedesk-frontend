@@ -73,8 +73,6 @@ export default function UsersPage() {
   } = dialog;
 
   const {
-    newUser,
-    setNewUser,
     editRoles,
     setEditRoles,
     editFio,
@@ -170,19 +168,11 @@ export default function UsersPage() {
         openEditOrg={openEditOrg}
       />
 
-      {/* Create User Dialog */}
       <CreateUser
-        isCreateOpen={isCreateOpen}
-        closeCreate={closeCreate}
-        newUser={newUser}
-        setNewUser={setNewUser}
-        handleCreateUser={handleCreateUser}
+        isOpen={isCreateOpen}
+        onClose={closeCreate}
+        onCreate={handleCreateUser}
         isSubmitting={isSubmitting}
-        toggleRole={toggleRole}
-        departmentId={newUser.departmentId}
-        setDepartmentId={(id) => setNewUser({ ...newUser, departmentId: id })}
-        positionId={newUser.positionId}
-        setPositionId={(id) => setNewUser({ ...newUser, positionId: id })}
       />
 
       {/* Edit Roles Dialog */}

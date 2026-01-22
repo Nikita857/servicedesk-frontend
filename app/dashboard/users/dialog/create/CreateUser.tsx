@@ -16,51 +16,61 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { LuCheck } from "react-icons/lu";
+import { toast } from "@/lib/utils";
 
 interface CreateUserProps {
-  isCreateOpen: boolean;
-  closeCreate: () => void;
-  newUser: CreateUserParams;
-  setNewUser: (newUser: CreateUserParams) => void;
-  handleCreateUser: () => void;
-  toggleRole: (
-    roleKey: string,
-    roles: string[],
-    callback: (updatedRoles: string[]) => void,
-  ) => void;
-  departmentId: number | null;
-  setDepartmentId: (id: number | null) => void;
-  positionId: number | null;
-  setPositionId: (id: number | null) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (user: CreateUserParams) => void;
   isSubmitting: boolean;
 }
 
 export default function CreateUser({
-  isCreateOpen,
-  closeCreate,
-  newUser,
-  setNewUser,
-  handleCreateUser,
-  toggleRole,
-  departmentId,
-  setDepartmentId,
-  positionId,
-  setPositionId,
+  isOpen,
+  onClose,
+  onCreate,
   isSubmitting,
 }: CreateUserProps) {
+  const [newUser, setNewUser] = useState<CreateUserParams>({
+    username: "",
+    password: "",
+    fio: "",
+    email: "",
+    roles: ["USER"],
+    active: true,
+    departmentId: null,
+    positionId: null,
+  });
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setNewUser({
+        username: "",
+        password: "",
+        fio: "",
+        email: "",
+        roles: ["USER"],
+        active: true,
+        departmentId: null,
+        positionId: null,
+      });
+    }
+  }, [isOpen]);
+
   const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
     queryKey: ["admin", "departments"],
     queryFn: () => adminApi.getDepartments(),
-    enabled: isCreateOpen,
+    enabled: isOpen,
   });
 
   // Fetch positions for selected department
   const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
-    queryKey: ["admin", "positions", departmentId],
-    queryFn: () => adminApi.getPositionsByDepartment(departmentId!),
-    enabled: isCreateOpen && !!departmentId,
+    queryKey: ["admin", "positions", newUser.departmentId],
+    queryFn: () => adminApi.getPositionsByDepartment(newUser.departmentId!),
+    enabled: isOpen && !!newUser.departmentId,
   });
 
   const deptCollection = useMemo(
@@ -85,11 +95,28 @@ export default function CreateUser({
     [positions],
   );
 
+  const toggleRole = (
+    role: string,
+    roles: string[],
+    setRoles: (r: string[]) => void,
+  ) => {
+    if (roles.includes(role)) {
+      setRoles(roles.filter((r) => r !== role));
+    } else {
+      setRoles([...roles, role]);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!newUser.username || !newUser.password) {
+      toast.error("Ошибка", "Заполните обязательные поля");
+      return;
+    }
+    onCreate(newUser);
+  };
+
   return (
-    <Dialog.Root
-      open={isCreateOpen}
-      onOpenChange={(e) => !e.open && closeCreate()}
-    >
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -153,11 +180,18 @@ export default function CreateUser({
                         isLoadingDepts ? "Загрузка..." : "Выберите отдел"
                       }
                       collection={deptCollection}
-                      value={departmentId ? [departmentId.toString()] : []}
+                      value={
+                        newUser.departmentId
+                          ? [newUser.departmentId.toString()]
+                          : []
+                      }
                       onValueChange={(e) => {
                         const id = e.value[0] ? parseInt(e.value[0]) : null;
-                        setDepartmentId(id);
-                        setPositionId(null);
+                        setNewUser({
+                          ...newUser,
+                          departmentId: id,
+                          positionId: null,
+                        });
                       }}
                       disabled={isLoadingDepts}
                       portalled={false}
@@ -167,19 +201,23 @@ export default function CreateUser({
                     <DataSelect
                       label="Должность"
                       placeholder={
-                        !departmentId
+                        !newUser.departmentId
                           ? "Сначала выберите отдел"
                           : isLoadingPositions
                             ? "Загрузка..."
                             : "Выберите должность"
                       }
                       collection={posCollection}
-                      value={positionId ? [positionId.toString()] : []}
+                      value={
+                        newUser.positionId
+                          ? [newUser.positionId.toString()]
+                          : []
+                      }
                       onValueChange={(e) => {
                         const id = e.value[0] ? parseInt(e.value[0]) : null;
-                        setPositionId(id);
+                        setNewUser({ ...newUser, positionId: id });
                       }}
-                      disabled={!departmentId || isLoadingPositions}
+                      disabled={!newUser.departmentId || isLoadingPositions}
                       portalled={false}
                       width="100%"
                     />
@@ -223,13 +261,13 @@ export default function CreateUser({
             </Dialog.Body>
 
             <Dialog.Footer>
-              <Button variant="outline" onClick={closeCreate}>
+              <Button variant="outline" onClick={onClose}>
                 Отмена
               </Button>
               <Button
                 bg="gray.900"
                 color="white"
-                onClick={handleCreateUser}
+                onClick={handleSubmit}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? <Spinner size="sm" /> : "Создать"}
