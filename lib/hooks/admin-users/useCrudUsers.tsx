@@ -2,7 +2,7 @@ import { adminApi, AdminUser, CreateUserParams } from "@/lib/api/admin";
 import { handleApiError, toast } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Query keys
@@ -40,14 +40,14 @@ export const useCrudUsers = () => {
 
   // Form states
   const [newUser, setNewUser] = useState<CreateUserParams>({
-        username: "",
-        password: "",
-        fio: "",
-        email: "",
-        roles: ["USER"],
-        active: true,
-        departmentId: null,
-        positionId: null
+    username: "",
+    password: "",
+    fio: "",
+    email: "",
+    roles: ["USER"],
+    active: true,
+    departmentId: null,
+    positionId: null,
   });
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editFio, setEditFio] = useState("");
@@ -91,7 +91,7 @@ export const useCrudUsers = () => {
         roles: ["USER"],
         active: true,
         departmentId: null,
-        positionId: null
+        positionId: null,
       });
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     },
@@ -203,12 +203,15 @@ export const useCrudUsers = () => {
     createUserMutation.mutate(newUser);
   };
 
-  const handleToggleActive = (targetUser: AdminUser) => {
-    toggleActiveMutation.mutate({
-      id: targetUser.id,
-      active: !targetUser.active,
-    });
-  };
+  const handleToggleActive = useCallback(
+    (targetUser: AdminUser) => {
+      toggleActiveMutation.mutate({
+        id: targetUser.id,
+        active: !targetUser.active,
+      });
+    },
+    [toggleActiveMutation],
+  );
 
   const handleUpdateRoles = async () => {
     if (!selectedUser) return;
@@ -244,30 +247,30 @@ export const useCrudUsers = () => {
 
   // ==================== DIALOG OPENERS ====================
 
-  const openEditRoles = (targetUser: AdminUser) => {
+  const openEditRoles = useCallback((targetUser: AdminUser) => {
     setSelectedUser(targetUser);
     setEditRoles([...targetUser.roles]);
     setIsEditRolesOpen(true);
-  };
+  }, []);
 
-  const openEditFio = (targetUser: AdminUser) => {
+  const openEditFio = useCallback((targetUser: AdminUser) => {
     setSelectedUser(targetUser);
     setEditFio(targetUser.fio || "");
     setIsEditFioOpen(true);
-  };
+  }, []);
 
-  const openChangePassword = (targetUser: AdminUser) => {
+  const openChangePassword = useCallback((targetUser: AdminUser) => {
     setSelectedUser(targetUser);
     setNewPassword("");
     setIsChangePasswordOpen(true);
-  };
+  }, []);
 
-  const openDelete = (targetUser: AdminUser) => {
+  const openDelete = useCallback((targetUser: AdminUser) => {
     setSelectedUser(targetUser);
     setIsDeleteOpen(true);
-  };
+  }, []);
 
-  const openEditOrg = (targetUser: AdminUser) => {
+  const openEditOrg = useCallback((targetUser: AdminUser) => {
     setSelectedUser(targetUser);
     // These might need to be resolved from names if the API doesn't return IDs in the user object
     // But AdminUser should have departmentId/positionId if the API provides it.
@@ -278,7 +281,7 @@ export const useCrudUsers = () => {
     setEditDepartmentId(null);
     setEditPositionId(null);
     setIsEditOrgOpen(true);
-  };
+  }, []);
 
   // ==================== UTILS ====================
 

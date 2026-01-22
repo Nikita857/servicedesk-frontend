@@ -12,6 +12,7 @@ import {
   Button,
   Text,
 } from "@chakra-ui/react";
+import { memo } from "react";
 import {
   LuUsers,
   LuUserX,
@@ -63,7 +64,7 @@ const getRoleBadge = (role: string) => {
   );
 };
 
-export default function UsersTable({
+const UsersTable = memo(function UsersTable({
   isLoading,
   searchQuery,
   users,
@@ -271,4 +272,6 @@ export default function UsersTable({
       )}
     </>
   );
-}
+});
+
+export default UsersTable;

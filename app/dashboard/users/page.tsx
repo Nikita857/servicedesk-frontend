@@ -179,10 +179,10 @@ export default function UsersPage() {
         handleCreateUser={handleCreateUser}
         isSubmitting={isSubmitting}
         toggleRole={toggleRole}
-        departmentId={editDepartmentId}
-        setDepartmentId={setEditDepartmentId}
-        positionId={editPositionId}
-        setPositionId={setEditPositionId}
+        departmentId={newUser.departmentId}
+        setDepartmentId={(id) => setNewUser({ ...newUser, departmentId: id })}
+        positionId={newUser.positionId}
+        setPositionId={(id) => setNewUser({ ...newUser, positionId: id })}
       />
 
       {/* Edit Roles Dialog */}
