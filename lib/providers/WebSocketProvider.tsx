@@ -12,6 +12,7 @@ import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
+import { refreshAccessToken } from "@/lib/api/client";
 import { Ticket, LastAssignment } from "@/types/ticket";
 import { Notification } from "@/types/notification";
 import type {
@@ -163,18 +164,36 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(false);
     };
 
-    client.onStompError = (frame) => {
-      console.error("[WS] STOMP ошибка:", frame.headers["message"]);
-      console.error("[WS] Подробности:", frame.body);
+    client.onStompError = async (frame) => {
+      const errorMessage = frame.headers["message"];
+      const errorBody = frame.body;
+
+      console.error("[WS] STOMP ошибка:", errorMessage);
+
+      // Check for token expired in body or headers
+      if (
+        errorBody?.includes("TOKEN_EXPIRED") ||
+        errorMessage?.includes("TOKEN_EXPIRED")
+      ) {
+        console.log("[WS] Токен истек, пытаемся обновить...");
+        await refreshAccessToken();
+        // effect will re-run automatically because accessToken is a dependency
+      }
     };
 
-    client.onWebSocketError = (event) => {
+    client.onWebSocketError = async (event) => {
       // Попытка извлечь больше информации из события ошибки
       let errorDetails = "";
       if (event instanceof ErrorEvent) {
         errorDetails = ` (${event.message})`;
       } else if (event instanceof CloseEvent) {
         errorDetails = ` (Close code: ${event.code}, Reason: ${event.reason})`;
+
+        // Often 401 error results in close code 1006 or specific reason
+        if (event.code === 1006 || event.reason?.includes("TOKEN_EXPIRED")) {
+          console.log("[WS] Вероятная ошибка авторизации, проверяем токен...");
+          await refreshAccessToken();
+        }
       }
 
       console.error(`[WS] WebSocket ошибка${errorDetails}`, event);

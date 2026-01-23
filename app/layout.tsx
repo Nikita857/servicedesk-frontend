@@ -1,5 +1,6 @@
 import { Provider } from "../components/ui/provider";
 import { QueryProvider } from "@/lib/providers";
+import { AuthRefresh } from "@/lib/providers/AuthRefresh";
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props;
@@ -7,7 +8,10 @@ export default function RootLayout(props: { children: React.ReactNode }) {
     <html lang="ru">
       <body>
         <QueryProvider>
-          <Provider>{children}</Provider>
+          <Provider>
+            <AuthRefresh />
+            {children}
+          </Provider>
         </QueryProvider>
       </body>
     </html>
