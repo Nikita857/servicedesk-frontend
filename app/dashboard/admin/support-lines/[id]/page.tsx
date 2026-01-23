@@ -24,6 +24,7 @@ import { Specialist } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
 import { userRolesBadges, activityStatusConfig } from "@/types/auth";
 import { AssignmentMode, assignmentModeConfig } from "@/types/ticket";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -196,28 +197,33 @@ export default function SupportLineDetailPage({ params }: PageProps) {
               <Text fontWeight="medium" mb={2}>
                 Режим назначения
               </Text>
-              <Select.Root
-                collection={assignmentModeCollection}
-                value={[form.assignmentMode]}
-                onValueChange={(e) =>
-                  form.setAssignmentMode(e.value[0] as AssignmentMode)
-                }
-              >
-                <Select.Trigger>
-                  <Select.ValueText />
-                </Select.Trigger>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {assignmentModeCollection.items.map((item) => (
-                        <Select.Item key={item.value} item={item}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
+              <Tooltip content="Экспериментальная функция пока не протестирована">
+                <Box>
+                  <Select.Root
+                    collection={assignmentModeCollection}
+                    value={[form.assignmentMode]}
+                    onValueChange={(e) =>
+                      form.setAssignmentMode(e.value[0] as AssignmentMode)
+                    }
+                    disabled
+                  >
+                    <Select.Trigger>
+                      <Select.ValueText />
+                    </Select.Trigger>
+                    <Portal>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {assignmentModeCollection.items.map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Portal>
+                  </Select.Root>
+                </Box>
+              </Tooltip>
             </Box>
           </VStack>
         </Box>
