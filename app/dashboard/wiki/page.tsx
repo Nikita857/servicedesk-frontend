@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   Box,
   Flex,
@@ -13,6 +13,7 @@ import {
   Spinner,
   Badge,
   SimpleGrid,
+  Icon,
 } from "@chakra-ui/react";
 import {
   LuPlus,
@@ -29,6 +30,7 @@ import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { Tooltip } from "@/components/ui/tooltip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useWikiAutocomplete } from "@/lib/hooks/useWikiAutocomplete";
 
 export default function WikiPage() {
   const { user } = useAuthStore();
@@ -52,12 +54,26 @@ export default function WikiPage() {
     setShowAll,
   } = useWikiArticlesQuery();
 
+  const { suggestions, clearSuggestions } = useWikiAutocomplete(searchQuery);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const [showFavorites, setShowFavorites] = useState(false);
 
   // Reset favorites filter on search
-  const onSearch = (e: React.FormEvent) => {
+  const onSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setShowFavorites(false);
-    handleSearch(e);
+    setShowSuggestions(false);
+    handleSearch(e as FormEvent<Element>);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    // Trigger search with the new value
+    setTimeout(() => {
+      onSearch();
+    }, 0);
   };
 
   // Filter articles for favorites display
@@ -127,19 +143,80 @@ export default function WikiPage() {
       <Box mb={6}>
         <form onSubmit={onSearch}>
           <VStack align="stretch" gap={2}>
-            <Flex gap={2}>
-              <Input
-                placeholder="Поиск по статьям..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                bg="bg.surface"
-                flex={1}
-              />
-              <Button type="submit" variant="outline">
-                <LuSearch />
-                Найти
-              </Button>
-            </Flex>
+            <Box position="relative">
+              <Flex gap={2}>
+                <Input
+                  placeholder="Поиск по статьям..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  bg="bg.surface"
+                  flex={1}
+                  autoComplete="off"
+                />
+                <Button type="submit" variant="outline">
+                  <LuSearch />
+                  Найти
+                </Button>
+              </Flex>
+
+              {/* Autocomplete Suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <Box
+                  position="absolute"
+                  top="100%"
+                  left={0}
+                  right={0}
+                  mt={1}
+                  bg="bg.surface"
+                  boxShadow="lg"
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor="border.default"
+                  zIndex={10}
+                  maxH="300px"
+                  overflowY="auto"
+                >
+                  <VStack align="stretch" gap={0}>
+                    {suggestions.map((suggestion, index) => (
+                      <Box
+                        key={index}
+                        px={4}
+                        py={2}
+                        cursor="pointer"
+                        _hover={{ bg: "bg.subtle" }}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        borderBottomWidth={
+                          index === suggestions.length - 1 ? 0 : "1px"
+                        }
+                        borderColor="border.subtle"
+                      >
+                        <HStack gap={2}>
+                          <Icon as={LuSearch} size="xs" color="fg.muted" />
+                          <Text fontSize="sm">{suggestion}</Text>
+                        </HStack>
+                      </Box>
+                    ))}
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Overlay to close suggestions when clicking outside */}
+              {showSuggestions && (
+                <Box
+                  position="fixed"
+                  top={0}
+                  left={0}
+                  right={0}
+                  bottom={0}
+                  zIndex={5}
+                  onClick={() => setShowSuggestions(false)}
+                />
+              )}
+            </Box>
             {filter === "all" && (
               <Text fontSize="xs" color="fg.muted" ml={1}>
                 Поиск выполняется по всей базе знаний (включая другие отделы)

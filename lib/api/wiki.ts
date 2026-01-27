@@ -220,6 +220,17 @@ export const wikiApi = {
     return response.data.data;
   },
 
+  // Autocomplete for wiki search
+  autocomplete: async (query: string): Promise<string[]> => {
+    const response = await api.get<ApiResponse<string[]>>(
+      "/wiki/autocomplete",
+      {
+        params: { q: query },
+      },
+    );
+    return response.data.data;
+  },
+
   // ============ Admin: Wiki Category Management ============
 
   adminGetCategories: async (): Promise<WikiCategory[]> => {

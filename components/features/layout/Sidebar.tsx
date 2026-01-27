@@ -12,6 +12,7 @@ import {
   LuSettings,
   LuUsers,
   LuNetwork,
+  LuSearch,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -47,6 +48,7 @@ const adminItems: NavItem[] = [
     href: "/dashboard/admin/wiki-categories",
     icon: LuBook,
   },
+  { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch },
   { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
 ];
 
