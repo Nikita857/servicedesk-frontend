@@ -53,9 +53,7 @@ export default function WikiPage() {
     showAll,
     setShowAll,
   } = useWikiArticlesQuery();
-
-  const { suggestions, clearSuggestions } = useWikiAutocomplete(searchQuery);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { hint, clearSuggestions } = useWikiAutocomplete(searchQuery);
 
   const [showFavorites, setShowFavorites] = useState(false);
 
@@ -63,17 +61,20 @@ export default function WikiPage() {
   const onSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setShowFavorites(false);
-    setShowSuggestions(false);
     handleSearch(e as FormEvent<Element>);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setSearchQuery(suggestion);
-    setShowSuggestions(false);
-    // Trigger search with the new value
-    setTimeout(() => {
-      onSearch();
-    }, 0);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === "Tab" || e.key === "ArrowRight") && hint) {
+      // If cursor is at the end of text or it's a Tab press
+      const isAtEnd =
+        (e.target as HTMLInputElement).selectionStart === searchQuery.length;
+
+      if (e.key === "Tab" || isAtEnd) {
+        e.preventDefault();
+        setSearchQuery(hint);
+      }
+    }
   };
 
   // Filter articles for favorites display
@@ -144,78 +145,50 @@ export default function WikiPage() {
         <form onSubmit={onSearch}>
           <VStack align="stretch" gap={2}>
             <Box position="relative">
+              {/* Ghost Hint Layer */}
+              {hint && (
+                <Box
+                  position="absolute"
+                  top={0}
+                  left={0}
+                  right={0}
+                  bottom={0}
+                  px="calc(12px + 1px)" // Input padding + border
+                  py="calc(8px + 1px)"
+                  pointerEvents="none"
+                  fontSize="md"
+                  fontFamily="inherit"
+                  color="fg.muted"
+                  opacity={0.5}
+                  whiteSpace="pre"
+                  overflow="hidden"
+                >
+                  {/* Invisible text to push hint to the right position */}
+                  <Box as="span" opacity={0}>
+                    {searchQuery}
+                  </Box>
+                  {/* The actual hint part */}
+                  {hint.slice(searchQuery.length)}
+                </Box>
+              )}
+
               <Flex gap={2}>
                 <Input
                   placeholder="Поиск по статьям..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  bg="bg.surface"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  bg="transparent"
                   flex={1}
                   autoComplete="off"
+                  zIndex={1}
+                  _placeholder={{ color: "fg.muted", opacity: 0.6 }}
                 />
                 <Button type="submit" variant="outline">
                   <LuSearch />
                   Найти
                 </Button>
               </Flex>
-
-              {/* Autocomplete Suggestions */}
-              {showSuggestions && suggestions.length > 0 && (
-                <Box
-                  position="absolute"
-                  top="100%"
-                  left={0}
-                  right={0}
-                  mt={1}
-                  bg="bg.surface"
-                  boxShadow="lg"
-                  borderRadius="md"
-                  borderWidth="1px"
-                  borderColor="border.default"
-                  zIndex={10}
-                  maxH="300px"
-                  overflowY="auto"
-                >
-                  <VStack align="stretch" gap={0}>
-                    {suggestions.map((suggestion, index) => (
-                      <Box
-                        key={index}
-                        px={4}
-                        py={2}
-                        cursor="pointer"
-                        _hover={{ bg: "bg.subtle" }}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        borderBottomWidth={
-                          index === suggestions.length - 1 ? 0 : "1px"
-                        }
-                        borderColor="border.subtle"
-                      >
-                        <HStack gap={2}>
-                          <Icon as={LuSearch} size="xs" color="fg.muted" />
-                          <Text fontSize="sm">{suggestion}</Text>
-                        </HStack>
-                      </Box>
-                    ))}
-                  </VStack>
-                </Box>
-              )}
-
-              {/* Overlay to close suggestions when clicking outside */}
-              {showSuggestions && (
-                <Box
-                  position="fixed"
-                  top={0}
-                  left={0}
-                  right={0}
-                  bottom={0}
-                  zIndex={5}
-                  onClick={() => setShowSuggestions(false)}
-                />
-              )}
             </Box>
             {filter === "all" && (
               <Text fontSize="xs" color="fg.muted" ml={1}>
