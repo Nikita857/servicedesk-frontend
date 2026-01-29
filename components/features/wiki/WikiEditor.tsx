@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import Youtube from "@tiptap/extension-youtube";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Flex, IconButton, HStack, Spinner, Text } from "@chakra-ui/react";
 import {
@@ -22,10 +23,14 @@ import {
   LuUndo,
   LuRedo,
   LuMinus,
+  LuVideo,
+  LuYoutube,
 } from "react-icons/lu";
 import { wikiImageApi } from "@/lib/api/wikiImages";
+import { wikiVideoApi } from "@/lib/api/wikiVideos";
 import { handleApiError, toast } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/tooltip";
+import { Video } from "./VideoExtension";
 import "./wiki-editor.css";
 
 interface WikiEditorProps {
@@ -70,10 +75,12 @@ function ToolbarButton({
 function EditorToolbar({
   editor,
   onImageUpload,
+  onVideoUpload,
   isUploading,
 }: {
   editor: Editor | null;
   onImageUpload: () => void;
+  onVideoUpload: () => void;
   isUploading: boolean;
 }) {
   if (!editor) return null;
@@ -90,6 +97,22 @@ function EditorToolbar({
     }
 
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }, [editor]);
+
+  const addYoutube = useCallback(() => {
+    const url = window.prompt("Введите URL видео с YouTube:");
+
+    if (url === null) return;
+
+    if (url === "") {
+      return;
+    }
+
+    editor.commands.setYoutubeVideo({
+      src: url,
+      width: 640,
+      height: 480,
+    });
   }, [editor]);
 
   return (
@@ -205,6 +228,16 @@ function EditorToolbar({
         >
           {isUploading ? <Spinner size="sm" /> : <LuImage />}
         </ToolbarButton>
+        <ToolbarButton
+          onClick={onVideoUpload}
+          disabled={isUploading}
+          tooltip="Вставить видео"
+        >
+          {isUploading ? <Spinner size="sm" /> : <LuVideo />}
+        </ToolbarButton>
+        <ToolbarButton onClick={addYoutube} tooltip="Вставить YouTube">
+          <LuYoutube />
+        </ToolbarButton>
       </HStack>
 
       <Box w="1px" bg="border.default" mx={1} />
@@ -249,20 +282,50 @@ export default function WikiEditor({
   height = "500px",
 }: WikiEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const isUploading = useRef(false);
   const [uploadingState, setUploadingState] = useState(false);
+  const editorRef = useRef<Editor | null>(null);
 
-  // Parse initial content
-  const getInitialContent = useCallback(() => {
-    if (!value) return "";
+  const uploadImage = useCallback(async (file: File) => {
+    const currentEditor = editorRef.current;
+    if (!currentEditor || isUploading.current) return;
+
+    isUploading.current = true;
+    setUploadingState(true);
+
     try {
-      // Try to parse as JSON (TipTap format)
-      return JSON.parse(value);
-    } catch {
-      // Fallback: treat as plain text/HTML
-      return value;
+      const response = await wikiImageApi.uploadImage(file);
+      currentEditor.chain().focus().setImage({ src: response.url }).run();
+      toast.success("Изображение загружено");
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      handleApiError(error, { context: "Ошибка загрузки изображения" });
+    } finally {
+      isUploading.current = false;
+      setUploadingState(false);
     }
-  }, [value]);
+  }, []);
+
+  const uploadVideo = useCallback(async (file: File) => {
+    const currentEditor = editorRef.current;
+    if (!currentEditor || isUploading.current) return;
+
+    isUploading.current = true;
+    setUploadingState(true);
+
+    try {
+      const response = await wikiVideoApi.uploadVideo(file);
+      currentEditor.chain().focus().setVideo({ src: response.url }).run();
+      toast.success("Видео загружено");
+    } catch (error) {
+      console.error("Video upload failed:", error);
+      handleApiError(error, { context: "Ошибка загрузки видео" });
+    } finally {
+      isUploading.current = false;
+      setUploadingState(false);
+    }
+  }, []);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -279,13 +342,32 @@ export default function WikiEditor({
           class: "wiki-editor-link",
         },
       }),
+      Youtube.configure({
+        HTMLAttributes: {
+          class: "wiki-editor-youtube",
+        },
+      }),
+      Video.configure({
+        HTMLAttributes: {
+          class: "wiki-editor-video",
+        },
+      }),
       Placeholder.configure({
         placeholder,
       }),
     ],
-    content: getInitialContent(),
+    content: (() => {
+      if (!value) return "";
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    })(),
+    onCreate({ editor }) {
+      editorRef.current = editor;
+    },
     onUpdate: ({ editor }) => {
-      // Save as JSON
       const json = editor.getJSON();
       onChange(JSON.stringify(json));
     },
@@ -298,9 +380,15 @@ export default function WikiEditor({
         if (!moved && event.dataTransfer?.files?.length) {
           const files = Array.from(event.dataTransfer.files);
           const images = files.filter((file) => file.type.startsWith("image/"));
+          const videos = files.filter((file) => file.type.startsWith("video/"));
           if (images.length > 0) {
             event.preventDefault();
             images.forEach((image) => uploadImage(image));
+            return true;
+          }
+          if (videos.length > 0) {
+            event.preventDefault();
+            videos.forEach((video) => uploadVideo(video));
             return true;
           }
         }
@@ -318,6 +406,14 @@ export default function WikiEditor({
               }
               return true;
             }
+            if (item.type.startsWith("video/")) {
+              event.preventDefault();
+              const file = item.getAsFile();
+              if (file) {
+                uploadVideo(file);
+              }
+              return true;
+            }
           }
         }
         return false;
@@ -325,7 +421,6 @@ export default function WikiEditor({
     },
   });
 
-  // Sync external value changes
   useEffect(() => {
     if (editor && value) {
       const currentContent = JSON.stringify(editor.getJSON());
@@ -334,37 +429,18 @@ export default function WikiEditor({
           const parsed = JSON.parse(value);
           editor.commands.setContent(parsed);
         } catch {
-          // If not JSON, set as HTML content
           editor.commands.setContent(value);
         }
       }
     }
   }, [editor, value]);
 
-  const uploadImage = useCallback(
-    async (file: File) => {
-      if (!editor || isUploading.current) return;
-
-      isUploading.current = true;
-      setUploadingState(true);
-
-      try {
-        const response = await wikiImageApi.uploadImage(file);
-        editor.chain().focus().setImage({ src: response.url }).run();
-        toast.success("Изображение загружено");
-      } catch (error) {
-        console.error("Image upload failed:", error);
-        handleApiError(error, {context: "Ошибка загрузки изображения"});
-      } finally {
-        isUploading.current = false;
-        setUploadingState(false);
-      }
-    },
-    [editor]
-  );
-
   const handleImageButtonClick = useCallback(() => {
     fileInputRef.current?.click();
+  }, []);
+
+  const handleVideoButtonClick = useCallback(() => {
+    videoInputRef.current?.click();
   }, []);
 
   const handleFileSelect = useCallback(
@@ -373,12 +449,24 @@ export default function WikiEditor({
       if (files?.[0]) {
         uploadImage(files[0]);
       }
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     },
-    [uploadImage]
+    [uploadImage],
+  );
+
+  const handleVideoSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files?.[0]) {
+        uploadVideo(files[0]);
+      }
+      if (videoInputRef.current) {
+        videoInputRef.current.value = "";
+      }
+    },
+    [uploadVideo],
   );
 
   return (
@@ -392,13 +480,13 @@ export default function WikiEditor({
       <EditorToolbar
         editor={editor}
         onImageUpload={handleImageButtonClick}
+        onVideoUpload={handleVideoButtonClick}
         isUploading={uploadingState}
       />
       <Box height={height} overflowY="auto" position="relative">
         <EditorContent editor={editor} style={{ height: "100%" }} />
       </Box>
 
-      {/* Hidden file input for image upload */}
       <input
         ref={fileInputRef}
         type="file"
@@ -407,7 +495,14 @@ export default function WikiEditor({
         style={{ display: "none" }}
       />
 
-      {/* Upload indicator */}
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        onChange={handleVideoSelect}
+        style={{ display: "none" }}
+      />
+
       {uploadingState && (
         <Flex
           position="absolute"
@@ -422,7 +517,7 @@ export default function WikiEditor({
         >
           <HStack bg="bg.surface" p={4} borderRadius="md" shadow="md">
             <Spinner size="sm" />
-            <Text>Загрузка изображения...</Text>
+            <Text>Загрузка медиа...</Text>
           </HStack>
         </Flex>
       )}

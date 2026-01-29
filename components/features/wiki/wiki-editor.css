@@ -108,9 +108,33 @@
   margin: 1rem 0;
 }
 
-.wiki-editor-image.ProseMirror-selectednode {
+.wiki-editor-image.ProseMirror-selectednode,
+.wiki-editor-video.ProseMirror-selectednode,
+.wiki-editor-youtube.ProseMirror-selectednode {
   outline: 3px solid var(--chakra-colors-blue-500, #3182ce);
   outline-offset: 2px;
+}
+
+/* Videos */
+.wiki-editor-video {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  display: block;
+}
+
+/* YouTube */
+.wiki-editor-youtube {
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.wiki-editor-youtube iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
 }
 
 /* Clickable images in content viewer */

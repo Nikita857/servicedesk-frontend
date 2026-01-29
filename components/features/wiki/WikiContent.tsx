@@ -4,6 +4,8 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import Youtube from "@tiptap/extension-youtube";
+import { Video } from "./VideoExtension";
 import { useState, useEffect, useCallback } from "react";
 import { Box, Dialog, Portal, CloseButton } from "@chakra-ui/react";
 import "./wiki-editor.css";
@@ -47,6 +49,16 @@ export default function WikiContent({ content }: WikiContentProps) {
           class: "wiki-editor-link",
           target: "_blank",
           rel: "noopener noreferrer",
+        },
+      }),
+      Youtube.configure({
+        HTMLAttributes: {
+          class: "wiki-editor-youtube",
+        },
+      }),
+      Video.configure({
+        HTMLAttributes: {
+          class: "wiki-editor-video",
         },
       }),
     ],

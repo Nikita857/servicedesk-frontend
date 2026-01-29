@@ -11,6 +11,7 @@ import {
   VStack,
   HStack,
   IconButton,
+  Button,
   Portal,
   Badge,
   createListCollection,
@@ -19,6 +20,7 @@ import { Select } from "@chakra-ui/react";
 import {
   LuChevronLeft,
   LuChevronRight,
+  LuPlus,
   LuUser,
   LuShield,
   LuClock,
@@ -105,6 +107,18 @@ export function AdminTicketsView() {
               </Select.Positioner>
             </Portal>
           </Select.Root>
+
+          <Link href="/dashboard/tickets/new">
+            <Button
+              size="sm"
+              bg="gray.900"
+              color="white"
+              _hover={{ bg: "gray.800" }}
+            >
+              <LuPlus />
+              Новый тикет
+            </Button>
+          </Link>
         </HStack>
       </Flex>
 
