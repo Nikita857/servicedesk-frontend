@@ -99,8 +99,65 @@ export interface PagedWikiArticleList {
   };
 }
 
+// New types for category-based response (TreeView compatible)
+export interface WikiCategoryWithArticles {
+  id: string;
+  name: string;
+  children: WikiArticleListItem[];
+}
+
+export interface PagedWikiCategoryList {
+  content: WikiCategoryWithArticles[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
 export const wikiApi = {
-  // List all articles (paginated)
+  // List all categories with articles (paginated)
+  listCategories: async (
+    page = 0,
+    size = 5,
+    showAll = false,
+    onlyMyDepartment = false,
+    onlyPublic = false,
+  ): Promise<PagedWikiCategoryList> => {
+    const response = await api.get<ApiResponse<PagedWikiCategoryList>>("/wiki", {
+      params: { page, size, showAll, onlyMyDepartment, onlyPublic },
+    });
+    return response.data.data;
+  },
+
+  // Search categories with articles (paginated)
+  searchCategories: async (
+    query: string,
+    page = 0,
+    size = 5,
+    showAll = false,
+    onlyMyDepartment = false,
+    onlyPublic = false,
+  ): Promise<PagedWikiCategoryList> => {
+    const response = await api.get<ApiResponse<WikiCategoryWithArticles[]>>("/wiki/search", {
+      params: { q: query, page, size, showAll, onlyMyDepartment, onlyPublic },
+    });
+
+    // API returns array directly, wrap it in paged structure
+    const categories = response.data.data;
+    return {
+      content: categories,
+      page: {
+        size: size,
+        number: page,
+        totalElements: categories.length,
+        totalPages: 1,
+      },
+    };
+  },
+
+  // List all articles (paginated) - LEGACY, kept for backward compatibility
   list: async (
     page = 0,
     size = 20,

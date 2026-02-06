@@ -47,6 +47,7 @@ export default function CreateUser({
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNewUser({
         username: "",
         password: "",

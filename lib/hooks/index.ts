@@ -8,6 +8,7 @@ export { useDashboardQuery } from "./useDashboardQuery";
 export { useWikiArticlesQuery } from "./useWikiArticlesQuery";
 export { useWikiArticleQuery } from "./useWikiArticleQuery";
 export { useWikiCategoriesQuery } from "./useWikiCategoriesQuery";
+export { useWikiCategoriesWithArticlesQuery } from "./useWikiCategoriesWithArticlesQuery";
 
 // Categories
 export {
