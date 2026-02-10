@@ -1,5 +1,7 @@
 // Ticket types based on OpenAPI spec
 
+import { Page } from "./api";
+
 export type TicketStatus =
   | "NEW"
   | "OPEN"
@@ -120,12 +122,7 @@ export interface ChangeStatusRequest {
 // Paginated response
 export interface PagedTicketList {
   content: TicketListItem[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-  first: boolean;
-  last: boolean;
+  page: Page
 }
 
 // Status labels and colors

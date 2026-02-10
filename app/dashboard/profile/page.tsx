@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
   Box,
   Heading,
@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [positionId, setPositionId] = useState<number | null>(null);
 
-  const hasInitializedOrg = useRef(false);
+  const [orgInitialized, setOrgInitialized] = useState(false);
 
   // Fetch profile
   const { data: profile, isLoading } = useQuery({
@@ -84,36 +84,32 @@ export default function ProfilePage() {
     [positions],
   );
 
-  // Initialize org IDs from profile names
-  useEffect(() => {
-    if (profile && departments.length > 0 && !hasInitializedOrg.current) {
-      const dept = departments.find((d) => d.name === profile.department);
-      if (dept) {
-        setDepartmentId(dept.id);
-      } else {
-        hasInitializedOrg.current = true;
-      }
+  // Initialize org IDs from profile (during render, not in effect)
+  if (!orgInitialized && profile && departments.length > 0 && departmentId === null) {
+    const dept = departments.find((d) => d.name === profile.department);
+    if (dept) {
+      setDepartmentId(dept.id);
+    } else {
+      setOrgInitialized(true);
     }
-  }, [profile, departments]);
+  }
 
-  useEffect(() => {
-    if (profile && positions.length > 0 && !hasInitializedOrg.current) {
-      const pos = positions.find((p) => p.name === profile.position);
-      if (pos) {
-        setPositionId(pos.id);
-      }
-      hasInitializedOrg.current = true;
+  if (!orgInitialized && profile && positions.length > 0 && positionId === null && departmentId !== null) {
+    const pos = positions.find((p) => p.name === profile.position);
+    if (pos) {
+      setPositionId(pos.id);
     }
-  }, [profile, positions]);
+    setOrgInitialized(true);
+  }
 
-  // Initialize form with profile data
-  useEffect(() => {
-    if (profile) {
-      setFio(profile.fio || "");
-      setEmail(profile.email || "");
-      setTelegramId(profile.telegramId?.toString() || "");
-    }
-  }, [profile]);
+  // Initialize form with profile data (during render, not in effect)
+  const [formInitialized, setFormInitialized] = useState(false);
+  if (!formInitialized && profile) {
+    setFio(profile.fio || "");
+    setEmail(profile.email || "");
+    setTelegramId(profile.telegramId?.toString() || "");
+    setFormInitialized(true);
+  }
 
   // Mutations
   const updateProfileMutation = useMutation({

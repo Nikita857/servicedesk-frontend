@@ -336,7 +336,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     );
 
     return unsubscribe;
-  }, [isConnected, ticketId, subscribeToAttachments]);
+  }, [isConnected, ticketId, subscribeToAttachments, fetchMessages]);
 
   return {
     messages,

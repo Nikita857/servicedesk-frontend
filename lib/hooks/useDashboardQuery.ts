@@ -22,10 +22,6 @@ interface UseDashboardQueryReturn {
   refetch: () => void;
 }
 
-/**
- * Hook for fetching dashboard data using TanStack Query
- * Replaces legacy useState + useEffect pattern
- */
 export function useDashboardQuery(): UseDashboardQueryReturn {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
@@ -35,15 +31,17 @@ export function useDashboardQuery(): UseDashboardQueryReturn {
   const statsQuery = useQuery({
     queryKey: queryKeys.reports.ticketsByStatus(),
     queryFn: async (): Promise<DashboardStats> => {
-      const [statusStats, pendingCount, lineStats] = await Promise.all([
+      const [statusStats, pendingCount, lineStatsResponse] = await Promise.all([
         isAdmin
           ? reportsApi.getStatsByStatus().catch(() => [])
           : Promise.resolve([]),
         isSpecialist ? assignmentApi.getPendingCount() : Promise.resolve(0),
         isSpecialist
-          ? statsApi.getStatsByAllLines().catch(() => [])
-          : Promise.resolve([]),
+          ? statsApi.getStatsByAllLines().catch(() => null)
+          : Promise.resolve(null),
       ]);
+
+      const lineStats = lineStatsResponse?.content ?? [];
 
       const getCount = (status: string) =>
         statusStats.find((s) => s.status === status)?.count ?? 0;
@@ -70,7 +68,7 @@ export function useDashboardQuery(): UseDashboardQueryReturn {
         open: openCount,
         resolved: resolvedCount,
         closed: closedCount,
-        overdue: 0, // TODO: Add backend endpoint for overdue count
+        overdue: 0,
         pendingCount,
       };
     },

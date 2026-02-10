@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Box,
   Grid,
@@ -15,23 +14,17 @@ import {
 import { LuTicket, LuClock, LuArchive, LuTimer } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useQuery } from "@tanstack/react-query";
-import {
-  statsApi,
-  type UserTicketStats,
-  type TicketPageResponse,
-} from "@/lib/api/stats";
+import { statsApi } from "@/lib/api/stats";
 import { queryKeys } from "@/lib/queryKeys";
-import { TicketListModal } from "./TicketListModal";
 
 interface StatCardProps {
   label: string;
   value: number;
   icon: IconType;
   color: string;
-  onClick?: () => void;
 }
 
-function StatCard({ label, value, icon, color, onClick }: StatCardProps) {
+function StatCard({ label, value, icon, color }: StatCardProps) {
   return (
     <Box
       bg="bg.surface"
@@ -39,12 +32,6 @@ function StatCard({ label, value, icon, color, onClick }: StatCardProps) {
       borderWidth="1px"
       borderColor="border.default"
       p={5}
-      cursor={onClick ? "pointer" : "default"}
-      onClick={onClick}
-      _hover={
-        onClick ? { borderColor: color, transform: "translateY(-2px)" } : {}
-      }
-      transition="all 0.2s"
     >
       <Flex align="flex-start" justify="space-between">
         <VStack align="flex-start" gap={1}>
@@ -63,48 +50,16 @@ function StatCard({ label, value, icon, color, onClick }: StatCardProps) {
   );
 }
 
-type ModalState = {
-  isOpen: boolean;
-  title: string;
-  statusKey: string;
-  data?: TicketPageResponse;
-};
-
 /**
  * Простой дашборд для обычных пользователей
  * Показывает только их собственную статистику тикетов
  */
 export function UserStatsDashboard() {
-  const [modal, setModal] = useState<ModalState>({
-    isOpen: false,
-    title: "",
-    statusKey: "",
-  });
-
-  // Fetch stats WITH tickets included
   const { data: stats, isLoading } = useQuery({
-    queryKey: [...queryKeys.stats.my(), { includeTickets: true }],
-    queryFn: () => statsApi.getMyStats({ includeTickets: true, pageSize: 10 }),
+    queryKey: queryKeys.stats.my(),
+    queryFn: () => statsApi.getMyStats(),
     staleTime: 60 * 1000,
   });
-
-  const handleCardClick = (title: string, statusKey: string) => {
-    if (!stats?.ticketsByStatus?.[statusKey]) return;
-    setModal({
-      isOpen: true,
-      title,
-      statusKey,
-      data: stats.ticketsByStatus[statusKey],
-    });
-  };
-
-  const handlePageChange = async (
-    page: number,
-  ): Promise<TicketPageResponse | undefined> => {
-    // For now, the API doesn't support pagination per status separately,
-    // so we just return the current data. This is a placeholder for future enhancement.
-    return modal.data;
-  };
 
   if (isLoading) {
     return (
@@ -122,36 +77,11 @@ export function UserStatsDashboard() {
     );
   }
 
-  // Map UI labels to status keys
   const cards = [
-    {
-      label: "Всего",
-      value: stats.total,
-      icon: LuTicket,
-      color: "blue.500",
-      statusKey: "",
-    },
-    {
-      label: "В работе",
-      value: stats.open,
-      icon: LuClock,
-      color: "orange.500",
-      statusKey: "OPEN",
-    },
-    {
-      label: "Закрыто",
-      value: stats.closed,
-      icon: LuArchive,
-      color: "gray.500",
-      statusKey: "CLOSED",
-    },
-    {
-      label: "Ожидание",
-      value: stats.waiting,
-      icon: LuTimer,
-      color: "yellow.500",
-      statusKey: "PENDING_CLOSURE",
-    },
+    { label: "Всего", value: stats.total, icon: LuTicket, color: "blue.500" },
+    { label: "В работе", value: stats.open, icon: LuClock, color: "orange.500" },
+    { label: "Закрыто", value: stats.closed, icon: LuArchive, color: "gray.500" },
+    { label: "Ожидание", value: stats.waiting, icon: LuTimer, color: "yellow.500" },
   ];
 
   return (
@@ -174,23 +104,10 @@ export function UserStatsDashboard() {
               value={card.value}
               icon={card.icon}
               color={card.color}
-              onClick={
-                card.statusKey && stats.ticketsByStatus?.[card.statusKey]
-                  ? () => handleCardClick(card.label, card.statusKey)
-                  : undefined
-              }
             />
           </GridItem>
         ))}
       </Grid>
-
-      <TicketListModal
-        isOpen={modal.isOpen}
-        onClose={() => setModal({ ...modal, isOpen: false })}
-        title={modal.title}
-        initialData={modal.data}
-        onPageChange={handlePageChange}
-      />
     </Box>
   );
 }

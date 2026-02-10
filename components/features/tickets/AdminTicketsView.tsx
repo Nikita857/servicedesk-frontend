@@ -10,63 +10,28 @@ import {
   Spinner,
   VStack,
   HStack,
-  IconButton,
   Button,
-  Portal,
-  Badge,
-  createListCollection,
+  Center,
 } from "@chakra-ui/react";
-import { Select } from "@chakra-ui/react";
-import {
-  LuChevronLeft,
-  LuChevronRight,
-  LuPlus,
-  LuUser,
-  LuShield,
-  LuClock,
-  LuUserCheck,
-} from "react-icons/lu";
+import { LuPlus } from "react-icons/lu";
 import Link from "next/link";
-import { adminApi } from "@/lib/api/admin";
-import { formatDate } from "@/lib/utils";
-import {
-  ticketStatusConfig,
-  ticketPriorityConfig,
-  TicketStatus,
-  TicketPriority,
-  type TicketListItem,
-} from "@/types/ticket";
+import { ticketApi } from "@/lib/api/tickets";
+import { queryKeys } from "@/lib/queryKeys";
+import { TicketCard } from "./TicketCard";
+import { SDPagination } from "@/components/ui/SDPagination";
 
-type AdminFilter = "new" | "closed";
-
-const filterCollection = createListCollection({
-  items: [
-    { label: "Невзятые", value: "new" },
-    { label: "Закрытые", value: "closed" },
-  ],
-});
+const PAGE_SIZE = 7;
 
 export function AdminTicketsView() {
-  const [filter, setFilter] = useState<AdminFilter>("new");
   const [page, setPage] = useState(0);
-  const pageSize = 10;
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-tickets", filter, page],
-    queryFn: () =>
-      filter === "new"
-        ? adminApi.getNewTickets(page, pageSize)
-        : adminApi.getClosedTickets(page, pageSize),
+    queryKey: queryKeys.tickets.list({ filter: "all", page }),
+    queryFn: () => ticketApi.list(page, PAGE_SIZE),
     staleTime: 30 * 1000,
   });
 
   const tickets = data?.content ?? [];
-  const totalPages = data?.page?.totalPages ?? 0;
-
-  const handleFilterChange = (newFilter: AdminFilter) => {
-    setFilter(newFilter);
-    setPage(0);
-  };
 
   return (
     <Box>
@@ -85,29 +50,6 @@ export function AdminTicketsView() {
         </Box>
 
         <HStack gap={3}>
-          <Select.Root
-            collection={filterCollection}
-            value={[filter]}
-            onValueChange={(e) => handleFilterChange(e.value[0] as AdminFilter)}
-            size="sm"
-            width="180px"
-          >
-            <Select.Trigger>
-              <Select.ValueText placeholder="Фильтр" />
-            </Select.Trigger>
-            <Portal>
-              <Select.Positioner>
-                <Select.Content>
-                  {filterCollection.items.map((item) => (
-                    <Select.Item key={item.value} item={item}>
-                      {item.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Positioner>
-            </Portal>
-          </Select.Root>
-
           <Link href="/dashboard/tickets/new">
             <Button
               size="sm"
@@ -138,110 +80,25 @@ export function AdminTicketsView() {
           borderWidth="1px"
           borderColor="border.default"
         >
-          <Text color="fg.muted">
-            {filter === "new" ? "Нет невзятых тикетов" : "Нет закрытых тикетов"}
-          </Text>
+          <Text color="fg.muted">Тикеты не найдены</Text>
         </Flex>
       ) : (
         <VStack gap={3} align="stretch">
           {tickets.map((ticket) => (
-            <AdminTicketCard key={ticket.id} ticket={ticket} />
+            <TicketCard key={ticket.id} ticket={ticket} />
           ))}
+
+          {data && data.page.totalPages > 1 && (
+            <Center>
+              <SDPagination
+                page={data.page}
+                action={setPage}
+                size="sm"
+              />
+            </Center>
+          )}
         </VStack>
       )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Flex mt={6} justify="center" align="center" gap={4}>
-          <IconButton
-            aria-label="Previous page"
-            variant="ghost"
-            onClick={() => setPage(Math.max(0, page - 1))}
-            disabled={page === 0}
-          >
-            <LuChevronLeft />
-          </IconButton>
-
-          <Text color="fg.muted" fontSize="sm">
-            Страница {page + 1} из {totalPages}
-          </Text>
-
-          <IconButton
-            aria-label="Next page"
-            variant="ghost"
-            onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-            disabled={page >= totalPages - 1}
-          >
-            <LuChevronRight />
-          </IconButton>
-        </Flex>
-      )}
     </Box>
-  );
-}
-
-// Admin ticket card component
-function AdminTicketCard({ ticket }: { ticket: TicketListItem }) {
-  const statusConf = ticketStatusConfig[ticket.status] || {
-    label: ticket.status,
-    color: "gray",
-  };
-  const priorityConf = ticketPriorityConfig[ticket.priority] || {
-    label: ticket.priority,
-    color: "gray",
-  };
-
-  return (
-    <Link href={`/dashboard/tickets/${ticket.id}`}>
-      <Box
-        bg="bg.surface"
-        borderRadius="xl"
-        borderWidth="1px"
-        borderColor="border.default"
-        p={4}
-        _hover={{ borderColor: "gray.300", shadow: "sm" }}
-        transition="all 0.2s"
-        cursor="pointer"
-      >
-        <Flex justify="space-between" align="flex-start" wrap="wrap" gap={3}>
-          <Box flex={1} minW="200px">
-            <HStack gap={2} mb={2}>
-              <Text fontWeight="medium" color="fg.default">
-                #{ticket.id}
-              </Text>
-              <Badge colorPalette={statusConf.color}>{statusConf.label}</Badge>
-              <Badge variant="subtle" colorPalette={priorityConf.color}>
-                {priorityConf.label}
-              </Badge>
-            </HStack>
-
-            <Text fontSize="md" fontWeight="medium" color="fg.default" mb={2}>
-              {ticket.title}
-            </Text>
-
-            <HStack gap={4} fontSize="sm" color="fg.muted" flexWrap="wrap">
-              <HStack gap={1}>
-                <LuUser size={14} />
-                <Text>Автор: {ticket.createdByUsername}</Text>
-              </HStack>
-              {ticket.assignedToUsername && (
-                <HStack gap={1}>
-                  <LuUserCheck size={14} />
-                  <Text>Исполнитель: {ticket.assignedToUsername}</Text>
-                </HStack>
-              )}
-              <HStack gap={1}>
-                <LuShield size={14} />
-                <Text>Линия: {ticket.supportLineName || "Не назначена"}</Text>
-              </HStack>
-              <HStack gap={1}>
-                <LuClock size={14} />
-                <Text>{formatDate(ticket.createdAt)}</Text>
-              </HStack>
-            </HStack>
-          </Box>
-        </Flex>
-      </Box>
-    </Link>
   );
 }

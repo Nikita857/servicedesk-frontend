@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -13,60 +12,60 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { Dialog } from "@chakra-ui/react";
-import { LuChevronLeft, LuChevronRight, LuX } from "react-icons/lu";
+import { LuX } from "react-icons/lu";
 import Link from "next/link";
-import type { TicketListItem } from "@/types/ticket";
-import type { TicketPageResponse } from "@/lib/api/stats";
+import { useQuery } from "@tanstack/react-query";
+import { statsApi } from "@/lib/api/stats";
+
+import type { TicketListItem, TicketStatus } from "@/types/ticket";
 import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
+import { useState } from "react";
+import { SDPagination } from "@/components/ui/SDPagination";
+
+const PAGE_SIZE = 5;
 
 interface TicketListModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  initialData?: TicketPageResponse;
-  onPageChange?: (page: number) => Promise<TicketPageResponse | undefined>;
+  status: TicketStatus | null;
+  lineId: number | null;
 }
 
 export function TicketListModal({
   isOpen,
   onClose,
   title,
-  initialData,
-  onPageChange,
+  status,
+  lineId,
 }: TicketListModalProps) {
-  const [data, setData] = useState<TicketPageResponse | undefined>(initialData);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [page, setPage] = useState(0);
 
-  // Sync data with initialData when it changes (e.g., when clicking a different card)
-  useEffect(() => {
-    setData(initialData);
-    setCurrentPage(0);
-  }, [initialData]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["stats", "by-line-with-tickets", lineId, status, page],
+    queryFn: () =>
+      statsApi.listBySupportLineAndStatus({
+        ticketStatus: status!,
+        lineId: lineId!,
+        page,
+        size: PAGE_SIZE,
+      }),
+    enabled: isOpen && status !== null && lineId !== null,
+  });
 
-  const handlePageChange = async (newPage: number) => {
-    if (!onPageChange || isLoading) return;
-    setIsLoading(true);
-    try {
-      const result = await onPageChange(newPage);
-      if (result) {
-        setData(result);
-        setCurrentPage(newPage);
-      }
-    } finally {
-      setIsLoading(false);
+  const tickets = data?.content ?? [];
+  const totalPages = data?.page?.totalPages ?? 0;
+
+  // Reset page when modal opens with a new status
+  const handleOpenChange = (details: { open: boolean }) => {
+    if (!details.open) {
+      onClose();
+      setPage(0);
     }
   };
 
-  const tickets = data?.content || [];
-  const totalPages = data ? Math.ceil(data.totalCount / data.size) : 0;
-
   return (
-    <Dialog.Root
-      open={isOpen}
-      onOpenChange={(e) => !e.open && onClose()}
-      size="lg"
-    >
+    <Dialog.Root open={isOpen} onOpenChange={handleOpenChange} size="lg">
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -102,36 +101,8 @@ export function TicketListModal({
               )}
             </Dialog.Body>
 
-            {totalPages > 1 && (
-              <Dialog.Footer
-                borderTopWidth="1px"
-                borderColor="border.default"
-                justifyContent="center"
-              >
-                <HStack gap={4}>
-                  <IconButton
-                    aria-label="Предыдущая страница"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 0 || isLoading}
-                  >
-                    <LuChevronLeft />
-                  </IconButton>
-                  <Text fontSize="sm" color="fg.muted">
-                    {currentPage + 1} / {totalPages}
-                  </Text>
-                  <IconButton
-                    aria-label="Следующая страница"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages - 1 || isLoading}
-                  >
-                    <LuChevronRight />
-                  </IconButton>
-                </HStack>
-              </Dialog.Footer>
+            {data != null && (totalPages > 1)&&(
+              <SDPagination page={data?.page} action={setPage} size="sm"/>
             )}
           </Dialog.Content>
         </Dialog.Positioner>

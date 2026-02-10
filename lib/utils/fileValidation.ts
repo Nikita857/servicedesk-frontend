@@ -28,7 +28,7 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 /**
  * Максимальный размер файла в человекочитаемом формате
  */
-export const MAX_FILE_SIZE_LABEL = '10 MB';
+export const MAX_FILE_SIZE_LABEL = '200 MB';
 
 /**
  * Разрешённые MIME-типы изображений

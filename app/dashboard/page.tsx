@@ -25,6 +25,7 @@ import {
   SpecialistStatsDashboard,
   AdminStatsDashboard,
 } from "@/components/features/dashboard";
+import { UserTicketsView} from "@/components/features/tickets/UserTicketsView";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -134,6 +135,9 @@ export default function DashboardPage() {
             )}
           </Box>
         </Flex>
+      )}
+      {(!isAdmin && !isSpecialist)&&(
+        <UserTicketsView/>
       )}
 
       {/* Дашборд статистики */}

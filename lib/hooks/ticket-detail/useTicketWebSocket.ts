@@ -1,7 +1,9 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers";
 import { toast } from "@/lib/utils";
+import { queryKeys } from "@/lib/queryKeys";
 import type { Ticket } from "@/types/ticket";
 import { User } from "@/types";
 
@@ -59,6 +61,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
   } = options;
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isConnected, subscribeToTicketUpdates, subscribeToTicketDeleted } =
     useWebSocket();
 
@@ -170,6 +173,11 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
           toast.ticketUpdated(ticketId, message);
         }
 
+        // Invalidate caches
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
+
         // Update ticket state
         updateCallbackRef.current?.(updatedTicket);
       }
@@ -179,6 +187,11 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
       if (showToasts && !shouldSuppressToast(ticketId)) {
         toast.warning(`Тикет #${ticketId} удалён`);
       }
+
+      // Invalidate caches
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+
       deleteCallbackRef.current?.();
       router.push("/dashboard/tickets");
     });
@@ -196,6 +209,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     generateChangeMessage,
     showToasts,
     router,
+    queryClient,
   ]);
 
   return { isConnected };

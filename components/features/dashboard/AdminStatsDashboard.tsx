@@ -12,197 +12,52 @@ import {
   HStack,
   Spinner,
 } from "@chakra-ui/react";
-import { LuUsers, LuGlobe, LuInbox } from "react-icons/lu";
+import { LuGlobe, LuInbox } from "react-icons/lu";
 import { useQuery } from "@tanstack/react-query";
-import {
-  statsApi,
-  type LineTicketStats,
-  type TicketPageResponse,
-} from "@/lib/api/stats";
+import { statsApi } from "@/lib/api/stats";
 import { queryKeys } from "@/lib/queryKeys";
 import { TicketListModal } from "./TicketListModal";
+import { StatBox, LineStatsCard } from "./DashboardStatComponents";
+import type { TicketStatus } from "@/types/ticket";
 
 type ModalState = {
   isOpen: boolean;
   title: string;
-  data?: TicketPageResponse;
+  status: TicketStatus | null;
+  lineId: number | null;
 };
-
-interface StatBoxProps {
-  label: string;
-  value: number;
-  color: string;
-  bgColor: string;
-  darkBgColor: string;
-  onClick?: () => void;
-}
-
-function StatBox({
-  label,
-  value,
-  color,
-  bgColor,
-  darkBgColor,
-  onClick,
-}: StatBoxProps) {
-  return (
-    <Box
-      textAlign="center"
-      p={4}
-      bg={bgColor}
-      borderRadius="lg"
-      _dark={{ bg: darkBgColor }}
-      cursor={onClick ? "pointer" : "default"}
-      onClick={onClick}
-      _hover={onClick ? { transform: "scale(1.02)", opacity: 0.9 } : {}}
-      transition="all 0.15s"
-    >
-      <Text fontSize="3xl" fontWeight="bold" color={color}>
-        {value}
-      </Text>
-      <Text fontSize="sm" color="fg.muted">
-        {label}
-      </Text>
-    </Box>
-  );
-}
-
-interface LineStatBoxProps {
-  label: string;
-  value: number;
-  color: string;
-  onClick?: () => void;
-}
-
-function LineStatBox({ label, value, color, onClick }: LineStatBoxProps) {
-  return (
-    <Box
-      textAlign="center"
-      p={3}
-      bg="bg.subtle"
-      borderRadius="lg"
-      cursor={onClick ? "pointer" : "default"}
-      onClick={onClick}
-      _hover={onClick ? { bg: "bg.muted", transform: "scale(1.02)" } : {}}
-      transition="all 0.15s"
-    >
-      <Text fontSize="xl" fontWeight="bold" color={color}>
-        {value}
-      </Text>
-      <Text fontSize="xs" color="fg.muted">
-        {label}
-      </Text>
-    </Box>
-  );
-}
-
-function LineStatsCard({
-  line,
-  onStatClick,
-}: {
-  line: LineTicketStats;
-  onStatClick: (title: string, statusKey: string) => void;
-}) {
-  const stats = [
-    {
-      label: "Новых",
-      value: line.newTickets,
-      color: "blue.500",
-      statusKey: "NEW",
-    },
-    {
-      label: "В работе",
-      value: line.open,
-      color: "orange.500",
-      statusKey: "OPEN",
-    },
-    {
-      label: "Закрыто",
-      value: line.closed,
-      color: "gray.500",
-      statusKey: "CLOSED",
-    },
-    {
-      label: "Без назначения",
-      value: line.unassigned,
-      color: "yellow.500",
-      statusKey: "NEW",
-    },
-  ];
-
-  return (
-    <Box
-      bg="bg.surface"
-      borderRadius="xl"
-      borderWidth="1px"
-      borderColor="border.default"
-      p={5}
-    >
-      <Flex justify="space-between" align="center" mb={4}>
-        <HStack gap={2}>
-          <Icon as={LuUsers} color="blue.500" />
-          <Heading size="md">{line.lineName}</Heading>
-        </HStack>
-        <Text color="fg.muted" fontSize="sm">
-          Всего: {line.total}
-        </Text>
-      </Flex>
-
-      <Grid
-        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
-        gap={3}
-      >
-        {stats.map((stat) => (
-          <LineStatBox
-            key={stat.label}
-            label={stat.label}
-            value={stat.value}
-            color={stat.color}
-            onClick={
-              line.ticketsByStatus?.[stat.statusKey]
-                ? () =>
-                    onStatClick(
-                      `${line.lineName} — ${stat.label}`,
-                      stat.statusKey,
-                    )
-                : undefined
-            }
-          />
-        ))}
-      </Grid>
-    </Box>
-  );
-}
 
 /**
  * Дашборд для администраторов
- * Показывает статистику по ВСЕМ линиям поддержки
+ * Показывает глобальную статистику и статистику по линиям поддержки
  */
 export function AdminStatsDashboard() {
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
     title: "",
+    status: null,
+    lineId: null,
   });
 
-  // Fetch stats WITH tickets
-  const { data: lineStats, isLoading } = useQuery({
-    queryKey: [...queryKeys.stats.byAllLines(), { includeTickets: true }],
-    queryFn: () =>
-      statsApi.getStatsByAllLines({ includeTickets: true, pageSize: 10 }),
+  // Глобальная статистика
+  const { data: globalStats, isLoading: isGlobalLoading } = useQuery({
+    queryKey: queryKeys.stats.global(),
+    queryFn: () => statsApi.getGlobalStats(),
     staleTime: 60 * 1000,
   });
 
-  const handleLineStatClick = (
-    line: LineTicketStats,
-    title: string,
-    statusKey: string,
-  ) => {
-    if (!line.ticketsByStatus?.[statusKey]) return;
-    setModal({
-      isOpen: true,
-      title,
-      data: line.ticketsByStatus[statusKey],
-    });
+  // Статистика по линиям
+  const { data: lineStatsResponse, isLoading: isLinesLoading } = useQuery({
+    queryKey: queryKeys.stats.byAllLines(),
+    queryFn: () => statsApi.getStatsByAllLines({ page: 0, size: 20 }),
+    staleTime: 60 * 1000,
+  });
+
+  const lineStats = lineStatsResponse?.content;
+  const isLoading = isGlobalLoading || isLinesLoading;
+
+  const handleStatClick = (title: string, status: TicketStatus, lineId: number) => {
+    setModal({ isOpen: true, title, status, lineId });
   };
 
   if (isLoading) {
@@ -213,54 +68,45 @@ export function AdminStatsDashboard() {
     );
   }
 
-  // Подсчитаем общую статистику
-  const totals = lineStats?.reduce(
-    (acc, line) => ({
-      total: acc.total + line.total,
-      newTickets: acc.newTickets + line.newTickets,
-      open: acc.open + line.open,
-      resolved: acc.resolved + line.resolved,
-      closed: acc.closed + line.closed,
-      unassigned: acc.unassigned + line.unassigned,
-    }),
-    { total: 0, newTickets: 0, open: 0, resolved: 0, closed: 0, unassigned: 0 },
-  );
-
   const totalStats = [
     {
       label: "Новых",
-      value: totals?.newTickets || 0,
+      value: globalStats?.byStatus?.["NEW"] ?? 0,
       color: "blue.500",
       bgColor: "blue.50",
       darkBgColor: "blue.900/20",
+      statusKey: "NEW" as TicketStatus,
     },
     {
       label: "В работе",
-      value: totals?.open || 0,
+      value: globalStats?.open ?? 0,
       color: "orange.500",
       bgColor: "orange.50",
       darkBgColor: "orange.900/20",
+      statusKey: "OPEN" as TicketStatus,
     },
     {
       label: "Закрыто",
-      value: totals?.closed || 0,
+      value: globalStats?.closed ?? 0,
       color: "gray.500",
       bgColor: "gray.50",
       darkBgColor: "gray.900/20",
+      statusKey: "CLOSED" as TicketStatus,
     },
     {
-      label: "Без назначения",
-      value: totals?.unassigned || 0,
+      label: "Ожидание",
+      value: globalStats?.waiting ?? 0,
       color: "yellow.500",
       bgColor: "yellow.50",
       darkBgColor: "yellow.900/20",
+      statusKey: "PENDING" as TicketStatus,
     },
   ];
 
   return (
     <VStack align="stretch" gap={6}>
       {/* Общая статистика */}
-      {totals && (
+      {globalStats && (
         <Box
           bg="bg.surface"
           borderRadius="xl"
@@ -272,7 +118,7 @@ export function AdminStatsDashboard() {
             <Icon as={LuGlobe} color="purple.500" />
             <Heading size="md">Общая статистика</Heading>
             <Text color="fg.muted" fontSize="sm" ml="auto">
-              Всего тикетов: {totals.total}
+              Всего тикетов: {globalStats.total}
             </Text>
           </HStack>
 
@@ -288,6 +134,7 @@ export function AdminStatsDashboard() {
                 color={stat.color}
                 bgColor={stat.bgColor}
                 darkBgColor={stat.darkBgColor}
+                fontSize="3xl"
               />
             ))}
           </Grid>
@@ -307,9 +154,7 @@ export function AdminStatsDashboard() {
               <LineStatsCard
                 key={line.lineId}
                 line={line}
-                onStatClick={(title, statusKey) =>
-                  handleLineStatClick(line, title, statusKey)
-                }
+                onStatClick={handleStatClick}
               />
             ))}
           </VStack>
@@ -331,7 +176,8 @@ export function AdminStatsDashboard() {
         isOpen={modal.isOpen}
         onClose={() => setModal({ ...modal, isOpen: false })}
         title={modal.title}
-        initialData={modal.data}
+        status={modal.status}
+        lineId={modal.lineId}
       />
     </VStack>
   );

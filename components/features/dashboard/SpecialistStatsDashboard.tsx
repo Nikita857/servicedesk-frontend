@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Box,
-  Grid,
   Heading,
   Text,
   Flex,
@@ -12,128 +11,20 @@ import {
   HStack,
   Spinner,
 } from "@chakra-ui/react";
-import { LuUsers, LuSparkles, LuUserX } from "react-icons/lu";
+import { LuSparkles, LuUserX } from "react-icons/lu";
 import { useQuery } from "@tanstack/react-query";
-import {
-  statsApi,
-  type LineTicketStats,
-  type TicketPageResponse,
-} from "@/lib/api/stats";
+import { statsApi } from "@/lib/api/stats";
 import { queryKeys } from "@/lib/queryKeys";
 import { TicketListModal } from "./TicketListModal";
+import { LineStatsCard } from "./DashboardStatComponents";
+import type { TicketStatus } from "@/types/ticket";
 
 type ModalState = {
   isOpen: boolean;
   title: string;
-  data?: TicketPageResponse;
+  status: TicketStatus | null;
+  lineId: number | null;
 };
-
-interface StatBoxProps {
-  label: string;
-  value: number;
-  color: string;
-  onClick?: () => void;
-}
-
-function StatBox({ label, value, color, onClick }: StatBoxProps) {
-  return (
-    <Box
-      textAlign="center"
-      p={3}
-      bg="bg.subtle"
-      borderRadius="lg"
-      cursor={onClick ? "pointer" : "default"}
-      onClick={onClick}
-      _hover={onClick ? { bg: "bg.muted", transform: "scale(1.02)" } : {}}
-      transition="all 0.15s"
-    >
-      <Text fontSize="2xl" fontWeight="bold" color={color}>
-        {value}
-      </Text>
-      <Text fontSize="xs" color="fg.muted">
-        {label}
-      </Text>
-    </Box>
-  );
-}
-
-function LineStatsCard({
-  line,
-  onStatClick,
-}: {
-  line: LineTicketStats;
-  onStatClick: (title: string, statusKey: string) => void;
-}) {
-  const stats = [
-    {
-      label: "Новых",
-      value: line.newTickets,
-      color: "blue.500",
-      statusKey: "NEW",
-    },
-    {
-      label: "В работе",
-      value: line.open,
-      color: "orange.500",
-      statusKey: "OPEN",
-    },
-    {
-      label: "Закрыто",
-      value: line.closed,
-      color: "gray.500",
-      statusKey: "CLOSED",
-    },
-    {
-      label: "Без назначения",
-      value: line.unassigned,
-      color: "yellow.500",
-      statusKey: "NEW",
-    },
-  ];
-
-  return (
-    <Box
-      bg="bg.surface"
-      borderRadius="xl"
-      borderWidth="1px"
-      borderColor="border.default"
-      p={5}
-    >
-      <Flex justify="space-between" align="center" mb={4}>
-        <HStack gap={2}>
-          <Icon as={LuUsers} color="blue.500" />
-          <Heading size="md">{line.lineName}</Heading>
-        </HStack>
-        <Text color="fg.muted" fontSize="sm">
-          Всего: {line.total}
-        </Text>
-      </Flex>
-
-      <Grid
-        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
-        gap={3}
-      >
-        {stats.map((stat) => (
-          <StatBox
-            key={stat.label}
-            label={stat.label}
-            value={stat.value}
-            color={stat.color}
-            onClick={
-              line.ticketsByStatus?.[stat.statusKey]
-                ? () =>
-                    onStatClick(
-                      `${line.lineName} — ${stat.label}`,
-                      stat.statusKey,
-                    )
-                : undefined
-            }
-          />
-        ))}
-      </Grid>
-    </Box>
-  );
-}
 
 /**
  * Дашборд для специалистов
@@ -143,29 +34,20 @@ export function SpecialistStatsDashboard() {
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
     title: "",
+    status: null,
+    lineId: null,
   });
-  const [currentLine, setCurrentLine] = useState<LineTicketStats | null>(null);
 
-  // Fetch stats WITH tickets
-  const { data: lineStats, isLoading } = useQuery({
-    queryKey: [...queryKeys.stats.byAllLines(), { includeTickets: true }],
-    queryFn: () =>
-      statsApi.getStatsByAllLines({ includeTickets: true, pageSize: 10 }),
+  const { data: lineStatsResponse, isLoading } = useQuery({
+    queryKey: queryKeys.stats.byAllLines(),
+    queryFn: () => statsApi.getStatsByAllLines({ page: 0, size: 20 }),
     staleTime: 60 * 1000,
   });
 
-  const handleStatClick = (
-    line: LineTicketStats,
-    title: string,
-    statusKey: string,
-  ) => {
-    if (!line.ticketsByStatus?.[statusKey]) return;
-    setCurrentLine(line);
-    setModal({
-      isOpen: true,
-      title,
-      data: line.ticketsByStatus[statusKey],
-    });
+  const lineStats = lineStatsResponse?.content;
+
+  const handleStatClick = (title: string, status: TicketStatus, lineId: number) => {
+    setModal({ isOpen: true, title, status, lineId });
   };
 
   if (isLoading) {
@@ -189,9 +71,7 @@ export function SpecialistStatsDashboard() {
             <LineStatsCard
               key={line.lineId}
               line={line}
-              onStatClick={(title, statusKey) =>
-                handleStatClick(line, title, statusKey)
-              }
+              onStatClick={handleStatClick}
             />
           ))}
         </VStack>
@@ -215,7 +95,8 @@ export function SpecialistStatsDashboard() {
         isOpen={modal.isOpen}
         onClose={() => setModal({ ...modal, isOpen: false })}
         title={modal.title}
-        initialData={modal.data}
+        status={modal.status}
+        lineId={modal.lineId}
       />
     </Box>
   );

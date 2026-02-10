@@ -1,21 +1,10 @@
 import { SenderType } from "@/types";
 import api from "./client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListItem } from "@/types/ticket";
 import { handleApiError } from "../utils";
 
 // ==================== Types ====================
-
-// Paginated response structure from admin API (different from standard PaginatedResponse)
-export interface AdminPaginatedResponse<T> {
-  content: T[];
-  page: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-}
 
 export interface AdminUser {
   id: number;
@@ -63,14 +52,14 @@ export const adminApi = {
     page: number = 0,
     size: number = 20,
     search?: string,
-  ): Promise<AdminPaginatedResponse<AdminUser>> => {
+  ): Promise<PaginatedResponse<AdminUser>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
     if (search) params.append("search", search);
 
     const response = await api.get<
-      ApiResponse<AdminPaginatedResponse<AdminUser>>
+      ApiResponse<PaginatedResponse<AdminUser>>
     >(`/admin/users?${params.toString()}`);
     return response.data.data;
   },
@@ -80,13 +69,13 @@ export const adminApi = {
     role: string,
     page: number = 0,
     size: number = 50,
-  ): Promise<AdminPaginatedResponse<AdminUser>> => {
+  ): Promise<PaginatedResponse<AdminUser>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
 
     const response = await api.get<
-      ApiResponse<AdminPaginatedResponse<AdminUser>>
+      ApiResponse<PaginatedResponse<AdminUser>>
     >(`/admin/users/by-role/${role}?${params.toString()}`);
     return response.data.data;
   },
@@ -196,9 +185,9 @@ export const adminApi = {
   getNewTickets: async (
     page: number = 0,
     size: number = 20,
-  ): Promise<AdminPaginatedResponse<TicketListItem>> => {
+  ): Promise<PaginatedResponse<TicketListItem>> => {
     const response = await api.get<
-      ApiResponse<AdminPaginatedResponse<TicketListItem>>
+      ApiResponse<PaginatedResponse<TicketListItem>>
     >(`/admin/tickets/new?page=${page}&size=${size}`);
     return response.data.data;
   },
@@ -207,9 +196,9 @@ export const adminApi = {
   getClosedTickets: async (
     page: number = 0,
     size: number = 20,
-  ): Promise<AdminPaginatedResponse<TicketListItem>> => {
+  ): Promise<PaginatedResponse<TicketListItem>> => {
     const response = await api.get<
-      ApiResponse<AdminPaginatedResponse<TicketListItem>>
+      ApiResponse<PaginatedResponse<TicketListItem>>
     >(`/admin/tickets/closed?page=${page}&size=${size}`);
     return response.data.data;
   },

@@ -14,10 +14,12 @@ export interface ApiError {
 
 export interface PaginatedResponse<T> {
   content: T[];
+  page: Page
+}
+
+export interface Page {
+  size: number;
+  number: number;
   totalElements: number;
   totalPages: number;
-  page: number;
-  size: number;
-  first: boolean;
-  last: boolean;
 }

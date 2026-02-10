@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { queryKeys } from "@/lib/queryKeys";
@@ -20,37 +20,46 @@ interface UseTicketsQueryOptions {
   pageSize?: number;
 }
 
-interface UseTicketsQueryReturn {
-  tickets: TicketListItem[];
-  pendingAssignments: Assignment[];
-  isLoading: boolean;
-  isFetching: boolean;
-  isError: boolean;
-  page: number;
-  totalPages: number;
-  filter: FilterType;
-  setPage: (page: number) => void;
-  setFilter: (filter: FilterType) => void;
-  refetch: () => void;
-  // For WebSocket updates
-  addTicket: (ticket: TicketListItem) => void;
-  updateTicketInList: (ticket: TicketListItem) => void;
-  removeTicket: (ticketId: number) => void;
+export interface TicketsPageResult {
+  data: PagedTicketList | null;
+  pendingAssignments?: Assignment[];
+
+  meta: {
+    filter: FilterType;
+    isLoading: boolean;
+    isFetching: boolean;
+    isError: boolean;
+  };
+
+  actions: {
+    setPage: (page: number) => void;
+    setFilter: (filter: FilterType) => void;
+    refetch: () => void;
+  };
+
+  optimistic: {
+    addTicket: (ticket: TicketListItem) => void;
+    updateTicket: (ticket: TicketListItem) => void;
+    removeTicket: (ticketId: number) => void;
+  };
 }
 
 export function useTicketsQuery(
   options: UseTicketsQueryOptions = {},
-): UseTicketsQueryReturn {
-  const { pageSize = 5 } = options;
+): TicketsPageResult {
+  const { pageSize = 5, initialFilter } = options;
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
-  const queryClient = useQueryClient();
+  const isSpecialist = user?.specialist ?? false;
 
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
-  // Load saved filter from localStorage on first render
+
+  // -------------------------------
+  // Filter state
+  // -------------------------------
   const [rawFilter, setRawFilter] = useState<FilterType>(() => {
-    // Priority: URL param > localStorage > default
-    if (options.initialFilter) return options.initialFilter;
+    if (initialFilter) return initialFilter;
+
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(FILTER_STORAGE_KEY);
       if (
@@ -60,21 +69,24 @@ export function useTicketsQuery(
         return saved as FilterType;
       }
     }
+
     return isSpecialist ? "unprocessed" : "my";
   });
 
-  // Derived state: non-specialists are forced to "my" filter
-  const filter = isSpecialist ? rawFilter : "my";
+  const filter: FilterType = isSpecialist ? rawFilter : "my";
 
-  // Use effective filter for queries
+  // -------------------------------
+  // Tickets query
+  // -------------------------------
   const ticketsQuery = useQuery({
     queryKey: queryKeys.tickets.list({ filter, page }),
+    enabled: filter !== "pending",
     queryFn: async (): Promise<PagedTicketList> => {
       switch (filter) {
         case "my":
           return ticketApi.listMy(page, pageSize);
+
         case "assigned": {
-          // Get assigned tickets, exclude CLOSED and CANCELLED
           const response = await ticketApi.listAssigned(page, pageSize);
           return {
             ...response,
@@ -83,61 +95,64 @@ export function useTicketsQuery(
             ),
           };
         }
-        case "closed": {
-          // Get tickets that are CLOSED using dedicated status endpoint
+
+        case "closed":
           return ticketApi.listByStatus("CLOSED", page, pageSize);
-        }
-        case "unprocessed": {
-          // Get NEW tickets using dedicated status endpoint
+
+        case "unprocessed":
           return ticketApi.listByStatus("NEW", page, pageSize);
-        }
+
         default:
           return ticketApi.listMy(page, pageSize);
       }
     },
-    enabled: filter !== "pending",
-    staleTime: 0,
   });
 
-  // Query for pending assignments
+  // -------------------------------
+  // Pending assignments query
+  // -------------------------------
   const pendingQuery = useQuery({
     queryKey: queryKeys.assignments.pending(page),
-    queryFn: () => assignmentApi.getMyPending(page, pageSize),
     enabled: filter === "pending",
-    staleTime: 0,
+    queryFn: () => assignmentApi.getMyPending(page, pageSize),
   });
 
-  // Optimistic update helpers
+  // -------------------------------
+  // Optimistic updates
+  // -------------------------------
   const addTicket = useCallback(
     (ticket: TicketListItem) => {
       queryClient.setQueryData<PagedTicketList>(
         queryKeys.tickets.list({ filter, page }),
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            content: [ticket, ...old.content],
-            totalElements: old.totalElements + 1,
-          };
-        },
+        (old) =>
+          old
+            ? {
+                ...old,
+                content: [ticket, ...old.content],
+                page: {
+                  ...old.page,
+                  totalElements: old.page.totalElements + 1,
+                },
+              }
+            : old,
       );
     },
     [queryClient, filter, page],
   );
 
-  const updateTicketInList = useCallback(
-    (updatedTicket: TicketListItem) => {
+  const updateTicket = useCallback(
+    (ticket: TicketListItem) => {
       queryClient.setQueryData<PagedTicketList>(
         queryKeys.tickets.list({ filter, page }),
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            content: old.content.map((t) =>
-              t.id === updatedTicket.id ? updatedTicket : t,
-            ),
-          };
-        },
+        (old) =>
+          old
+            ? {
+                ...old,
+                content: old.content.map((t) =>
+                  t.id === ticket.id ? ticket : t,
+                ),
+              }
+            : old,
       );
     },
     [queryClient, filter, page],
@@ -147,75 +162,80 @@ export function useTicketsQuery(
     (ticketId: number) => {
       queryClient.setQueryData<PagedTicketList>(
         queryKeys.tickets.list({ filter, page }),
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            content: old.content.filter((t) => t.id !== ticketId),
-            totalElements: old.totalElements - 1,
-          };
-        },
+        (old) =>
+          old
+            ? {
+                ...old,
+                content: old.content.filter((t) => t.id !== ticketId),
+                page: {
+                  ...old.page,
+                  totalElements: old.page.totalElements - 1,
+                },
+              }
+            : old,
       );
     },
     [queryClient, filter, page],
   );
 
-  const handleSetFilter = useCallback(
-    (newFilter: FilterType) => {
-      if (isSpecialist) {
-        setRawFilter(newFilter);
-        setPage(0);
-        // Persist filter to localStorage
-        if (typeof window !== "undefined") {
-          localStorage.setItem(FILTER_STORAGE_KEY, newFilter);
-        }
+  // -------------------------------
+  // Actions
+  // -------------------------------
+  const setFilter = useCallback(
+    (next: FilterType) => {
+      if (!isSpecialist) return;
+
+      setRawFilter(next);
+      setPage(0);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(FILTER_STORAGE_KEY, next);
       }
     },
     [isSpecialist],
   );
 
   const refetch = useCallback(() => {
-    if (filter === "pending") {
-      pendingQuery.refetch();
-    } else {
-      ticketsQuery.refetch();
-    }
-  }, [filter, ticketsQuery, pendingQuery]);
+    filter === "pending"
+      ? pendingQuery.refetch()
+      : ticketsQuery.refetch();
+  }, [filter, pendingQuery, ticketsQuery]);
 
-  // Determine which data to return based on filter
-  if (filter === "pending") {
-    return {
-      tickets: [],
-      pendingAssignments: pendingQuery.data?.content ?? [],
-      isLoading: pendingQuery.isLoading,
-      isFetching: pendingQuery.isFetching,
-      isError: pendingQuery.isError,
-      page,
-      totalPages: pendingQuery.data?.totalPages ?? 0,
-      filter,
-      setPage,
-      setFilter: handleSetFilter,
-      refetch,
-      addTicket,
-      updateTicketInList,
-      removeTicket,
-    };
-  }
+  // -------------------------------
+  // Result
+  // -------------------------------
+  const isPending = filter === "pending";
 
   return {
-    tickets: ticketsQuery.data?.content ?? [],
-    pendingAssignments: [],
-    isLoading: ticketsQuery.isLoading,
-    isFetching: ticketsQuery.isFetching,
-    isError: ticketsQuery.isError,
-    page,
-    totalPages: ticketsQuery.data?.totalPages ?? 0,
-    filter,
-    setPage,
-    setFilter: handleSetFilter,
-    refetch,
-    addTicket,
-    updateTicketInList,
-    removeTicket,
+    data: isPending ? null : ticketsQuery.data ?? null,
+
+    pendingAssignments: isPending
+      ? pendingQuery.data?.content ?? []
+      : undefined,
+
+    meta: {
+      filter,
+      isLoading: isPending
+        ? pendingQuery.isLoading
+        : ticketsQuery.isLoading,
+      isFetching: isPending
+        ? pendingQuery.isFetching
+        : ticketsQuery.isFetching,
+      isError: isPending
+        ? pendingQuery.isError
+        : ticketsQuery.isError,
+    },
+
+    actions: {
+      setPage,
+      setFilter,
+      refetch,
+    },
+
+    optimistic: {
+      addTicket,
+      updateTicket,
+      removeTicket,
+    },
   };
 }

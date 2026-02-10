@@ -76,6 +76,13 @@ export const supportLineApi = {
     return response.data.data;
   },
 
+  getAvailableForAssignment: async (): Promise<SupportLine[]> => {
+    const response = await api.get<ApiResponse<SupportLine[]>>(
+      `/support-lines/available-for-assignment`
+    );
+    return response.data.data;
+  },
+
   // Get specialists in a support line
   getSpecialists: async (lineId: number): Promise<Specialist[]> => {
     const response = await api.get<ApiResponse<Specialist[]>>(

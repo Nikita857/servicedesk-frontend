@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers";
 import { toast } from "@/lib/utils";
+import { queryKeys } from "@/lib/queryKeys";
 import type { Ticket } from "@/types/ticket";
 import type { TicketListItem } from "@/types/ticket";
 
@@ -16,6 +18,7 @@ interface UseTicketsWebSocketOptions {
 export function useTicketsWebSocket(options: UseTicketsWebSocketOptions = {}) {
   const { onNewTicket, enabled = true } = options;
   const { isConnected, subscribeToNewTickets } = useWebSocket();
+  const queryClient = useQueryClient();
   const callbackRef = useRef(onNewTicket);
 
   // Keep callback ref updated
@@ -42,6 +45,10 @@ export function useTicketsWebSocket(options: UseTicketsWebSocketOptions = {}) {
 
       // Notify via toast
       toast.newTicket(ticket.id, ticket.title);
+
+      // Invalidate caches
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
 
       // Call the callback to add ticket to list
       callbackRef.current?.(listItem);

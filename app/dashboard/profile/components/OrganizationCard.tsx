@@ -55,7 +55,7 @@ export function OrganizationCard({
             setDepartmentId(id);
             setPositionId(null);
           }}
-          disabled={isLoadingDepts}
+          disabled={true}
           portalled={false}
         />
 
@@ -74,7 +74,7 @@ export function OrganizationCard({
             const id = e.value[0] ? parseInt(e.value[0]) : null;
             setPositionId(id);
           }}
-          disabled={!departmentId || isLoadingPositions}
+          disabled={true}
           portalled={false}
         />
 
@@ -82,7 +82,7 @@ export function OrganizationCard({
           colorPalette="green"
           onClick={onUpdate}
           loading={isPending}
-          disabled={!departmentId || !positionId || isPending}
+          disabled={true}
           mt="auto"
         >
           <Icon as={LuSave} mr={2} />

@@ -13,6 +13,8 @@ export const queryKeys = {
     details: () => [...queryKeys.tickets.all, "detail"] as const,
     detail: (id: number) => [...queryKeys.tickets.details(), id] as const,
     counts: () => [...queryKeys.tickets.all, "counts"] as const,
+    byStatus: (status: string, page: number, size: number) =>
+      [...queryKeys.tickets.all, "by-status", status, page, size] as const,
   },
 
   // Assignments
@@ -30,6 +32,7 @@ export const queryKeys = {
   supportLines: {
     all: ["supportLines"] as const,
     list: () => [...queryKeys.supportLines.all, "list"] as const,
+    available: () => [...queryKeys.supportLines.all, "available"] as const,
     specialists: (lineId: number) =>
       [...queryKeys.supportLines.all, "specialists", lineId] as const,
   },

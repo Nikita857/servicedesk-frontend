@@ -45,7 +45,7 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
       }
 
       // Fetch all data in parallel with error handling
-      const [statusStats, pendingCount, assignedTickets, lineStats] =
+      const [statusStats, pendingCount, assignedTickets, lineStatsResponse] =
         await Promise.all([
           isAdmin
             ? reportsApi.getStatsByStatus().catch(() => [])
@@ -54,8 +54,10 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
           ticketApi
             .listAssigned(0, 100)
             .catch(() => ({ content: [], totalElements: 0, totalPages: 0 })),
-          statsApi.getStatsByAllLines().catch(() => []),
+          statsApi.getStatsByAllLines().catch(() => null),
         ]);
+
+      const lineStats = lineStatsResponse?.content ?? [];
 
       // Extract counts from status stats (for ADMIN)
       const getCount = (status: string) =>

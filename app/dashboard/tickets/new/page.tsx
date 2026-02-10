@@ -10,30 +10,19 @@ import {
   Textarea,
   HStack,
   VStack,
-  Select,
-  Portal,
   createListCollection,
-  ListCollection,
   Text,
 } from "@chakra-ui/react";
-import { LuInfo, LuX } from "react-icons/lu";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ticketApi } from "@/lib/api/tickets";
 import {
   useCategoryDetailQuery,
   useCategoriesQuery,
-  useAllSupportLinesQuery,
 } from "@/lib/hooks";
 import { toast, handleApiError } from "@/lib/utils";
 import { DataSelect, BackButton } from "@/components/ui";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
-
-interface SupportLineItem {
-  label: string;
-  value: string;
-  description: string | null;
-}
+import { useAvailableSupportLinesQuery } from "@/lib/hooks/useAvailableSupportLinesQuery";
 
 const priorityCollection = createListCollection({
   items: [
@@ -50,7 +39,7 @@ export default function NewTicketPage() {
 
   // Fetch categories and support lines using TanStack Query
   const { data: categories = [] } = useCategoriesQuery();
-  const { supportLines, isLoading: isLoadingLines } = useAllSupportLinesQuery();
+  const { supportLines, isLoading: isLoadingLines } = useAvailableSupportLinesQuery();
 
   const [formData, setFormData] = useState<CreateTicketRequest>({
     title: "",
