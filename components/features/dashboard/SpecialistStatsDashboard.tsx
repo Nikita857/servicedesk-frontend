@@ -22,7 +22,7 @@ import type { TicketStatus } from "@/types/ticket";
 type ModalState = {
   isOpen: boolean;
   title: string;
-  status: TicketStatus | null;
+  status: TicketStatus[] | null;
   lineId: number | null;
 };
 
@@ -46,9 +46,9 @@ export function SpecialistStatsDashboard() {
 
   const lineStats = lineStatsResponse?.content;
 
-  const handleStatClick = (title: string, status: TicketStatus, lineId: number) => {
-    setModal({ isOpen: true, title, status, lineId });
-  };
+  const handleStatClick = (title: string, status: TicketStatus[], lineId: number) => {
+  setModal({ isOpen: true, title, status, lineId });
+};
 
   if (isLoading) {
     return (

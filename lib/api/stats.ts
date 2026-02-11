@@ -24,9 +24,9 @@ export interface LineTicketStats {
   lineName: string;
   total: number;
   open: number;
-  resolved: number;
+  new: number;
   closed: number;
-  unassigned: number;
+  rejected: number
   newTickets: number;
   byStatus: Record<string, number>;
 }
@@ -37,7 +37,7 @@ interface StatsQueryParams {
 }
 
 interface listBySupLineAndStatusParams {
-  ticketStatus: TicketStatus;
+  ticketStatus: TicketStatus[];
   lineId: number;
   page: number;
   size: number;

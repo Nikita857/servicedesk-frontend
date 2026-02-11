@@ -11,19 +11,16 @@ import {
   VStack,
   HStack,
   Spinner,
+  Stack,
 } from "@chakra-ui/react";
-import {
-  LuPlus,
-  LuSearch,
-  LuBookOpen,
-  LuHeart,
-} from "react-icons/lu";
+import { LuPlus, LuSearch, LuBookOpen, LuHeart } from "react-icons/lu";
 import { useAuthStore } from "@/stores";
 import { useWikiCategoriesWithArticlesQuery } from "@/lib/hooks";
 import Link from "next/link";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useWikiAutocomplete } from "@/lib/hooks/useWikiAutocomplete";
 import { WikiTreeView } from "@/components/features/wiki/WikiTreeView";
+import { WikiFilter } from "@/lib/hooks/useWikiArticlesQuery";
 
 export default function WikiPage() {
   const { user } = useAuthStore();
@@ -91,7 +88,11 @@ export default function WikiPage() {
           </Text>
         </Box>
 
-        <HStack gap={2}>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          gap={2}
+          align={{ base: "stretch", md: "center" }}
+        >
           {/* Favorites filter */}
           <Button
             variant={showFavorites ? "solid" : "outline"}
@@ -100,16 +101,16 @@ export default function WikiPage() {
               setShowFavorites(!showFavorites);
               if (!showFavorites) setShowAll(false);
             }}
+            size={{ base: "sm", md: "md" }}
           >
             <LuHeart />
-            Избранное
+            <Text hideBelow="sm">Избранное</Text>
           </Button>
 
           <SegmentedControl
             value={filter}
             onValueChange={(e) => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const val = e.value as any;
+              const val = e.value as WikiFilter;
               setFilter(val);
               if (val === "all") {
                 setShowAll(true);
@@ -124,17 +125,23 @@ export default function WikiPage() {
               { value: "all", label: "Все статьи" },
             ]}
             size="sm"
+            width={{ base: "full", md: "auto" }}
           />
 
           {isSpecialist && (
             <Link href="/dashboard/wiki/new">
-              <Button bg="gray.900" color="white" _hover={{ bg: "gray.800" }}>
+              <Button
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
+                size={{ base: "sm", md: "md" }}
+              >
                 <LuPlus />
-                Новая статья
+                <Text hideBelow="sm">Новая статья</Text>
               </Button>
             </Link>
           )}
-        </HStack>
+        </Stack>
       </Flex>
 
       {/* Search */}
@@ -187,9 +194,9 @@ export default function WikiPage() {
                 </Button>
               </Flex>
             </Box>
-              <Text fontSize="xs" color="fg.muted" ml={1}>
-                Поиск выполняется по всей базе знаний (включая другие отделы)
-              </Text>
+            <Text fontSize="xs" color="fg.muted" ml={1}>
+              Поиск выполняется по всей базе знаний (включая другие отделы)
+            </Text>
           </VStack>
         </form>
       </Box>

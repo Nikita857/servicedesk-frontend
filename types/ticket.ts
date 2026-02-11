@@ -14,6 +14,13 @@ export type TicketStatus =
   | "REJECTED"
   | "CANCELLED";
 
+export const TicketStatusCollection: Record<string, TicketStatus[]> = {
+  new: ["NEW"],
+  open: ["OPEN", "PENDING", "REOPENED", "RESOLVED", "ESCALATED"],
+  closed: ["CLOSED", "PENDING_CLOSURE"],
+  rejected: ["REJECTED"],
+}
+
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface UserShort {

@@ -28,7 +28,7 @@ interface TicketListModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  status: TicketStatus | null;
+  status: TicketStatus[] | null;
   lineId: number | null;
 }
 
@@ -69,7 +69,7 @@ export function TicketListModal({
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="bg.surface" borderRadius="xl" maxH="80vh">
+          <Dialog.Content bg="bg.surface" borderRadius="xl" maxH="80vh" mx={{ base: 4, md: 0 }}>
             <Dialog.Header borderBottomWidth="1px" borderColor="border.default">
               <Flex justify="space-between" align="center" w="full">
                 <Dialog.Title fontSize="lg" fontWeight="semibold">

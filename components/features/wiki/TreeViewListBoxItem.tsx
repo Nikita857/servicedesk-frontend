@@ -6,6 +6,8 @@ import {
   Text,
   HStack,
   Flex,
+  VStack,
+  Box,
 } from "@chakra-ui/react";
 import { LuHeart, LuUser, LuClock, LuFile } from "react-icons/lu";
 import Link from "next/link";
@@ -56,55 +58,104 @@ export const TreeViewListBoxItem = ({
               }}
             >
               <Link href={`/dashboard/wiki/${article.slug}`}>
-                <Flex
-                  align="center"
-                  justify="space-between"
-                  gap={3}
-                  w="full"
-                  py={1}
-                >
-                  {/* Left: Icon + Title */}
-                  <HStack gap={2} flex={1} minW={0}>
-                    <LuFile size={16} style={{ flexShrink: 0 }} />
-                    <Text
-                      fontWeight="medium"
-                      fontSize="sm"
-                      color={
-                        article.likedByCurrentUser ? "red.500" : "fg.default"
-                      }
-                      lineClamp={1}
-                    >
-                      {article.title}
-                    </Text>
-                    {article.likedByCurrentUser && (
-                      <LuHeart
-                        size={12}
-                        fill="currentColor"
-                        color="red.500"
-                        style={{ flexShrink: 0 }}
-                      />
-                    )}
-                  </HStack>
-
-                  {/* Right: Metadata */}
-                  <HStack
+                <Box w="full" py={1}>
+                  {/* Desktop версия */}
+                  <Flex
+                    align="center"
+                    justify="space-between"
                     gap={3}
-                    fontSize="xs"
-                    color="fg.muted"
-                    flexShrink={0}
+                    w="full"
+                    hideBelow="md"
                   >
-                    <HStack gap={1}>
-                      <LuUser size={12} />
-                      <Text>
-                        {article.author?.fio || article.author?.username || "Аноним"}
+                    {/* Left: Icon + Title */}
+                    <HStack gap={2} flex={1} minW={0}>
+                      <LuFile size={16} style={{ flexShrink: 0 }} />
+                      <Text
+                        fontWeight="medium"
+                        fontSize="sm"
+                        color={
+                          article.likedByCurrentUser ? "red.500" : "fg.default"
+                        }
+                        lineClamp={1}
+                      >
+                        {article.title}
                       </Text>
+                      {article.likedByCurrentUser && (
+                        <LuHeart
+                          size={12}
+                          fill="currentColor"
+                          color="red.500"
+                          style={{ flexShrink: 0 }}
+                        />
+                      )}
                     </HStack>
-                    <HStack gap={1}>
-                      <LuClock size={12} />
-                      <Text>{formatDate(article.updatedAt)}</Text>
+
+                    {/* Right: Metadata */}
+                    <HStack
+                      gap={3}
+                      fontSize="xs"
+                      color="fg.muted"
+                      flexShrink={0}
+                    >
+                      <HStack gap={1}>
+                        <LuUser size={12} />
+                        <Text>
+                          {article.author?.fio || article.author?.username || "Аноним"}
+                        </Text>
+                      </HStack>
+                      <HStack gap={1}>
+                        <LuClock size={12} />
+                        <Text>{formatDate(article.updatedAt)}</Text>
+                      </HStack>
                     </HStack>
-                  </HStack>
-                </Flex>
+                  </Flex>
+
+                  {/* Mobile версия */}
+                  <VStack align="start" gap={1} hideFrom="md" w="full">
+                    {/* Заголовок с иконкой */}
+                    <HStack gap={2} w="full">
+                      <LuFile size={16} style={{ flexShrink: 0 }} />
+                      <Text
+                        fontWeight="medium"
+                        fontSize="sm"
+                        color={
+                          article.likedByCurrentUser ? "red.500" : "fg.default"
+                        }
+                        lineClamp={2}
+                        flex={1}
+                      >
+                        {article.title}
+                      </Text>
+                      {article.likedByCurrentUser && (
+                        <LuHeart
+                          size={12}
+                          fill="currentColor"
+                          color="red.500"
+                          style={{ flexShrink: 0 }}
+                        />
+                      )}
+                    </HStack>
+
+                    {/* Метаданные под заголовком */}
+                    <HStack
+                      gap={3}
+                      fontSize="xs"
+                      color="fg.muted"
+                      pl={6} // отступ для выравнивания с текстом
+                    >
+                      <HStack gap={1}>
+                        <LuUser size={10} />
+                        <Text>
+                          {article.author?.fio || article.author?.username || "Аноним"}
+                        </Text>
+                      </HStack>
+                      <HStack gap={1}>
+                        <LuClock size={10} />
+                        <Text>{formatDate(article.updatedAt)}</Text>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                </Box>
               </Link>
             </Listbox.Item>
           );

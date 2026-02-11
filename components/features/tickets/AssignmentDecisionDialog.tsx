@@ -110,7 +110,7 @@ export function AssignmentDecisionDialog({
                         <HStack gap={1} fontSize="sm" color="fg.muted">
                           <LuArrowRight size={14} />
                           <Text>
-                            От линии: {assignment.fromLineName}
+                            С линии: {assignment.fromLineName}
                           </Text>
                         </HStack>
                       )}

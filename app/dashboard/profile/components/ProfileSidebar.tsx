@@ -10,6 +10,7 @@ import {
   Icon,
   Separator,
   Button,
+  Center,
 } from "@chakra-ui/react";
 import {
   LuCamera,
@@ -47,7 +48,8 @@ export function ProfileSidebar({
       p={6}
     >
       {/* Avatar */}
-      <VStack gap={4} mb={6}>
+      {/* Avatar */}
+      <VStack gap={4} mb={6} align="center">
         <Box position="relative">
           <Avatar.Root
             size="2xl"
@@ -98,10 +100,15 @@ export function ProfileSidebar({
           </Button>
         )}
 
-        <Text fontSize="xl" fontWeight="semibold" color="fg.default">
+        <Text
+          fontSize="xl"
+          fontWeight="semibold"
+          color="fg.default"
+          textAlign="center"
+        >
           {profile.fio || profile.username}
         </Text>
-        <Text fontSize="sm" color="fg.muted">
+        <Text fontSize="sm" color="fg.muted" textAlign="center">
           @{profile.username}
         </Text>
       </VStack>

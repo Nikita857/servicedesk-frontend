@@ -18,12 +18,12 @@ import { statsApi } from "@/lib/api/stats";
 import { queryKeys } from "@/lib/queryKeys";
 import { TicketListModal } from "./TicketListModal";
 import { StatBox, LineStatsCard } from "./DashboardStatComponents";
-import type { TicketStatus } from "@/types/ticket";
+import { TicketStatus, TicketStatusCollection } from "@/types/ticket";
 
 type ModalState = {
   isOpen: boolean;
   title: string;
-  status: TicketStatus | null;
+  status: TicketStatus[] | null;
   lineId: number | null;
 };
 
@@ -56,7 +56,7 @@ export function AdminStatsDashboard() {
   const lineStats = lineStatsResponse?.content;
   const isLoading = isGlobalLoading || isLinesLoading;
 
-  const handleStatClick = (title: string, status: TicketStatus, lineId: number) => {
+  const handleStatClick = (title: string, status: TicketStatus[], lineId: number) => {
     setModal({ isOpen: true, title, status, lineId });
   };
 
@@ -75,7 +75,7 @@ export function AdminStatsDashboard() {
       color: "blue.500",
       bgColor: "blue.50",
       darkBgColor: "blue.900/20",
-      statusKey: "NEW" as TicketStatus,
+      statusKey: TicketStatusCollection.new,
     },
     {
       label: "В работе",
@@ -83,7 +83,7 @@ export function AdminStatsDashboard() {
       color: "orange.500",
       bgColor: "orange.50",
       darkBgColor: "orange.900/20",
-      statusKey: "OPEN" as TicketStatus,
+      statusKey: TicketStatusCollection.open,
     },
     {
       label: "Закрыто",
@@ -91,15 +91,15 @@ export function AdminStatsDashboard() {
       color: "gray.500",
       bgColor: "gray.50",
       darkBgColor: "gray.900/20",
-      statusKey: "CLOSED" as TicketStatus,
+      statusKey: TicketStatusCollection.closed,
     },
     {
-      label: "Ожидание",
+      label: "Отклонено",
       value: globalStats?.waiting ?? 0,
-      color: "yellow.500",
-      bgColor: "yellow.50",
-      darkBgColor: "yellow.900/20",
-      statusKey: "PENDING" as TicketStatus,
+      color: "red.500",
+      bgColor: "red.50",
+      darkBgColor: "red.900/20",
+      statusKey: TicketStatusCollection.rejected,
     },
   ];
 

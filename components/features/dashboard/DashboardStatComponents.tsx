@@ -9,7 +9,7 @@ import {
 } from "@chakra-ui/react";
 import { LuUsers } from "react-icons/lu";
 import type { LineTicketStats } from "@/lib/api/stats";
-import type { TicketStatus } from "@/types/ticket";
+import { TicketStatusCollection, type TicketStatus } from "@/types/ticket";
 
 interface StatBoxProps {
   label: string;
@@ -57,32 +57,32 @@ export function LineStatsCard({
   onStatClick,
 }: {
   line: LineTicketStats;
-  onStatClick: (title: string, statusKey: TicketStatus, lineId: number) => void;
+  onStatClick: (title: string, statusKey: TicketStatus[], lineId: number) => void;
 }) {
   const stats = [
     {
       label: "Новых",
       value: line.newTickets,
       color: "blue.500",
-      statusKey: "NEW" as TicketStatus,
+      statusKey: TicketStatusCollection.new,
     },
     {
       label: "В работе",
       value: line.open,
       color: "orange.500",
-      statusKey: "OPEN" as TicketStatus,
+      statusKey: TicketStatusCollection.open,
     },
     {
       label: "Закрыто",
       value: line.closed,
       color: "gray.500",
-      statusKey: "CLOSED" as TicketStatus,
+      statusKey: TicketStatusCollection.closed,
     },
     {
-      label: "Без назначения",
-      value: line.unassigned,
-      color: "yellow.500",
-      statusKey: "NEW" as TicketStatus,
+      label: "Отклонено",
+      value: line.rejected,
+      color: "red.500",
+      statusKey: TicketStatusCollection.rejected,
     },
   ];
 
