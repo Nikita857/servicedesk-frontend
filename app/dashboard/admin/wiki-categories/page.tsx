@@ -10,60 +10,40 @@ import {
   Spinner,
   VStack,
   HStack,
-  Badge,
   Input,
-  Table,
   Dialog,
   createListCollection,
   Textarea,
-  Stack,
   Portal,
   IconButton,
 } from "@chakra-ui/react";
-import Link from "next/link";
-import { DataSelect, BackButton } from "@/components/ui";
+import { DataSelect, BackButton, CategoryTreeSelect } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
-import {
-  LuPlus,
-  LuPencil,
-  LuTrash,
-  LuBuilding,
-  LuArrowUpDown,
-  LuArrowUp,
-  LuArrowDown,
-  LuX,
-} from "react-icons/lu";
+import { LuPlus, LuX } from "react-icons/lu";
 
 import { useWikiCategoriesAdmin } from "@/lib/hooks";
 import { adminApi, Department } from "@/lib/api/admin";
 import {
-  WikiCategory,
+  WikiCategoryTree,
   CreateWikiCategoryRequest,
   UpdateWikiCategoryRequest,
 } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
+import { CategoryTree } from "@/components/features/wiki/CategoryTree";
 
 export default function WikiCategoriesPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const isAdmin = user?.roles?.includes("ADMIN") || false;
 
-  // Redirect non-admins
-  if (!isAdmin) {
-    router.push("/dashboard");
-    return null;
-  }
-
   const {
-    categories,
     isLoading,
     createCategory,
     updateCategory,
     deleteCategory,
     isCreating,
     isUpdating,
-    isDeleting,
   } = useWikiCategoriesAdmin();
 
   // Fetch departments for the department selector
@@ -72,25 +52,24 @@ export default function WikiCategoriesPage() {
     queryFn: () => adminApi.getDepartments(),
   });
 
+  // Fetch category tree
+  const { data: treeData = [], isLoading: isLoadingTree } = useQuery({
+    queryKey: ["admin", "categoriesTree"],
+    queryFn: () => adminApi.getCategoriesTree(),
+  });
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<WikiCategory | null>(
-    null,
-  );
+  const [editingCategory, setEditingCategory] =
+    useState<WikiCategoryTree | null>(null);
   const [formData, setFormData] = useState<CreateWikiCategoryRequest>({
     name: "",
     description: "",
     departmentId: undefined,
+    parentId: undefined,
     displayOrder: 0,
   });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof WikiCategory;
-    direction: "asc" | "desc";
-  }>({
-    key: "displayOrder",
-    direction: "asc",
-  });
 
   // Department collection for Select
   const departmentCollection = useMemo(
@@ -113,18 +92,20 @@ export default function WikiCategoriesPage() {
       name: "",
       description: "",
       departmentId: undefined,
-      displayOrder: (categories?.length || 0) + 1,
+      parentId: undefined,
+      displayOrder: 0,
     });
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (category: WikiCategory) => {
-    setEditingCategory(category);
+  const handleEdit = (node: WikiCategoryTree) => {
+    setEditingCategory(node);
     setFormData({
-      name: category.name,
-      description: category.description || "",
-      departmentId: category.departmentId || undefined,
-      displayOrder: category.displayOrder,
+      name: node.name,
+      description: node.description || "",
+      departmentId: node.departmentId || undefined,
+      parentId: node.parentId || undefined,
+      displayOrder: node.displayOrder || 0,
     });
     setIsDialogOpen(true);
   };
@@ -144,45 +125,49 @@ export default function WikiCategoriesPage() {
     }
   };
 
-  const handleSort = (key: keyof WikiCategory) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
+  // Filter tree by search term
+  const filteredTree = useMemo(() => {
+    if (!searchTerm.trim()) return treeData;
 
-  const filteredAndSortedCategories = useMemo(() => {
-    if (!categories) return [];
+    const term = searchTerm.toLowerCase();
 
-    return categories
-      .filter(
-        (c) =>
-          c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          c.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-      .sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
+    const filterNodes = (nodes: WikiCategoryTree[]): WikiCategoryTree[] => {
+      return nodes.reduce<WikiCategoryTree[]>((acc, node) => {
+        const nameMatch = node.name.toLowerCase().includes(term);
+        const descMatch = node.description?.toLowerCase().includes(term);
+        const filteredChildren = node.children?.length
+          ? filterNodes(node.children)
+          : [];
 
-        if (aValue === bValue) return 0;
+        if (nameMatch || descMatch || filteredChildren.length > 0) {
+          acc.push({
+            ...node,
+            children:
+              filteredChildren.length > 0
+                ? filteredChildren
+                : node.children || [],
+          });
+        }
+        return acc;
+      }, []);
+    };
 
-        const comparison = (aValue ?? "") < (bValue ?? "") ? -1 : 1;
-        return sortConfig.direction === "asc" ? comparison : -comparison;
-      });
-  }, [categories, searchTerm, sortConfig]);
+    return filterNodes(treeData);
+  }, [treeData, searchTerm]);
 
-  if (isLoading) {
+  // Redirect non-admins
+  if (!isAdmin) {
+    router.push("/dashboard");
+    return null;
+  }
+
+  if (isLoading || isLoadingTree) {
     return (
       <Flex justify="center" align="center" h="400px">
         <Spinner size="lg" />
       </Flex>
     );
   }
-
-  const SortIcon = ({ column }: { column: keyof WikiCategory }) => {
-    if (sortConfig.key !== column) return <LuArrowUpDown />;
-    return sortConfig.direction === "asc" ? <LuArrowUp /> : <LuArrowDown />;
-  };
 
   return (
     <Box p={6}>
@@ -222,86 +207,11 @@ export default function WikiCategoriesPage() {
           />
         </Box>
 
-        <Table.Root size="sm" variant="outline">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeader
-                cursor="pointer"
-                onClick={() => handleSort("displayOrder")}
-                width="80px"
-              >
-                <HStack gap={1}>
-                  # <SortIcon column="displayOrder" />
-                </HStack>
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                cursor="pointer"
-                onClick={() => handleSort("name")}
-              >
-                <HStack gap={1}>
-                  Название <SortIcon column="name" />
-                </HStack>
-              </Table.ColumnHeader>
-              <Table.ColumnHeader>Описание</Table.ColumnHeader>
-              <Table.ColumnHeader>Доступ</Table.ColumnHeader>
-              <Table.ColumnHeader width="120px">Действия</Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {filteredAndSortedCategories.map((category) => (
-              <Table.Row key={category.id}>
-                <Table.Cell>{category.displayOrder}</Table.Cell>
-                <Table.Cell fontWeight="medium">{category.name}</Table.Cell>
-                <Table.Cell color="fg.muted" maxW="300px" truncate>
-                  {category.description || "—"}
-                </Table.Cell>
-                <Table.Cell>
-                  {category.departmentId ? (
-                    <Badge colorPalette="blue" variant="subtle">
-                      <LuBuilding size={12} style={{ marginRight: "4px" }} />
-                      {departments.find(
-                        (d: Department) => d.id === category.departmentId,
-                      )?.name || "Отдел"}
-                    </Badge>
-                  ) : (
-                    <Badge colorPalette="green" variant="subtle">
-                      Публичная
-                    </Badge>
-                  )}
-                </Table.Cell>
-                <Table.Cell>
-                  <HStack gap={2}>
-                    <IconButton
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => handleEdit(category)}
-                      title="Редактировать"
-                    >
-                      <LuPencil />
-                    </IconButton>
-                    <IconButton
-                      variant="ghost"
-                      size="xs"
-                      colorPalette="red"
-                      onClick={() => handleDelete(category.id)}
-                      disabled={isDeleting}
-                      title="Удалить"
-                    >
-                      <LuTrash />
-                    </IconButton>
-                  </HStack>
-                </Table.Cell>
-              </Table.Row>
-            ))}
-            {filteredAndSortedCategories.length === 0 && (
-              <Table.Row>
-                <Table.Cell colSpan={5} textAlign="center" py={8}>
-                  <Text color="fg.muted">Категории не найдены</Text>
-                </Table.Cell>
-              </Table.Row>
-            )}
-          </Table.Body>
-        </Table.Root>
+        <CategoryTree
+          data={filteredTree}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </Box>
 
       {/* Create/Edit Dialog */}
@@ -352,6 +262,20 @@ export default function WikiCategoriesPage() {
                         }))
                       }
                       placeholder="Краткое описание категории"
+                    />
+                  </Box>
+
+                  <Box>
+                    <CategoryTreeSelect
+                      label="Родительская категория (опционально)"
+                      data={treeData}
+                      value={formData.parentId ?? undefined}
+                      onChange={(parentId) =>
+                        setFormData((prev) => ({ ...prev, parentId }))
+                      }
+                      placeholder="Выберите родительскую категорию"
+                      helperText="Если не выбрана, категория будет корневой"
+                      isLoading={isLoadingTree}
                     />
                   </Box>
 

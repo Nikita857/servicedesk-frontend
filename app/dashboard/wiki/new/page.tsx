@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import {
   Box,
@@ -21,10 +21,10 @@ import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { useWikiCategoriesQuery, useFileUpload } from "@/lib/hooks";
-import { BackButton } from "@/components/ui";
-import { createListCollection } from "@chakra-ui/react";
-import { Select, Portal } from "@chakra-ui/react";
+import { useFileUpload } from "@/lib/hooks";
+import { BackButton, CategoryTreeSelect } from "@/components/ui";
+import { useQuery } from "@tanstack/react-query";
+import { adminApi } from "@/lib/api/admin";
 
 export default function NewWikiArticlePage() {
   const router = useRouter();
@@ -44,27 +44,18 @@ export default function NewWikiArticlePage() {
   const [tagsInput, setTagsInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  // Fetch categories
-  const { data: categories = [], isLoading: loadingCategories } =
-    useWikiCategoriesQuery();
-
-  const categoryCollection = useMemo(
-    () =>
-      createListCollection({
-        items: categories.map((c) => ({
-          label: c.name,
-          value: c.id.toString(),
-        })),
-      }),
-    [categories]
-  );
+  // Fetch category tree
+  const { data: categoryTree = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["wiki", "categoriesTree"],
+    queryFn: () => adminApi.getCategoriesTree(),
+  });
 
   // Redirect non-specialists
   useEffect(() => {
     if (!isSpecialist) {
       toast.error(
         "Доступ запрещён",
-        "Только специалисты могут создавать статьи"
+        "Только специалисты могут создавать статьи",
       );
       router.push("/dashboard/wiki");
     }
@@ -116,19 +107,19 @@ export default function NewWikiArticlePage() {
       // Upload attachments if any
       if (selectedFiles.length > 0) {
         const uploadPromises = selectedFiles.map((file) =>
-          upload(file, "WIKI_ARTICLE", article.id)
+          upload(file, "WIKI_ARTICLE", article.id),
         );
 
         try {
           await Promise.all(uploadPromises);
           toast.success(
             "Статья опубликована!",
-            `Загружено ${selectedFiles.length} вложений`
+            `Загружено ${selectedFiles.length} вложений`,
           );
         } catch (uploadError) {
           toast.warning(
             "Статья создана",
-            "Некоторые файлы не удалось загрузить"
+            "Некоторые файлы не удалось загрузить",
           );
         }
       } else {
@@ -183,39 +174,16 @@ export default function NewWikiArticlePage() {
             </Box>
 
             {/* Category */}
-            <Box>
-              <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-                Категория
-              </Text>
-              <Select.Root
-                collection={categoryCollection}
-                value={
-                  formData.categoryId ? [formData.categoryId.toString()] : []
-                }
-                onValueChange={(details) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    categoryId: parseInt(details.value[0]),
-                  }))
-                }
-                disabled={loadingCategories}
-              >
-                <Select.Trigger>
-                  <Select.ValueText placeholder="Выберите категорию" />
-                </Select.Trigger>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {categoryCollection.items.map((item) => (
-                        <Select.Item item={item} key={item.value}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Box>
+            <CategoryTreeSelect
+              label="Категория"
+              data={categoryTree}
+              value={formData.categoryId}
+              onChange={(categoryId) =>
+                setFormData((prev) => ({ ...prev, categoryId }))
+              }
+              placeholder="Выберите категорию"
+              isLoading={loadingCategories}
+            />
 
             {/* Excerpt */}
             <Box>

@@ -5,3 +5,4 @@ export * from "./toaster";
 export * from "./tooltip";
 export * from "./DataSelect";
 export * from "./BackButton";
+export * from "./CategoryTreeSelect";

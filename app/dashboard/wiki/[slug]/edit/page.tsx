@@ -26,15 +26,10 @@ import { attachmentApi } from "@/lib/api/attachments";
 import { useAuthStore } from "@/stores";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import {
-  useWikiCategoriesQuery,
-  useWikiArticleQuery,
-  useFileUpload,
-} from "@/lib/hooks";
-import { BackButton } from "@/components/ui";
-import { createListCollection } from "@chakra-ui/react";
-import { Select, Portal } from "@chakra-ui/react";
-import { useMemo } from "react";
+import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
+import { BackButton, CategoryTreeSelect } from "@/components/ui";
+import { useQuery } from "@tanstack/react-query";
+import { adminApi } from "@/lib/api/admin";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -71,20 +66,30 @@ export default function EditWikiArticlePage({ params }: PageProps) {
     number | null
   >(null);
 
-  // Fetch categories
-  const { data: categories = [], isLoading: loadingCategories } =
-    useWikiCategoriesQuery();
+  // Check access
+  useEffect(() => {
+    if (!isLoading && article) {
+      const isAuthor = user?.id === article.createdBy.id;
+      const isAdmin = user?.roles.every((role) => role === "ADMIN");
+      if (!isSpecialist) {
+        toast.error(
+          "Доступ запрещён",
+          "Вы можете редактировать только свои статьи",
+        );
+        router.push(`/dashboard/wiki/${slug}`);
+      }
+      if (!isAuthor && !isAdmin) {
+        toast.error("Доступ запрещён", "Вы не являетесь специалистом");
+        router.push(`/dashboard/wiki/${slug}`);
+      }
+    }
+  }, [isLoading, article, isSpecialist, user?.id, router, slug, user?.roles]);
 
-  const categoryCollection = useMemo(
-    () =>
-      createListCollection({
-        items: categories.map((c) => ({
-          label: c.name,
-          value: c.id.toString(),
-        })),
-      }),
-    [categories]
-  );
+  // Fetch category tree
+  const { data: categoryTree = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["wiki", "categoriesTree"],
+    queryFn: () => adminApi.getCategoriesTree(),
+  });
 
   // Initialize form when article loads
   useEffect(() => {
@@ -121,25 +126,6 @@ export default function EditWikiArticlePage({ params }: PageProps) {
     return null;
   }
 
-  // Check access
-  useEffect(() => {
-    if (!isLoading && article) {
-      const isAuthor = user?.id === article.createdBy.id;
-      const isAdmin = user?.roles.every((role) => role === "ADMIN");
-      if (!isSpecialist) {
-        toast.error(
-          "Доступ запрещён",
-          "Вы можете редактировать только свои статьи"
-        );
-        router.push(`/dashboard/wiki/${slug}`);
-      }
-      if (!isAuthor && !isAdmin) {
-        toast.error("Доступ запрещён", "Вы не являетесь специалистом");
-        router.push(`/dashboard/wiki/${slug}`);
-      }
-    }
-  }, [isLoading, article, isSpecialist, user?.id, router, slug, user?.roles]);
-
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -164,7 +150,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
     try {
       await attachmentApi.delete(attachmentId);
       setExistingAttachments((prev) =>
-        prev.filter((a) => a.id !== attachmentId)
+        prev.filter((a) => a.id !== attachmentId),
       );
       toast.success("Вложение удалено");
     } catch (error) {
@@ -203,19 +189,19 @@ export default function EditWikiArticlePage({ params }: PageProps) {
       // Upload new attachments if any
       if (selectedFiles.length > 0) {
         const uploadPromises = selectedFiles.map((file) =>
-          upload(file, "WIKI_ARTICLE", article.id)
+          upload(file, "WIKI_ARTICLE", article.id),
         );
 
         try {
           await Promise.all(uploadPromises);
           toast.success(
             "Статья обновлена!",
-            `Загружено ${selectedFiles.length} вложений`
+            `Загружено ${selectedFiles.length} вложений`,
           );
         } catch (uploadError) {
           toast.warning(
             "Статья обновлена",
-            "Некоторые файлы не удалось загрузить"
+            "Некоторые файлы не удалось загрузить",
           );
         }
       } else {
@@ -282,39 +268,16 @@ export default function EditWikiArticlePage({ params }: PageProps) {
             </Box>
 
             {/* Category */}
-            <Box>
-              <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-                Категория
-              </Text>
-              <Select.Root
-                collection={categoryCollection}
-                value={
-                  formData.categoryId ? [formData.categoryId.toString()] : []
-                }
-                onValueChange={(details) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    categoryId: parseInt(details.value[0]),
-                  }))
-                }
-                disabled={loadingCategories}
-              >
-                <Select.Trigger>
-                  <Select.ValueText placeholder="Выберите категорию" />
-                </Select.Trigger>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {categoryCollection.items.map((item) => (
-                        <Select.Item item={item} key={item.value}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Box>
+            <CategoryTreeSelect
+              label="Категория"
+              data={categoryTree}
+              value={formData.categoryId}
+              onChange={(categoryId) =>
+                setFormData((prev) => ({ ...prev, categoryId }))
+              }
+              placeholder="Выберите категорию"
+              isLoading={loadingCategories}
+            />
 
             {/* Excerpt */}
             <Box>

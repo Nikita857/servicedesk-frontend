@@ -1,30 +1,131 @@
 "use client";
 
 import {
-  TreeView,
-  createTreeCollection,
   Box,
+  HStack,
+  Text,
   Badge,
+  Collapsible,
+  VStack,
 } from "@chakra-ui/react";
-import { LuFolder } from "react-icons/lu";
-import type {
-  WikiCategoryWithArticles,
-  WikiArticleListItem,
-} from "@/lib/api/wiki";
+import { LuChevronRight, LuChevronDown, LuFolder, LuFolderOpen } from "react-icons/lu";
+import { useState } from "react";
+import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
 import { TreeViewListBoxItem } from "./TreeViewListBoxItem";
 
-interface CategoryData {
-  articles: WikiArticleListItem[];
+// --- Рекурсивный узел категории ---
+interface CategoryNodeProps {
+  category: WikiCategoryWithArticles;
+  depth?: number;
+  onLike?: (e: React.MouseEvent, articleId: number) => void;
+  likingArticleId?: number | null;
+  defaultOpen?: boolean;
 }
 
-interface WikiTreeNode {
-  id: string;
-  name: string;
-  type: "category" | "article";
-  data?: CategoryData;
-  children?: WikiTreeNode[];
+const CategoryNode = ({
+  category,
+  depth = 0,
+  onLike,
+  likingArticleId,
+  defaultOpen = true,
+}: CategoryNodeProps) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const hasChildren = category.children && category.children.length > 0;
+  const hasArticles = category.article && category.article.length > 0;
+  const articleCount = countArticles(category);
+
+  return (
+    <Box w="full">
+      {/* Category header */}
+      <HStack
+        gap={2}
+        py={2}
+        px={3}
+        pl={`${depth * 20 + 12}px`}
+        cursor="pointer"
+        borderRadius="md"
+        transition="background 0.15s"
+        _hover={{ bg: "gray.50", _dark: { bg: "whiteAlpha.50" } }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <Box color="fg.muted" flexShrink={0}>
+          {isOpen ? <LuChevronDown size={16} /> : <LuChevronRight size={16} />}
+        </Box>
+
+        <Box color="blue.500" flexShrink={0}>
+          {isOpen ? <LuFolderOpen size={18} /> : <LuFolder size={18} />}
+        </Box>
+
+        <Text fontWeight="medium" fontSize="sm">
+          {category.name}
+        </Text>
+
+        <Badge colorPalette="blue" variant="subtle" size="sm">
+          {articleCount}{" "}
+          {articleCount === 1
+            ? "статья"
+            : articleCount < 5 && articleCount != 0
+              ? "статьи"
+              : "статей"}
+        </Badge>
+      </HStack>
+
+      {/* Content (articles + child categories) */}
+      <Collapsible.Root open={isOpen}>
+        <Collapsible.Content>
+          {/* Articles in this category */}
+          {hasArticles && (
+            <Box pl={`${depth * 20 + 32}px`} pr={2} py={1}>
+              <TreeViewListBoxItem
+                articles={category.article}
+                onLike={onLike}
+                likingArticleId={likingArticleId}
+              />
+            </Box>
+          )}
+
+          {/* Child categories */}
+          {hasChildren && (
+            <VStack gap={0} align="stretch">
+              {category.children.map((child) => (
+                <CategoryNode
+                  key={child.id}
+                  category={child}
+                  depth={depth + 1}
+                  onLike={onLike}
+                  likingArticleId={likingArticleId}
+                  defaultOpen={false}
+                />
+              ))}
+            </VStack>
+          )}
+
+          {/* Empty category */}
+          {!hasArticles && !hasChildren && (
+            <Box pl={`${depth * 20 + 48}px`} py={2}>
+              <Text fontSize="sm" color="fg.muted">
+                Нет статей в категории
+              </Text>
+            </Box>
+          )}
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </Box>
+  );
+};
+
+// Count total articles in category and all its children
+function countArticles(category: WikiCategoryWithArticles): number {
+  let count = category.article?.length ?? 0;
+  if (category.children?.length) {
+    for (const child of category.children) {
+      count += countArticles(child);
+    }
+  }
+  return count;
 }
 
+// --- Main component ---
 interface WikiTreeViewProps {
   categories: WikiCategoryWithArticles[];
   onLike?: (e: React.MouseEvent, articleId: number) => void;
@@ -36,108 +137,30 @@ export const WikiTreeView = ({
   onLike,
   likingArticleId,
 }: WikiTreeViewProps) => {
-  console.log("WikiTreeView categories:", categories);
-
-  // Transform categories to tree structure with articles data
-  const rootNode: WikiTreeNode = {
-    id: "ROOT",
-    name: "ROOT",
-    type: "category",
-    children: categories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      type: "category" as const,
-      data: {
-        articles: category.children,
-      },
-      // Add a dummy child so TreeView treats this as a branch
-      children: [
-        {
-          id: `${category.id}-placeholder`,
-          name: "placeholder",
-          type: "article" as const,
-        },
-      ],
-    })),
-  };
-
-  console.log("WikiTreeView rootNode:", rootNode);
-
-  const collection = createTreeCollection<WikiTreeNode>({
-    nodeToValue: (node) => node.id,
-    nodeToString: (node) => node.name,
-    rootNode,
-  });
+  if (!categories || categories.length === 0) {
+    return null;
+  }
 
   return (
-    <TreeView.Root
-      collection={collection}
-      defaultExpandedValue={[]}
-      size="md"
-      variant="subtle"
+    <Box
+      bg="bg.surface"
+      borderRadius="xl"
+      borderWidth="1px"
+      borderColor="border.default"
+      py={2}
     >
-      <TreeView.Tree>
-        <TreeView.Node<WikiTreeNode>
-          render={({ node, nodeState }) => {
-            // Skip ROOT node
-            if (node.id === "ROOT") {
-              return null;
-            }
-
-            // Skip placeholder nodes
-            if (node.name === "placeholder") {
-              return null;
-            }
-
-            // Category (Branch)
-            if (node.type === "category") {
-              const categoryData = node.data;
-              const articleCount = categoryData?.articles?.length || 0;
-
-              console.log("Rendering category:", node.name, "isBranch:", nodeState.isBranch, "expanded:", nodeState.expanded, "articles:", articleCount);
-
-              return (
-                <>
-                  <TreeView.BranchControl>
-                    <LuFolder />
-                    <TreeView.BranchText fontWeight="medium">
-                      {node.name}
-                    </TreeView.BranchText>
-                    <Badge colorPalette="blue" variant="subtle" size="sm" ml={2}>
-                      {articleCount}{" "}
-                      {articleCount === 1
-                        ? "статья"
-                        : articleCount < 5
-                          ? "статьи"
-                          : "статей"}
-                    </Badge>
-                  </TreeView.BranchControl>
-
-                  {/* Articles as Listbox when category is expanded */}
-                  <TreeView.BranchContent>
-                    {categoryData?.articles && categoryData.articles.length > 0 ? (
-                      <Box pl={4} pt={2} pb={2}>
-                        <TreeViewListBoxItem
-                          articles={categoryData.articles}
-                          onLike={onLike}
-                          likingArticleId={likingArticleId}
-                        />
-                      </Box>
-                    ) : (
-                      <Box pl={4} pt={2} pb={2} color="fg.muted" fontSize="sm">
-                        Нет статей в категории
-                      </Box>
-                    )}
-                  </TreeView.BranchContent>
-                </>
-              );
-            }
-
-            console.log("Unknown node type:", node);
-            return null;
-          }}
-        />
-      </TreeView.Tree>
-    </TreeView.Root>
+      <VStack gap={0} align="stretch">
+        {categories.map((category) => (
+          <CategoryNode
+            key={category.id}
+            category={category}
+            depth={0}
+            onLike={onLike}
+            likingArticleId={likingArticleId}
+            defaultOpen={true}
+          />
+        ))}
+      </VStack>
+    </Box>
   );
 };

@@ -3,6 +3,7 @@ import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListItem } from "@/types/ticket";
 import { handleApiError } from "../utils";
+import { WikiCategory, WikiCategoryTree } from "./wiki";
 
 // ==================== Types ====================
 
@@ -228,4 +229,11 @@ export const adminApi = {
     );
     return response.data.data;
   },
+
+  getCategoriesTree: async (): Promise<WikiCategoryTree[]> => {
+    const response = await api.get<ApiResponse<WikiCategoryTree[]>>(
+      `/wiki/categories/tree`
+    );
+    return response.data.data;
+  }
 };

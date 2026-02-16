@@ -33,6 +33,39 @@ interface UseWikiCategoriesWithArticlesQueryReturn {
   refetch: () => void;
 }
 
+// Helper: find article recursively in nested categories
+function findArticleInCategories(
+  categories: WikiCategoryWithArticles[],
+  articleId: number,
+): WikiArticleListItem | undefined {
+  for (const cat of categories) {
+    const found = cat.article?.find((a) => a.id === articleId);
+    if (found) return found;
+    if (cat.children?.length) {
+      const deep = findArticleInCategories(cat.children, articleId);
+      if (deep) return deep;
+    }
+  }
+  return undefined;
+}
+
+// Helper: update article recursively in nested categories
+function updateArticleInCategories(
+  categories: WikiCategoryWithArticles[],
+  articleId: number,
+  updater: (a: WikiArticleListItem) => WikiArticleListItem,
+): WikiCategoryWithArticles[] {
+  return categories.map((cat) => ({
+    ...cat,
+    article: cat.article?.map((a) =>
+      a.id === articleId ? updater(a) : a,
+    ) ?? [],
+    children: cat.children?.length
+      ? updateArticleInCategories(cat.children, articleId, updater)
+      : [],
+  }));
+}
+
 /**
  * Hook for fetching wiki categories with articles, search, pagination, and like mutations
  */
@@ -104,52 +137,34 @@ export function useWikiCategoriesWithArticlesQuery(
       return { articleId, wasLiked: isLiked };
     },
     onMutate: async ({ articleId, isLiked }) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.wiki.categoriesWithArticles({
-          page,
-          search: debouncedSearch,
-          showAll,
-          filter,
-        }),
+      const queryKey = queryKeys.wiki.categoriesWithArticles({
+        page,
+        search: debouncedSearch,
+        showAll,
+        filter,
       });
 
-      // Snapshot previous value
-      const previousData = queryClient.getQueryData(
-        queryKeys.wiki.categoriesWithArticles({
-          page,
-          search: debouncedSearch,
-          showAll,
-          filter,
-        }),
-      );
+      await queryClient.cancelQueries({ queryKey });
 
-      // Optimistically update - find article in categories and update it
+      const previousData = queryClient.getQueryData(queryKey);
+
       queryClient.setQueryData(
-        queryKeys.wiki.categoriesWithArticles({
-          page,
-          search: debouncedSearch,
-          showAll,
-          filter,
-        }),
+        queryKey,
         (old: PagedWikiCategoryList | undefined) => {
           if (!old) return old;
           return {
             ...old,
-            content: old.content.map((category) => ({
-              ...category,
-              children: category.children.map((a) =>
-                a.id === articleId
-                  ? {
-                      ...a,
-                      likedByCurrentUser: !isLiked,
-                      likeCount: isLiked
-                        ? Math.max(0, a.likeCount - 1)
-                        : a.likeCount + 1,
-                    }
-                  : a,
-              ),
-            })),
+            content: updateArticleInCategories(
+              old.content,
+              articleId,
+              (a) => ({
+                ...a,
+                likedByCurrentUser: !isLiked,
+                likeCount: isLiked
+                  ? Math.max(0, a.likeCount - 1)
+                  : a.likeCount + 1,
+              }),
+            ),
           };
         },
       );
@@ -165,7 +180,6 @@ export function useWikiCategoriesWithArticlesQuery(
       );
     },
     onError: (error, _, context) => {
-      // Rollback on error
       if (context?.previousData) {
         queryClient.setQueryData(
           queryKeys.wiki.categoriesWithArticles({
@@ -196,19 +210,16 @@ export function useWikiCategoriesWithArticlesQuery(
     [searchQuery],
   );
 
-  // Handle like button click - need to search through all categories to find the article
+  // Handle like button click
   const handleLike = useCallback(
     (e: React.MouseEvent, articleId: number) => {
       e.preventDefault();
       e.stopPropagation();
 
-      // Find article in any category
-      let article: WikiArticleListItem | undefined;
-      categoriesQuery.data?.content.forEach((category) => {
-        const found = category.children.find((a) => a.id === articleId);
-        if (found) article = found;
-      });
-
+      const article = findArticleInCategories(
+        categoriesQuery.data?.content ?? [],
+        articleId,
+      );
       if (!article) return;
 
       likeMutation.mutate({

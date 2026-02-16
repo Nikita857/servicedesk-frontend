@@ -41,6 +41,7 @@ export function useWikiCategoriesAdmin(): UseWikiCategoriesAdminReturn {
         queryKey: queryKeys.wiki.adminCategories(),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.wiki.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "categoriesTree"] });
       toast.success("Категория создана");
     },
     onError: (error) => {
@@ -62,6 +63,7 @@ export function useWikiCategoriesAdmin(): UseWikiCategoriesAdminReturn {
         queryKey: queryKeys.wiki.adminCategories(),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.wiki.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "categoriesTree"] });
       toast.success("Категория обновлена");
     },
     onError: (error) => {
@@ -77,6 +79,7 @@ export function useWikiCategoriesAdmin(): UseWikiCategoriesAdminReturn {
         queryKey: queryKeys.wiki.adminCategories(),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.wiki.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "categoriesTree"] });
       toast.success("Категория удалена");
     },
     onError: (error) => {

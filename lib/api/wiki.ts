@@ -35,13 +35,29 @@ export interface WikiCategory {
   description: string | null;
   departmentId: number | null;
   departmentName: string | null;
+  parentId: number | null;
+  depth: number | null;
   displayOrder: number;
+  children: WikiCategory[];
+}
+
+export interface WikiCategoryTree {
+  id: number,
+  name: string,
+  description: string | null,
+  departmentId: number | null,
+  departmentName: string | null,
+  parentId: number | null,
+  depth: number | null,
+  displayOrder: number | null,
+  children: WikiCategoryTree[]
 }
 
 export interface CreateWikiCategoryRequest {
   name: string;
   description?: string;
   departmentId?: number | null;
+  parentId?: number | null; //null = корневая категория
   displayOrder?: number;
 }
 
@@ -49,6 +65,7 @@ export interface UpdateWikiCategoryRequest {
   name?: string;
   description?: string;
   departmentId?: number | null;
+  parentId?: number | null;
   displayOrder?: number;
 }
 
@@ -99,11 +116,18 @@ export interface PagedWikiArticleList {
   };
 }
 
-// New types for category-based response (TreeView compatible)
+// Category with nested children and articles
 export interface WikiCategoryWithArticles {
-  id: string;
+  id: number;
   name: string;
-  children: WikiArticleListItem[];
+  description: string | null;
+  departmentId: number | null;
+  departmentName: string | null;
+  parentId: number | null;
+  depth: number;
+  displayOrder: number;
+  article: WikiArticleListItem[];
+  children: WikiCategoryWithArticles[];
 }
 
 export interface PagedWikiCategoryList {
@@ -125,7 +149,7 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
-    const response = await api.get<ApiResponse<PagedWikiCategoryList>>("/wiki", {
+    const response = await api.get<ApiResponse<PagedWikiCategoryList>>("/wiki/tree", {
       params: { page, size, showAll, onlyMyDepartment, onlyPublic },
     });
     return response.data.data;

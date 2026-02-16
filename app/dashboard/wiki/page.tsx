@@ -9,7 +9,6 @@ import {
   Button,
   Input,
   VStack,
-  HStack,
   Spinner,
   Stack,
 } from "@chakra-ui/react";
@@ -20,7 +19,8 @@ import Link from "next/link";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useWikiAutocomplete } from "@/lib/hooks/useWikiAutocomplete";
 import { WikiTreeView } from "@/components/features/wiki/WikiTreeView";
-import { WikiFilter } from "@/lib/hooks/useWikiArticlesQuery";
+import { WikiFilter } from "@/lib/hooks/useWikiCategoriesWithArticlesQuery";
+import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
 
 export default function WikiPage() {
   const { user } = useAuthStore();
@@ -65,14 +65,21 @@ export default function WikiPage() {
     }
   };
 
-  // Filter categories for favorites display - show only categories with favorited articles
+  // Recursively filter categories to show only liked articles
+  const filterFavorites = (
+    cats: WikiCategoryWithArticles[],
+  ): WikiCategoryWithArticles[] => {
+    return cats
+      .map((cat) => ({
+        ...cat,
+        article: cat.article?.filter((a) => a.likedByCurrentUser) ?? [],
+        children: filterFavorites(cat.children ?? []),
+      }))
+      .filter((cat) => cat.article.length > 0 || cat.children.length > 0);
+  };
+
   const displayedCategories = showFavorites
-    ? categories
-        .map((category) => ({
-          ...category,
-          children: category.children.filter((a) => a.likedByCurrentUser),
-        }))
-        .filter((category) => category.children.length > 0)
+    ? filterFavorites(categories)
     : categories;
 
   return (

@@ -15,7 +15,7 @@ export function BackButton({
   ...props
 }: BackButtonProps) {
   return (
-    <Link href={href} passHref legacyBehavior>
+    <Link href={href} passHref>
       <Button variant="ghost" size="sm" as="a" {...props}>
         <LuArrowLeft />
         {label}
