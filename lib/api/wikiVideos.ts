@@ -24,6 +24,7 @@ export const wikiVideoApi = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        timeout: 0, // no timeout for video upload — large files can take minutes
       },
     );
     return response.data.data;

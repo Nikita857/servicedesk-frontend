@@ -34,6 +34,7 @@ export default function NewWikiArticlePage() {
   const { upload } = useFileUpload();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [formData, setFormData] = useState<CreateWikiArticleRequest>({
     title: "",
     content: "",
@@ -228,6 +229,7 @@ export default function NewWikiArticlePage() {
                 onChange={(content) =>
                   setFormData((prev) => ({ ...prev, content }))
                 }
+                onUploadingChange={setIsMediaUploading}
                 placeholder="Начните писать статью..."
                 height="400px"
               />
@@ -309,10 +311,11 @@ export default function NewWikiArticlePage() {
                 bg="gray.900"
                 color="white"
                 loading={isSubmitting}
+                disabled={isMediaUploading}
                 _hover={{ bg: "gray.800" }}
               >
                 <LuSave />
-                Опубликовать
+                {isMediaUploading ? "Загрузка медиа..." : "Опубликовать"}
               </Button>
             </Flex>
           </VStack>

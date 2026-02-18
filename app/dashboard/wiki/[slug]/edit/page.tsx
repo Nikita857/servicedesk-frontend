@@ -47,6 +47,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const { article, isLoading, error, refetch } = useWikiArticleQuery(slug);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [formData, setFormData] = useState<UpdateWikiArticleRequest>({
     title: "",
     content: "",
@@ -322,6 +323,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
                 onChange={(content) =>
                   setFormData((prev) => ({ ...prev, content }))
                 }
+                onUploadingChange={setIsMediaUploading}
                 placeholder="Напишите содержимое статьи..."
                 height="400px"
               />
@@ -449,10 +451,11 @@ export default function EditWikiArticlePage({ params }: PageProps) {
                 bg="gray.900"
                 color="white"
                 loading={isSubmitting}
+                disabled={isMediaUploading}
                 _hover={{ bg: "gray.800" }}
               >
                 <LuSave />
-                Сохранить
+                {isMediaUploading ? "Загрузка медиа..." : "Сохранить"}
               </Button>
             </Flex>
           </VStack>

@@ -9,9 +9,6 @@ import {
   Text,
   SimpleGrid,
   Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
   Icon,
   VStack,
 } from "@chakra-ui/react";
@@ -34,8 +31,7 @@ export default function SearchAdminPage() {
         await searchAdminApi.reindexTickets();
       }
       toast.success(
-        "Переиндексация запущена",
-        "Процесс запущен в фоновом режиме. Это может занять некоторое время.",
+        "Переиндексация завершена",
       );
     } catch (error) {
       toast.error("Ошибка", "Не удалось запустить переиндексацию");
@@ -44,6 +40,9 @@ export default function SearchAdminPage() {
       setLoading(null);
     }
   };
+
+  // TODO сделать механизм сохранения состояния вики папок (типа я открыл нужную папку и отркыл статью, возвращаюсь назад к дереву папок и все свернулось)
+  // TODO поработать с адаптивностью страницы категории вики и Wiki
 
   return (
     <Container maxW="container.xl" py={8}>

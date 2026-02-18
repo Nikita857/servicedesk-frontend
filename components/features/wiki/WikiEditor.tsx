@@ -36,6 +36,7 @@ import "./wiki-editor.css";
 interface WikiEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
   placeholder?: string;
   height?: string;
 }
@@ -278,6 +279,7 @@ function EditorToolbar({
 export default function WikiEditor({
   value,
   onChange,
+  onUploadingChange,
   placeholder = "Начните писать статью...",
   height = "500px",
 }: WikiEditorProps) {
@@ -285,6 +287,11 @@ export default function WikiEditor({
   const videoInputRef = useRef<HTMLInputElement>(null);
   const isUploading = useRef(false);
   const [uploadingState, setUploadingState] = useState(false);
+
+  const setUploadingStateSynced = useCallback((value: boolean) => {
+    setUploadingState(value);
+    onUploadingChange?.(value);
+  }, [onUploadingChange]);
   const editorRef = useRef<Editor | null>(null);
 
   const uploadImage = useCallback(async (file: File) => {
@@ -292,7 +299,7 @@ export default function WikiEditor({
     if (!currentEditor || isUploading.current) return;
 
     isUploading.current = true;
-    setUploadingState(true);
+    setUploadingStateSynced(true);
 
     try {
       const response = await wikiImageApi.uploadImage(file);
@@ -303,16 +310,16 @@ export default function WikiEditor({
       handleApiError(error, { context: "Ошибка загрузки изображения" });
     } finally {
       isUploading.current = false;
-      setUploadingState(false);
+      setUploadingStateSynced(false);
     }
-  }, []);
+  }, [setUploadingStateSynced]);
 
   const uploadVideo = useCallback(async (file: File) => {
     const currentEditor = editorRef.current;
     if (!currentEditor || isUploading.current) return;
 
     isUploading.current = true;
-    setUploadingState(true);
+    setUploadingStateSynced(true);
 
     try {
       const response = await wikiVideoApi.uploadVideo(file);
@@ -323,9 +330,9 @@ export default function WikiEditor({
       handleApiError(error, { context: "Ошибка загрузки видео" });
     } finally {
       isUploading.current = false;
-      setUploadingState(false);
+      setUploadingStateSynced(false);
     }
-  }, []);
+  }, [setUploadingStateSynced]);
 
   const editor = useEditor({
     immediatelyRender: false,
