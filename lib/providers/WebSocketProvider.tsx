@@ -144,7 +144,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         if (process.env.NODE_ENV === "development") {
           // Log only important STOMP messages or all in verbose mode
           if (!str.includes("PING") && !str.includes("PONG")) {
-            console.log("[WS STOMP]", str);
           }
         }
       },
@@ -154,12 +153,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     client.onConnect = () => {
-      console.log("[WS] Подключен");
       setIsConnected(true);
     };
 
     client.onDisconnect = () => {
-      console.log("[WS] Отключен");
       setIsConnected(false);
     };
 
@@ -174,7 +171,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         errorBody?.includes("TOKEN_EXPIRED") ||
         errorMessage?.includes("TOKEN_EXPIRED")
       ) {
-        console.log("[WS] Токен истек, пытаемся обновить...");
         await refreshAccessToken();
         // effect will re-run automatically because accessToken is a dependency
       }
@@ -190,11 +186,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
         // Often 401 error results in close code 1006 or specific reason
         if (event.code === 1006 || event.reason?.includes("TOKEN_EXPIRED")) {
-          console.log("[WS] Вероятная ошибка авторизации, проверяем токен...");
           await refreshAccessToken();
         }
       }
-
       console.error(`[WS] WebSocket ошибка${errorDetails}`, event);
     };
 
@@ -232,12 +226,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         subscriptionsRef.current.get(existingKey)?.unsubscribe();
       }
 
-      console.log("[WS] Подписка на: ", destination);
       const subscription = client.subscribe(destination, callback);
       subscriptionsRef.current.set(existingKey, subscription);
 
       return () => {
-        console.log("[WS] Отписка от: ", destination);
         subscription.unsubscribe();
         subscriptionsRef.current.delete(existingKey);
       };
@@ -385,7 +377,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       return subscribe(`/topic/user/${userId}/assignments`, (message) => {
         try {
           const assignment: AssignmentWS = JSON.parse(message.body);
-          console.log("[WS] Получено новое назначение:", assignment);
           callback(assignment);
         } catch (e) {
           console.error("[WS] Ошибка подписки на назначения: ", e);
@@ -402,7 +393,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         (message) => {
           try {
             const assignment: AssignmentWS = JSON.parse(message.body);
-            console.log("[WS] Назначение отклонено:", assignment);
             callback(assignment);
           } catch (e) {
             console.error("[WS] Ошибка подписки на отклонение назначения: ", e);
