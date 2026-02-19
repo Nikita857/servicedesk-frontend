@@ -157,7 +157,6 @@ export const useChatActions = (
           try {
             await messageApi.delete(messageId);
             setMessages((prev) => prev.filter((m) => m.id !== messageId));
-            console.log("Rolled back message due to upload failure");
           } catch (rollbackError) {
             console.error("Failed to rollback message", rollbackError);
           }

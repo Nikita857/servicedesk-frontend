@@ -66,7 +66,6 @@ export function useSpecialistTicketsByStatus(
     if (!isConnected) return;
 
     const unsubscribe = subscribeToNewTickets((ticket: Ticket) => {
-      console.log("[WS] Новый тикет получен:", ticket.id, ticket.status);
       invalidateByStatus(ticket.status as TicketStatus);
     });
 

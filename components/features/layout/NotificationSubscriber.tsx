@@ -23,9 +23,6 @@ export function NotificationSubscriber() {
       (notification: Notification) => {
         // Пропускаем STATUS_CHANGE — их обрабатывает useTicketWebSocket на странице тикета
         if (notification.type === "STATUS_CHANGE") {
-          console.log(
-            "[Notifications] Skipping STATUS_CHANGE toast (handled by useTicketWebSocket)"
-          );
           return;
         }
 
@@ -37,14 +34,8 @@ export function NotificationSubscriber() {
         }
       }
     );
-
-    console.log(
-      "[Notifications] Subscribed to user notifications via WebSocketProvider"
-    );
-
     return () => {
       unsubscribe();
-      console.log("[Notifications] Unsubscribed from user notifications");
     };
   }, [isConnected, user?.id, subscribeToUserNotifications]);
 

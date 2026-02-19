@@ -9,6 +9,10 @@ export { useWikiArticlesQuery } from "./useWikiArticlesQuery";
 export { useWikiArticleQuery } from "./useWikiArticleQuery";
 export { useWikiCategoriesQuery } from "./useWikiCategoriesQuery";
 export { useWikiCategoriesWithArticlesQuery } from "./useWikiCategoriesWithArticlesQuery";
+export { useWikiTreeState } from "./useWikiTreeState";
+export type { WikiTreeState } from "./useWikiTreeState";
+export { useOnboarding } from "./useOnboarding";
+export type { OnboardingControls } from "./useOnboarding";
 
 // Categories
 export {

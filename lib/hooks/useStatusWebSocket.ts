@@ -32,7 +32,6 @@ export function useStatusWebSocket() {
     const unsubscribe = subscribeToUserStatus(
       user.id,
       (payload: UserStatusWS) => {
-        console.log("[WS] Received own status update:", payload);
 
         // Update the cache for myStatus
         queryClient.setQueryData(queryKeys.users.myStatus(), (oldData: any) => {
@@ -57,11 +56,6 @@ export function useStatusWebSocket() {
       return subscribeToLineStatus(line.id, (payload: UserStatusWS) => {
         // Skip own updates (handled by user topic)
         if (payload.userId === user.id) return;
-
-        console.log(
-          `[WS] Received status update for line ${line.id}:`,
-          payload,
-        );
 
         const statusInfo = activityStatusConfig[payload.status];
         const statusLabel = statusInfo?.label || payload.status;

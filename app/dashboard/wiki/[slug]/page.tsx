@@ -136,7 +136,7 @@ export default function WikiArticlePage({ params }: PageProps) {
         borderRadius="xl"
         borderWidth="1px"
         borderColor="border.default"
-        p={8}
+        p={{ base: 4, md: 8 }}
       >
         {/* Header */}
         <VStack align="stretch" gap={4} mb={6}>
@@ -226,24 +226,30 @@ export default function WikiArticlePage({ params }: PageProps) {
                 {attachments.map((attachment) => {
                   const IconComponent = getFileIcon(attachment.type);
                   return (
-                    <HStack
+                    <Flex
                       key={attachment.id}
                       justify="space-between"
+                      align={{ base: "start", sm: "center" }}
+                      direction={{ base: "column", sm: "row" }}
+                      gap={2}
                       bg="bg.surface"
                       px={3}
                       py={2}
                       borderRadius="md"
                     >
-                      <HStack gap={2}>
-                        <IconComponent size={16} />
-                        <Text fontSize="sm">{attachment.filename}</Text>
-                        <Text fontSize="xs" color="fg.muted">
+                      <HStack gap={2} minW={0} flex={1}>
+                        <IconComponent size={16} style={{ flexShrink: 0 }} />
+                        <Text fontSize="sm" truncate>
+                          {attachment.filename}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted" flexShrink={0}>
                           ({formatFileSize(attachment.fileSize)})
                         </Text>
                       </HStack>
                       <Button
                         size="xs"
                         variant="ghost"
+                        flexShrink={0}
                         onClick={async () => {
                           try {
                             const { downloadUrl } = await attachmentApi.getUrl(
@@ -258,7 +264,7 @@ export default function WikiArticlePage({ params }: PageProps) {
                         <LuDownload size={14} />
                         Скачать
                       </Button>
-                    </HStack>
+                    </Flex>
                   );
                 })}
               </VStack>

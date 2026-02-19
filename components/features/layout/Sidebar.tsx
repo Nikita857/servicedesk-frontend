@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   LuTicket,
   LuLayoutDashboard,
-  LuMessageSquare,
   LuBook,
   LuBarcode,
   LuSettings,
@@ -35,6 +34,12 @@ const navItems: NavItem[] = [
   { label: "Wiki", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
 ];
+
+const onboardingIds: Record<string, string> = {
+  "/dashboard": "onboarding-dashboard",
+  "/dashboard/tickets": "onboarding-tickets",
+  "/dashboard/wiki": "onboarding-wiki",
+};
 
 const adminItems: NavItem[] = [
   { label: "Пользователи", href: "/dashboard/users", icon: LuUsers },
@@ -143,6 +148,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 bg: "bg.subtle",
                 color: "fg.default",
               }}
+              data-onboarding-id={onboardingIds[item.href]}
             >
               <Icon as={item.icon} boxSize={5} />
               <Text fontSize="sm">{item.label}</Text>

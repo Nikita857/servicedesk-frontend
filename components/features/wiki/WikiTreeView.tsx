@@ -9,9 +9,10 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { LuChevronRight, LuChevronDown, LuFolder, LuFolderOpen } from "react-icons/lu";
-import { useState } from "react";
+import { useEffect } from "react";
 import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
 import { TreeViewListBoxItem } from "./TreeViewListBoxItem";
+import { useWikiTreeState } from "@/lib/hooks/useWikiTreeState";
 
 // --- Рекурсивный узел категории ---
 interface CategoryNodeProps {
@@ -19,7 +20,9 @@ interface CategoryNodeProps {
   depth?: number;
   onLike?: (e: React.MouseEvent, articleId: number) => void;
   likingArticleId?: number | null;
-  defaultOpen?: boolean;
+  isOpen: boolean;
+  getIsOpen: (id: number) => boolean;
+  onToggle: (id: number) => void;
 }
 
 const CategoryNode = ({
@@ -27,12 +30,14 @@ const CategoryNode = ({
   depth = 0,
   onLike,
   likingArticleId,
-  defaultOpen = true,
+  isOpen,
+  getIsOpen,
+  onToggle,
 }: CategoryNodeProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
   const hasChildren = category.children && category.children.length > 0;
   const hasArticles = category.article && category.article.length > 0;
   const articleCount = countArticles(category);
+  const indent = Math.min(depth * 16, 64) + 12;
 
   return (
     <Box w="full">
@@ -41,12 +46,12 @@ const CategoryNode = ({
         gap={2}
         py={2}
         px={3}
-        pl={`${depth * 20 + 12}px`}
+        pl={`${indent}px`}
         cursor="pointer"
         borderRadius="md"
         transition="background 0.15s"
         _hover={{ bg: "gray.50", _dark: { bg: "whiteAlpha.50" } }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => onToggle(category.id)}
       >
         <Box color="fg.muted" flexShrink={0}>
           {isOpen ? <LuChevronDown size={16} /> : <LuChevronRight size={16} />}
@@ -56,15 +61,15 @@ const CategoryNode = ({
           {isOpen ? <LuFolderOpen size={18} /> : <LuFolder size={18} />}
         </Box>
 
-        <Text fontWeight="medium" fontSize="sm">
+        <Text fontWeight="medium" fontSize="sm" flex={1} minW={0} truncate>
           {category.name}
         </Text>
 
-        <Badge colorPalette="blue" variant="subtle" size="sm">
+        <Badge colorPalette="blue" variant="subtle" size="sm" flexShrink={0}>
           {articleCount}{" "}
           {articleCount === 1
             ? "статья"
-            : articleCount < 5 && articleCount != 0
+            : articleCount < 5 && articleCount !== 0
               ? "статьи"
               : "статей"}
         </Badge>
@@ -75,7 +80,11 @@ const CategoryNode = ({
         <Collapsible.Content>
           {/* Articles in this category */}
           {hasArticles && (
-            <Box pl={`${depth * 20 + 32}px`} pr={2} py={1}>
+            <Box
+              pl={{ base: `${Math.min(depth * 12, 48) + 24}px`, md: `${Math.min(depth * 20, 80) + 32}px` }}
+              pr={2}
+              py={1}
+            >
               <TreeViewListBoxItem
                 articles={category.article}
                 onLike={onLike}
@@ -94,7 +103,9 @@ const CategoryNode = ({
                   depth={depth + 1}
                   onLike={onLike}
                   likingArticleId={likingArticleId}
-                  defaultOpen={false}
+                  isOpen={getIsOpen(child.id)}
+                  getIsOpen={getIsOpen}
+                  onToggle={onToggle}
                 />
               ))}
             </VStack>
@@ -102,7 +113,7 @@ const CategoryNode = ({
 
           {/* Empty category */}
           {!hasArticles && !hasChildren && (
-            <Box pl={`${depth * 20 + 48}px`} py={2}>
+            <Box pl={`${indent + 36}px`} py={2}>
               <Text fontSize="sm" color="fg.muted">
                 Нет статей в категории
               </Text>
@@ -127,27 +138,42 @@ function countArticles(category: WikiCategoryWithArticles): number {
 
 // --- Main component ---
 interface WikiTreeViewProps {
+  onBoardingId: string
   categories: WikiCategoryWithArticles[];
   onLike?: (e: React.MouseEvent, articleId: number) => void;
   likingArticleId?: number | null;
 }
 
 export const WikiTreeView = ({
+  onBoardingId,
   categories,
   onLike,
   likingArticleId,
 }: WikiTreeViewProps) => {
+  const rootIds = categories.map((c) => c.id);
+  const { isOpen, toggle, openAll } = useWikiTreeState(rootIds);
+
+  // При изменении списка категорий (поиск, фильтр) — открываем корневые
+  useEffect(() => {
+    if (rootIds.length > 0) {
+      openAll(rootIds);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories]);
+
   if (!categories || categories.length === 0) {
     return null;
   }
 
   return (
     <Box
+      id={onBoardingId}
       bg="bg.surface"
       borderRadius="xl"
       borderWidth="1px"
       borderColor="border.default"
       py={2}
+      overflowX="hidden"
     >
       <VStack gap={0} align="stretch">
         {categories.map((category) => (
@@ -157,7 +183,9 @@ export const WikiTreeView = ({
             depth={0}
             onLike={onLike}
             likingArticleId={likingArticleId}
-            defaultOpen={true}
+            isOpen={isOpen(category.id)}
+            getIsOpen={isOpen}
+            onToggle={toggle}
           />
         ))}
       </VStack>

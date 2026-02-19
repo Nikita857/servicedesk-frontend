@@ -11,6 +11,7 @@ import {
   VStack,
   Spinner,
   Stack,
+  Center,
 } from "@chakra-ui/react";
 import { LuPlus, LuSearch, LuBookOpen, LuHeart } from "react-icons/lu";
 import { useAuthStore } from "@/stores";
@@ -21,6 +22,12 @@ import { useWikiAutocomplete } from "@/lib/hooks/useWikiAutocomplete";
 import { WikiTreeView } from "@/components/features/wiki/WikiTreeView";
 import { WikiFilter } from "@/lib/hooks/useWikiCategoriesWithArticlesQuery";
 import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
+import { useOnboarding } from "@/lib/hooks/useOnboarding";
+import {
+  OnboardingOverlay,
+  WIKI_ONBOARDING_STEPS,
+} from "@/components/features/onboarding";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export default function WikiPage() {
   const { user } = useAuthStore();
@@ -44,6 +51,8 @@ export default function WikiPage() {
   const { hint } = useWikiAutocomplete(searchQuery);
 
   const [showFavorites, setShowFavorites] = useState(false);
+
+  const wikiOnboarding = useOnboarding(true, "sd_wiki_onboarding_seen");
 
   // Reset favorites filter on search
   const onSearch = (e?: React.FormEvent) => {
@@ -84,16 +93,23 @@ export default function WikiPage() {
 
   return (
     <Box>
+      <OnboardingOverlay
+        steps={WIKI_ONBOARDING_STEPS}
+        controls={wikiOnboarding}
+      />
+
       {/* Header */}
       <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
-        <Box>
-          <Heading size="lg" color="fg.default" mb={1}>
-            База знаний
-          </Heading>
-          <Text color="fg.muted" fontSize="sm">
-            Статьи и документация для специалистов
-          </Text>
-        </Box>
+        <Flex align="center" gap={2}>
+          <Box>
+            <Heading size="lg" color="fg.default" mb={1}>
+              База знаний
+            </Heading>
+            <Text color="fg.muted" fontSize="sm">
+              Статьи и документация
+            </Text>
+          </Box>
+        </Flex>
 
         <Stack
           direction={{ base: "column", md: "row" }}
@@ -102,6 +118,7 @@ export default function WikiPage() {
         >
           {/* Favorites filter */}
           <Button
+            data-onboarding-id="wiki-fav"
             variant={showFavorites ? "solid" : "outline"}
             colorPalette={showFavorites ? "red" : "gray"}
             onClick={() => {
@@ -114,26 +131,28 @@ export default function WikiPage() {
             <Text hideBelow="sm">Избранное</Text>
           </Button>
 
-          <SegmentedControl
-            value={filter}
-            onValueChange={(e) => {
-              const val = e.value as WikiFilter;
-              setFilter(val);
-              if (val === "all") {
-                setShowAll(true);
-              } else {
-                setShowAll(false);
-              }
-              if (val !== "all") setShowFavorites(false);
-            }}
-            items={[
-              { value: "my", label: "Мой отдел" },
-              { value: "public", label: "Публичные" },
-              { value: "all", label: "Все статьи" },
-            ]}
-            size="sm"
-            width={{ base: "full", md: "auto" }}
-          />
+          <Box data-onboarding-id="wiki-switcher">
+            <SegmentedControl
+              value={filter}
+              onValueChange={(e) => {
+                const val = e.value as WikiFilter;
+                setFilter(val);
+                if (val === "all") {
+                  setShowAll(true);
+                } else {
+                  setShowAll(false);
+                }
+                if (val !== "all") setShowFavorites(false);
+              }}
+              items={[
+                { value: "my", label: "Мой отдел" },
+                { value: "public", label: "Публичные" },
+                { value: "all", label: "Все статьи" },
+              ]}
+              size="sm"
+              width={{ base: "full", md: "auto" }}
+            />
+          </Box>
 
           {isSpecialist && (
             <Link href="/dashboard/wiki/new">
@@ -152,7 +171,7 @@ export default function WikiPage() {
       </Flex>
 
       {/* Search */}
-      <Box mb={6}>
+      <Box mb={6} data-onboarding-id="wiki-search">
         <form onSubmit={onSearch}>
           <VStack align="stretch" gap={2}>
             <Box position="relative">
@@ -262,6 +281,7 @@ export default function WikiPage() {
       ) : (
         <>
           <WikiTreeView
+            onBoardingId="wiki-tree"
             categories={displayedCategories}
             onLike={handleLike}
             likingArticleId={likingArticleId}
@@ -293,6 +313,25 @@ export default function WikiPage() {
           )}
         </>
       )}
+      <Center mt={10}>
+        <Tooltip
+          content="Показать обучение"
+          showArrow
+          positioning={{ placement: "bottom" }}
+        >
+          <Button
+            aria-label="Показать обучение по вики"
+            variant="ghost"
+            size="md"
+            bg="red.500"
+            color="white"
+            onClick={wikiOnboarding.start}
+            mt={-4}
+          >
+            Я ничего не понимаю!
+          </Button>
+        </Tooltip>
+      </Center>
     </Box>
   );
 }

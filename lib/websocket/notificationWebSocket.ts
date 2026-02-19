@@ -19,7 +19,6 @@ export function connectNotifications(
   onDisconnect?: () => void
 ): void {
   if (stompClient?.connected) {
-    console.log('[NotificationWS] Already connected');
     return;
   }
 
@@ -33,7 +32,6 @@ export function connectNotifications(
     heartbeatOutgoing: 10000,
 
     onConnect: () => {
-      console.log('[NotificationWS] Connected');
       
       // Subscribe to user's notification topic
       notificationSubscription = stompClient!.subscribe(
@@ -41,7 +39,6 @@ export function connectNotifications(
         (message: IMessage) => {
           try {
             const notification: Notification = JSON.parse(message.body);
-            console.log('[NotificationWS] Received:', notification);
             onNotification(notification);
           } catch (error) {
             console.error('[NotificationWS] Parse error:', error);
@@ -53,7 +50,6 @@ export function connectNotifications(
     },
 
     onDisconnect: () => {
-      console.log('[NotificationWS] Disconnected');
       onDisconnect?.();
     },
 
@@ -78,8 +74,6 @@ export function disconnectNotifications(): void {
     stompClient.deactivate();
     stompClient = null;
   }
-
-  console.log('[NotificationWS] Disconnected');
 }
 
 /**

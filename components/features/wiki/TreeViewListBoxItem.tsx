@@ -27,8 +27,6 @@ interface TreeViewListBoxItemProps {
 export const TreeViewListBoxItem = ({
   articles,
 }: TreeViewListBoxItemProps) => {
-  console.log("TreeViewListBoxItem articles:", articles);
-
   const collection = createListCollection({
     items: articles.map((article) => ({
       label: article.title,
@@ -36,8 +34,6 @@ export const TreeViewListBoxItem = ({
       data: article,
     })),
   });
-
-  console.log("TreeViewListBoxItem collection:", collection);
 
   return (
     <Listbox.Root collection={collection} width="full">

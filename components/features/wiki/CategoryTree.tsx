@@ -47,7 +47,7 @@ const TreeItem = ({ node, depth = 0, onEdit, onDelete }: TreeItemProps) => {
           if (hasChildren) setIsOpen(!isOpen)
         }}
       >
-        <HStack gap={2} pl={depth * 6}>
+        <HStack gap={2} pl={Math.min(depth * 6, 48)} overflow="hidden">
           {/* Стрелка раскрытия */}
           <Box w="18px" display="flex" justifyContent="center" alignItems="center" color="fg.muted" flexShrink={0}>
             {hasChildren ? (
@@ -82,7 +82,7 @@ const TreeItem = ({ node, depth = 0, onEdit, onDelete }: TreeItemProps) => {
             )}
           </HStack>
 
-          {/* Кнопки (видны при наведении) */}
+          {/* Кнопки (видны при наведении на десктопе, всегда видны на мобиле) */}
           <HStack
             className="tree-actions"
             gap={0}
@@ -90,6 +90,7 @@ const TreeItem = ({ node, depth = 0, onEdit, onDelete }: TreeItemProps) => {
             opacity={0}
             transition="opacity 0.15s"
             onClick={(e) => e.stopPropagation()}
+            css={{ "@media (max-width: 48em)": { opacity: 1 } }}
           >
             <IconButton
               variant="ghost"

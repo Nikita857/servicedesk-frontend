@@ -41,9 +41,6 @@ export default function SearchAdminPage() {
     }
   };
 
-  // TODO сделать механизм сохранения состояния вики папок (типа я открыл нужную папку и отркыл статью, возвращаюсь назад к дереву папок и все свернулось)
-  // TODO поработать с адаптивностью страницы категории вики и Wiki
-
   return (
     <Container maxW="container.xl" py={8}>
       <VStack align="start" gap={8}>

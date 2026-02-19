@@ -12,17 +12,21 @@ import {
   VStack,
   createListCollection,
   Text,
+  Tooltip,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
 import {
   useCategoryDetailQuery,
   useCategoriesQuery,
+  useOnboarding,
 } from "@/lib/hooks";
 import { toast, handleApiError } from "@/lib/utils";
 import { DataSelect, BackButton } from "@/components/ui";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
 import { useAvailableSupportLinesQuery } from "@/lib/hooks/useAvailableSupportLinesQuery";
+import { OnboardingOverlay } from "@/components/features/onboarding";
+import { TICKET_FORM_ONBOARDING_STEPS } from "@/components/features/onboarding/OnboardingOverlay";
 
 const priorityCollection = createListCollection({
   items: [
@@ -36,10 +40,12 @@ const priorityCollection = createListCollection({
 export default function NewTicketPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const wikiOnboarding = useOnboarding(true, "sd_tickets_form_Seen");
 
   // Fetch categories and support lines using TanStack Query
   const { data: categories = [] } = useCategoriesQuery();
-  const { supportLines, isLoading: isLoadingLines } = useAvailableSupportLinesQuery();
+  const { supportLines, isLoading: isLoadingLines } =
+    useAvailableSupportLinesQuery();
 
   const [formData, setFormData] = useState<CreateTicketRequest>({
     title: "",
@@ -111,6 +117,10 @@ export default function NewTicketPage() {
 
   return (
     <Box maxW="800px" mx="auto" py={8} px={4}>
+      <OnboardingOverlay
+        steps={TICKET_FORM_ONBOARDING_STEPS}
+        controls={wikiOnboarding}
+      />
       {/* Header */}
       <Box mb={6}>
         <HStack mb={2}>
@@ -135,7 +145,7 @@ export default function NewTicketPage() {
         <form onSubmit={handleSubmit}>
           <VStack gap={6} align="stretch">
             {/* Title */}
-            <Box>
+            <Box data-onboarding-id="t-theme">
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
                 Тема обращения сокращенно (Заголовок) *
               </Text>
@@ -152,7 +162,7 @@ export default function NewTicketPage() {
 
             <HStack gap={4} align="flex-start">
               {/* Priority */}
-              <Box flex={1}>
+              <Box flex={1} data-onboarding-id="t-priority">
                 <DataSelect
                   label="Приоритет"
                   collection={priorityCollection}
@@ -167,7 +177,7 @@ export default function NewTicketPage() {
               </Box>
 
               {categories.length > 0 && (
-                <Box flex={1}>
+                <Box flex={1} data-onboarding-id="t-category">
                   <DataSelect
                     label="Категория"
                     collection={categoryCollection}
@@ -189,7 +199,8 @@ export default function NewTicketPage() {
             </HStack>
 
             {/* Support Line Selection */}
-            <DataSelect
+            <Box data-onboarding-id="t-line">
+              <DataSelect
               label="Линия поддержки"
               collection={supportLineCollection}
               placeholder="Выберите линию поддержки (опционально)"
@@ -215,6 +226,7 @@ export default function NewTicketPage() {
                 </VStack>
               )}
             />
+            </Box>
 
             {/* Link 1C */}
             {categoryDetail?.is1ClinkRecommended && (
@@ -239,7 +251,7 @@ export default function NewTicketPage() {
             )}
 
             {/* Description */}
-            <Box>
+            <Box data-onboarding-id="t-description">
               <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
                 Подробное описание проблемы *
               </Text>
@@ -258,7 +270,17 @@ export default function NewTicketPage() {
               />
             </Box>
 
-            <Flex justify="flex-end" pt={4}>
+            <Flex justify="space-between" pt={4}>
+              <Button
+                aria-label="Показать обучение по созданию тикета"
+                variant="ghost"
+                size="md"
+                color="white"
+                bg="red.500"
+                onClick={wikiOnboarding.start}
+              >
+                Я ничего не понимаю!
+              </Button>
               <Button
                 type="submit"
                 size="md"

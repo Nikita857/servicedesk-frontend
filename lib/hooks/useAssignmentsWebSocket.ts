@@ -65,8 +65,6 @@ export function useAssignmentsWebSocket() {
     if (!isConnected || !user?.id || !user?.specialist) {
       return;
     }
-
-    console.log("[Assignments WS] Подписка на назначения для userId:", user.id);
     const unsubscribeNew = subscribeToAssignments(user.id, handleNewAssignment);
     const unsubscribeRejected = subscribeToAssignmentRejected(
       user.id,
@@ -74,16 +72,8 @@ export function useAssignmentsWebSocket() {
     );
 
     return () => {
-      console.log("[Assignments WS] Отписка от назначений");
       unsubscribeNew();
       unsubscribeRejected();
     };
-  }, [
-    isConnected,
-    user?.specialist,
-    subscribeToAssignments,
-    subscribeToAssignmentRejected,
-    handleNewAssignment,
-    handleAssignmentRejected,
-  ]);
+  }, [isConnected, user?.specialist, subscribeToAssignments, subscribeToAssignmentRejected, handleNewAssignment, handleAssignmentRejected, user?.id]);
 }

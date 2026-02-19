@@ -170,14 +170,22 @@ export default function WikiCategoriesPage() {
   }
 
   return (
-    <Box p={6}>
-      <Flex justify="space-between" align="center" mb={6}>
+    <Box p={{ base: 3, md: 6 }}>
+      <Flex
+        justify="space-between"
+        align={{ base: "start", sm: "center" }}
+        direction={{ base: "column", sm: "row" }}
+        gap={3}
+        mb={6}
+      >
         <VStack align="start" gap={1}>
           <HStack mb={2}>
             <BackButton href="/dashboard/wiki" />
           </HStack>
-          <Heading size="lg">Управление категориями Wiki</Heading>
-          <Text color="fg.muted">
+          <Heading size={{ base: "md", md: "lg" }}>
+            Управление категориями Wiki
+          </Heading>
+          <Text color="fg.muted" fontSize={{ base: "sm", md: "md" }}>
             Создание и редактирование категорий для статей базы знаний
           </Text>
         </VStack>
@@ -185,6 +193,8 @@ export default function WikiCategoriesPage() {
           bg="gray.900"
           color="white"
           _hover={{ bg: "gray.800" }}
+          size={{ base: "sm", md: "md" }}
+          flexShrink={0}
           onClick={handleCreateNew}
         >
           <LuPlus /> Добавить категорию
@@ -193,7 +203,7 @@ export default function WikiCategoriesPage() {
 
       <Box
         bg="bg.surface"
-        p={4}
+        p={{ base: 3, md: 4 }}
         borderRadius="lg"
         borderWidth="1px"
         borderColor="border.default"
@@ -203,7 +213,7 @@ export default function WikiCategoriesPage() {
             placeholder="Поиск по названию или описанию..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            maxW="400px"
+            maxW={{ base: "full", md: "400px" }}
           />
         </Box>
 
@@ -218,7 +228,7 @@ export default function WikiCategoriesPage() {
       <Dialog.Root
         open={isDialogOpen}
         onOpenChange={(e) => setIsDialogOpen(e.open)}
-        size="md"
+        size={{ base: "full", md: "md" }}
       >
         <Portal>
           <Dialog.Backdrop />

@@ -98,7 +98,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
 
   // Обработка входящего сообщения (обычное и внутреннее)
   const handleIncomingMessage = useCallback((wsMessage: ChatMessageWS) => {
-    console.log("[WS] Входящее сообщение (payload):", wsMessage);
 
     // Формируем отправителя, если не хватает данных (плоская структура vs вложенная)
     const sender = wsMessage.sender || {
@@ -254,7 +253,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     const unsubscribe = subscribeToAttachments(
       ticketId,
       (attachment: AttachmentWS) => {
-        console.log("[WS] Получено событие вложения:", attachment);
 
         // Конвертация AttachmentWS в MessageAttachment
         const newAttachment: MessageAttachment = {
@@ -272,9 +270,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
             const messageExists = prev.some((m) => m.id === messageId);
 
             if (!messageExists) {
-              console.log(
-                `[WS] Сообщение ${messageId} для вложения не найдено локально. Буферизируем.`
-              );
               // Сообщение еще не пришло, буферизируем вложение
               const existing =
                 pendingAttachmentsRef.current.get(messageId) || [];
@@ -289,9 +284,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
                 const timeoutId = setTimeout(() => {
                   pendingAttachmentsRef.current.delete(messageId);
                   pendingTimeoutsRef.current.delete(messageId);
-                  console.warn(
-                    `Очищены осиротевшие вложения для сообщения ${messageId}`
-                  );
                 }, 60000);
                 pendingTimeoutsRef.current.set(messageId, timeoutId);
               }
@@ -299,9 +291,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
               return prev;
             }
 
-            console.log(
-              `[WS] Сообщение ${messageId} найдено. Обновляем вложения.`
-            );
             return prev.map((msg) => {
               if (msg.id !== messageId) return msg;
 
@@ -310,9 +299,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
                 (msg.attachments || []).map((a) => a.id)
               );
               if (existingIds.has(newAttachment.id)) {
-                console.log(
-                  `[WS] Вложение ${newAttachment.id} уже существует, пропускаем`
-                );
                 return msg;
               }
 
@@ -326,9 +312,6 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           // Принудительное обновление сообщений для гарантии консистентности (fail-safe)
           // Добавляем задержку, чтобы транзакция на бэке успела закоммититься
           setTimeout(() => {
-            console.log(
-              "[WS] Принудительное обновление сообщений после события вложения"
-            );
             fetchMessages();
           }, 1000);
         }

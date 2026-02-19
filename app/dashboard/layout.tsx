@@ -17,6 +17,8 @@ import { Header } from "@/components/features/layout/Header";
 import { WebSocketProvider } from "@/lib/providers";
 import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
 import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
+import { OnboardingOverlay, USER_ONBOARDING_STEPS } from "@/components/features/onboarding";
+import { useOnboarding } from "@/lib/hooks/useOnboarding";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -24,17 +26,24 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isAuthenticated, isHydrated } = useAuthStore();
+  const { isAuthenticated, isHydrated, user } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Онбординг только для обычных пользователей (не специалистов и не админов)
+  const isOnlyUser = !!(
+    user &&
+    !user.specialist &&
+    user.roles?.length === 1 &&
+    user.roles[0] === "USER"
+  );
+  const onboarding = useOnboarding(isOnlyUser);
+
   useEffect(() => {
-    // Wait for hydration, then check auth
     if (isHydrated && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, isHydrated, router]);
 
-  // Show loading while hydrating from localStorage
   if (!isHydrated) {
     return (
       <Center h="100vh" bg="bg.canvas">
@@ -43,7 +52,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  // Don't render if not authenticated
   if (!isAuthenticated) {
     return null;
   }
@@ -53,10 +61,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <WebSocketProvider>
-      {/* Подписка на уведомления через централизованный WebSocket */}
       <NotificationSubscriber />
-      {/* Подписка на назначения тикетов (для специалистов) */}
       <AssignmentSubscriber />
+
+      {/* Онбординг — рендерится поверх всего интерфейса */}
+      <OnboardingOverlay steps={USER_ONBOARDING_STEPS} controls={onboarding} />
 
       <Flex h="100vh" bg="bg.canvas">
         {/* Desktop Sidebar - hidden on mobile */}
@@ -91,10 +100,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Main Content */}
         <Flex flex={1} direction="column" overflow="hidden">
-          {/* Header with burger menu */}
-          <Header onMenuClick={handleOpenSidebar} />
+          <Header
+            onMenuClick={handleOpenSidebar}
+            onStartTutorial={onboarding.start}
+            showTutorialButton={isOnlyUser}
+          />
 
-          {/* Page Content */}
           <Box flex={1} overflow="auto" p={{ base: 4, md: 6 }} bg="bg.canvas">
             {children}
           </Box>
