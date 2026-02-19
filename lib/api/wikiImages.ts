@@ -1,4 +1,5 @@
 import api from "./client";
+import axios from "axios";
 import type { ApiResponse } from "@/types/api";
 
 export interface WikiImageResponse {
@@ -9,24 +10,53 @@ export interface WikiImageResponse {
   fileKey: string;
 }
 
+interface WikiMediaUploadUrlResponse {
+  uploadUrl: string;
+  fileKey: string;
+  filename: string;
+  bucket: string;
+}
+
 export const wikiImageApi = {
   /**
-   * Upload an image for wiki articles
+   * Upload an image for wiki articles via presigned URL (client → MinIO directly).
+   * Step 1: get presigned PUT URL from backend.
+   * Step 2: PUT file directly to MinIO.
+   * Step 3: confirm upload on backend.
    */
-  uploadImage: async (file: File): Promise<WikiImageResponse> => {
-    const formData = new FormData();
-    formData.append("file", file);
+  uploadImage: async (
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<WikiImageResponse> => {
+    // Step 1: request presigned URL
+    const { data: urlResp } = await api.post<
+      ApiResponse<WikiMediaUploadUrlResponse>
+    >("/wiki/images/upload-url", {
+      filename: file.name,
+      contentType: file.type,
+    });
+    const { uploadUrl, fileKey, filename } = urlResp.data;
 
-    const response = await api.post<ApiResponse<WikiImageResponse>>(
-      "/wiki/images",
-      formData,
+    // Step 2: upload directly to MinIO (auth is signed into the URL)
+    await axios.put(uploadUrl, file, {
+      headers: { "Content-Type": file.type },
+      onUploadProgress: onProgress
+        ? (e) =>
+            onProgress(Math.round((e.loaded * 100) / (e.total ?? e.loaded)))
+        : undefined,
+    });
+
+    // Step 3: confirm on backend
+    const { data: confirmResp } = await api.post<ApiResponse<WikiImageResponse>>(
+      "/wiki/images/confirm",
       {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+        fileKey,
+        filename,
+        contentType: file.type,
+        fileSize: file.size,
+      },
     );
-    return response.data.data;
+    return confirmResp.data;
   },
 
   /**

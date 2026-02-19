@@ -9,7 +9,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { LuChevronRight, LuChevronDown, LuFolder, LuFolderOpen } from "react-icons/lu";
-import { useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
 import { TreeViewListBoxItem } from "./TreeViewListBoxItem";
 import { useWikiTreeState } from "@/lib/hooks/useWikiTreeState";
@@ -25,7 +25,7 @@ interface CategoryNodeProps {
   onToggle: (id: number) => void;
 }
 
-const CategoryNode = ({
+const CategoryNode = memo(function CategoryNode({
   category,
   depth = 0,
   onLike,
@@ -33,11 +33,19 @@ const CategoryNode = ({
   isOpen,
   getIsOpen,
   onToggle,
-}: CategoryNodeProps) => {
+}: CategoryNodeProps) {
   const hasChildren = category.children && category.children.length > 0;
   const hasArticles = category.article && category.article.length > 0;
   const articleCount = countArticles(category);
   const indent = Math.min(depth * 16, 64) + 12;
+
+  // Lazy mounting: mount children only on first open, keep them after.
+  // Calling setState during render is intentional here — React re-renders
+  // immediately and the condition becomes false, so there's no loop.
+  const [everOpened, setEverOpened] = useState(isOpen);
+  if (isOpen && !everOpened) {
+    setEverOpened(true);
+  }
 
   return (
     <Box w="full">
@@ -75,55 +83,57 @@ const CategoryNode = ({
         </Badge>
       </HStack>
 
-      {/* Content (articles + child categories) */}
+      {/* Content: render only after first open (lazy mounting) */}
       <Collapsible.Root open={isOpen}>
-        <Collapsible.Content>
-          {/* Articles in this category */}
-          {hasArticles && (
-            <Box
-              pl={{ base: `${Math.min(depth * 12, 48) + 24}px`, md: `${Math.min(depth * 20, 80) + 32}px` }}
-              pr={2}
-              py={1}
-            >
-              <TreeViewListBoxItem
-                articles={category.article}
-                onLike={onLike}
-                likingArticleId={likingArticleId}
-              />
-            </Box>
-          )}
-
-          {/* Child categories */}
-          {hasChildren && (
-            <VStack gap={0} align="stretch">
-              {category.children.map((child) => (
-                <CategoryNode
-                  key={child.id}
-                  category={child}
-                  depth={depth + 1}
+        {everOpened && (
+          <Collapsible.Content>
+            {/* Articles in this category */}
+            {hasArticles && (
+              <Box
+                pl={{ base: `${Math.min(depth * 12, 48) + 24}px`, md: `${Math.min(depth * 20, 80) + 32}px` }}
+                pr={2}
+                py={1}
+              >
+                <TreeViewListBoxItem
+                  articles={category.article}
                   onLike={onLike}
                   likingArticleId={likingArticleId}
-                  isOpen={getIsOpen(child.id)}
-                  getIsOpen={getIsOpen}
-                  onToggle={onToggle}
                 />
-              ))}
-            </VStack>
-          )}
+              </Box>
+            )}
 
-          {/* Empty category */}
-          {!hasArticles && !hasChildren && (
-            <Box pl={`${indent + 36}px`} py={2}>
-              <Text fontSize="sm" color="fg.muted">
-                Нет статей в категории
-              </Text>
-            </Box>
-          )}
-        </Collapsible.Content>
+            {/* Child categories */}
+            {hasChildren && (
+              <VStack gap={0} align="stretch">
+                {category.children.map((child) => (
+                  <CategoryNode
+                    key={child.id}
+                    category={child}
+                    depth={depth + 1}
+                    onLike={onLike}
+                    likingArticleId={likingArticleId}
+                    isOpen={getIsOpen(child.id)}
+                    getIsOpen={getIsOpen}
+                    onToggle={onToggle}
+                  />
+                ))}
+              </VStack>
+            )}
+
+            {/* Empty category */}
+            {!hasArticles && !hasChildren && (
+              <Box pl={`${indent + 36}px`} py={2}>
+                <Text fontSize="sm" color="fg.muted">
+                  Нет статей в категории
+                </Text>
+              </Box>
+            )}
+          </Collapsible.Content>
+        )}
       </Collapsible.Root>
     </Box>
   );
-};
+});
 
 // Count total articles in category and all its children
 function countArticles(category: WikiCategoryWithArticles): number {
@@ -144,12 +154,12 @@ interface WikiTreeViewProps {
   likingArticleId?: number | null;
 }
 
-export const WikiTreeView = ({
+export const WikiTreeView = memo(function WikiTreeView({
   onBoardingId,
   categories,
   onLike,
   likingArticleId,
-}: WikiTreeViewProps) => {
+}: WikiTreeViewProps) {
   const rootIds = categories.map((c) => c.id);
   const { isOpen, toggle, openAll } = useWikiTreeState(rootIds);
 
@@ -191,4 +201,4 @@ export const WikiTreeView = ({
       </VStack>
     </Box>
   );
-};
+});

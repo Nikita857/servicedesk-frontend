@@ -24,6 +24,8 @@ interface UseWikiCategoriesWithArticlesQueryReturn {
   setSearchQuery: (query: string) => void;
   setPage: (page: number) => void;
   handleSearch: (e: React.FormEvent) => void;
+  submitSearch: (query: string) => void;
+  activeSearch: string;
   handleLike: (e: React.MouseEvent, articleId: number) => void;
   likingArticleId: number | null;
   filter: WikiFilter;
@@ -200,7 +202,7 @@ export function useWikiCategoriesWithArticlesQuery(
     },
   });
 
-  // Handle search submission
+  // Handle search submission (form event variant)
   const handleSearch = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
@@ -209,6 +211,12 @@ export function useWikiCategoriesWithArticlesQuery(
     },
     [searchQuery],
   );
+
+  // Submit search programmatically (used by WikiSearchBar)
+  const submitSearch = useCallback((query: string) => {
+    setPage(0);
+    setDebouncedSearch(query);
+  }, []);
 
   // Handle like button click
   const handleLike = useCallback(
@@ -239,6 +247,8 @@ export function useWikiCategoriesWithArticlesQuery(
     setSearchQuery,
     setPage,
     handleSearch,
+    submitSearch,
+    activeSearch: debouncedSearch,
     handleLike,
     likingArticleId,
     filter,

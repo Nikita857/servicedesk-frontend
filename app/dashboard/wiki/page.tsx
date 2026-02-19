@@ -1,24 +1,22 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Box,
   Flex,
   Heading,
   Text,
   Button,
-  Input,
-  VStack,
   Spinner,
   Stack,
   Center,
 } from "@chakra-ui/react";
-import { LuPlus, LuSearch, LuBookOpen, LuHeart } from "react-icons/lu";
+import { LuPlus, LuBookOpen, LuHeart } from "react-icons/lu";
 import { useAuthStore } from "@/stores";
 import { useWikiCategoriesWithArticlesQuery } from "@/lib/hooks";
 import Link from "next/link";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { useWikiAutocomplete } from "@/lib/hooks/useWikiAutocomplete";
+import { WikiSearchBar } from "@/components/features/wiki/WikiSearchBar";
 import { WikiTreeView } from "@/components/features/wiki/WikiTreeView";
 import { WikiFilter } from "@/lib/hooks/useWikiCategoriesWithArticlesQuery";
 import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
@@ -29,6 +27,19 @@ import {
 } from "@/components/features/onboarding";
 import { Tooltip } from "@/components/ui/tooltip";
 
+// Module-level helper — stable reference, no re-creation on every render
+function filterFavorites(
+  cats: WikiCategoryWithArticles[],
+): WikiCategoryWithArticles[] {
+  return cats
+    .map((cat) => ({
+      ...cat,
+      article: cat.article?.filter((a) => a.likedByCurrentUser) ?? [],
+      children: filterFavorites(cat.children ?? []),
+    }))
+    .filter((cat) => cat.article.length > 0 || cat.children.length > 0);
+}
+
 export default function WikiPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
@@ -38,58 +49,32 @@ export default function WikiPage() {
     isLoading,
     page,
     totalPages,
-    searchQuery,
-    setSearchQuery,
+    activeSearch,
     setPage,
-    handleSearch,
     handleLike,
     likingArticleId,
     filter,
     setFilter,
     setShowAll,
+    submitSearch,
   } = useWikiCategoriesWithArticlesQuery({ pageSize: 5 });
-  const { hint } = useWikiAutocomplete(searchQuery);
 
   const [showFavorites, setShowFavorites] = useState(false);
 
   const wikiOnboarding = useOnboarding(true, "sd_wiki_onboarding_seen");
 
-  // Reset favorites filter on search
-  const onSearch = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setShowFavorites(false);
-    handleSearch(e as FormEvent<Element>);
-  };
+  const onSearch = useCallback(
+    (query: string) => {
+      setShowFavorites(false);
+      submitSearch(query);
+    },
+    [submitSearch],
+  );
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.key === "Tab" || e.key === "ArrowRight") && hint) {
-      // If cursor is at the end of text or it's a Tab press
-      const isAtEnd =
-        (e.target as HTMLInputElement).selectionStart === searchQuery.length;
-
-      if (e.key === "Tab" || isAtEnd) {
-        e.preventDefault();
-        setSearchQuery(hint);
-      }
-    }
-  };
-
-  // Recursively filter categories to show only liked articles
-  const filterFavorites = (
-    cats: WikiCategoryWithArticles[],
-  ): WikiCategoryWithArticles[] => {
-    return cats
-      .map((cat) => ({
-        ...cat,
-        article: cat.article?.filter((a) => a.likedByCurrentUser) ?? [],
-        children: filterFavorites(cat.children ?? []),
-      }))
-      .filter((cat) => cat.article.length > 0 || cat.children.length > 0);
-  };
-
-  const displayedCategories = showFavorites
-    ? filterFavorites(categories)
-    : categories;
+  const displayedCategories = useMemo(
+    () => (showFavorites ? filterFavorites(categories) : categories),
+    [showFavorites, categories],
+  );
 
   return (
     <Box>
@@ -170,62 +155,7 @@ export default function WikiPage() {
         </Stack>
       </Flex>
 
-      {/* Search */}
-      <Box mb={6} data-onboarding-id="wiki-search">
-        <form onSubmit={onSearch}>
-          <VStack align="stretch" gap={2}>
-            <Box position="relative">
-              {/* Ghost Hint Layer */}
-              {hint && (
-                <Box
-                  position="absolute"
-                  top={0}
-                  left={0}
-                  right={0}
-                  bottom={0}
-                  px="calc(12px + 1px)" // Input padding + border
-                  py="calc(8px + 1px)"
-                  pointerEvents="none"
-                  fontSize="md"
-                  fontFamily="inherit"
-                  color="fg.muted"
-                  opacity={0.5}
-                  whiteSpace="pre"
-                  overflow="hidden"
-                >
-                  {/* Invisible text to push hint to the right position */}
-                  <Box as="span" opacity={0}>
-                    {searchQuery}
-                  </Box>
-                  {/* The actual hint part */}
-                  {hint.slice(searchQuery.length)}
-                </Box>
-              )}
-
-              <Flex gap={2}>
-                <Input
-                  placeholder="Поиск по статьям..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  bg="transparent"
-                  flex={1}
-                  autoComplete="off"
-                  zIndex={1}
-                  _placeholder={{ color: "fg.muted", opacity: 0.6 }}
-                />
-                <Button type="submit" variant="outline">
-                  <LuSearch />
-                  Найти
-                </Button>
-              </Flex>
-            </Box>
-            <Text fontSize="xs" color="fg.muted" ml={1}>
-              Поиск выполняется по всей базе знаний (включая другие отделы)
-            </Text>
-          </VStack>
-        </form>
-      </Box>
+      <WikiSearchBar onSearch={onSearch} />
 
       {/* Categories with Accordions */}
       {isLoading ? (
@@ -245,7 +175,7 @@ export default function WikiPage() {
           <Text color="fg.muted" mt={4}>
             {showFavorites
               ? "У вас пока нет избранных статей"
-              : searchQuery
+              : activeSearch
                 ? "Статьи не найдены"
                 : "Нет статей в базе знаний"}
           </Text>
@@ -264,7 +194,7 @@ export default function WikiPage() {
             </Button>
           )}
 
-          {isSpecialist && !searchQuery && !showFavorites && (
+          {isSpecialist && !activeSearch && !showFavorites && (
             <Link href="/dashboard/wiki/new">
               <Button
                 mt={4}

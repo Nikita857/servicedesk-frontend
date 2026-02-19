@@ -287,6 +287,7 @@ export default function WikiEditor({
   const videoInputRef = useRef<HTMLInputElement>(null);
   const isUploading = useRef(false);
   const [uploadingState, setUploadingState] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const setUploadingStateSynced = useCallback((value: boolean) => {
     setUploadingState(value);
@@ -300,6 +301,7 @@ export default function WikiEditor({
 
     isUploading.current = true;
     setUploadingStateSynced(true);
+    setUploadProgress(null);
 
     try {
       const response = await wikiImageApi.uploadImage(file);
@@ -311,6 +313,7 @@ export default function WikiEditor({
     } finally {
       isUploading.current = false;
       setUploadingStateSynced(false);
+      setUploadProgress(null);
     }
   }, [setUploadingStateSynced]);
 
@@ -320,9 +323,10 @@ export default function WikiEditor({
 
     isUploading.current = true;
     setUploadingStateSynced(true);
+    setUploadProgress(0);
 
     try {
-      const response = await wikiVideoApi.uploadVideo(file);
+      const response = await wikiVideoApi.uploadVideo(file, setUploadProgress);
       currentEditor.chain().focus().setVideo({ src: response.url }).run();
       toast.success("Видео загружено");
     } catch (error) {
@@ -331,6 +335,7 @@ export default function WikiEditor({
     } finally {
       isUploading.current = false;
       setUploadingStateSynced(false);
+      setUploadProgress(null);
     }
   }, [setUploadingStateSynced]);
 
@@ -524,7 +529,11 @@ export default function WikiEditor({
         >
           <HStack bg="bg.surface" p={4} borderRadius="md" shadow="md">
             <Spinner size="sm" />
-            <Text>Загрузка медиа...</Text>
+            <Text>
+              {uploadProgress !== null
+                ? `Загрузка видео... ${uploadProgress}%`
+                : "Загрузка медиа..."}
+            </Text>
           </HStack>
         </Flex>
       )}
