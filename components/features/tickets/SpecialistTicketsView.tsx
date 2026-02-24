@@ -13,11 +13,14 @@ import {
   VStack,
   HStack,
   Badge,
+  Link,
+  Button
 } from "@chakra-ui/react";
 import {
   LuCircleCheck,
   LuInbox,
   LuLoader,
+  LuPlus,
   LuUserCheck,
 } from "react-icons/lu";
 import { useAuth, useSpecialistTicketsByStatus } from "@/lib/hooks";
@@ -58,15 +61,30 @@ export function SpecialistTicketsView() {
   return (
     <>
       <Box>
+        {/* Header */}
         <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
           <Box>
             <Heading size="lg" color="fg.default" mb={1}>
               Все тикеты линии
             </Heading>
             <Text color="fg.muted" fontSize="sm">
-              Просмотр тикетов своей линии поддержки
+              Просмотр тикетов вашей линии поддержки
             </Text>
           </Box>
+
+          <HStack gap={3}>
+            <Link href="/dashboard/tickets/new">
+              <Button
+                size="sm"
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
+              >
+                <LuPlus />
+                Новый тикет
+              </Button>
+            </Link>
+          </HStack>
         </Flex>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} columnGap={3} rowGap={3}>

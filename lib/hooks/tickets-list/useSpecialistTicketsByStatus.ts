@@ -32,15 +32,24 @@ export function useSpecialistTicketsByStatus(
   const { subscribeToNewTickets, isConnected } = useWebSocket();
 
   type SpecialistTicketStatus = "NEW" | "OPEN" | "PENDING" | "CLOSED" ;
-  const [pages, setPages] = useState<Record<SpecialistTicketStatus, number>>({
-    NEW: 0,
-    OPEN: 0,
-    PENDING: 0,
-    CLOSED: 0,
+  const STORAGE_KEY = "sd_page_specialist-tickets";
+  const defaultPages: Record<SpecialistTicketStatus, number> = { NEW: 0, OPEN: 0, PENDING: 0, CLOSED: 0 };
+
+  const [pages, setPages] = useState<Record<SpecialistTicketStatus, number>>(() => {
+    if (typeof window === "undefined") return defaultPages;
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      if (stored) return { ...defaultPages, ...JSON.parse(stored) };
+    } catch { /* ignore */ }
+    return defaultPages;
   });
 
   const setPage = useCallback((status: TicketStatus, page: number) => {
-    setPages((prev) => ({ ...prev, [status]: page }));
+    setPages((prev) => {
+      const next = { ...prev, [status]: page };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   // Invalidate cache for a specific status

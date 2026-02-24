@@ -29,6 +29,9 @@ export * from "./tickets-list";
 // Ticket Detail Page
 export * from "./ticket-detail";
 
+// Pagination
+export { usePersistentPage } from "./usePersistentPage";
+
 // User Status
 export { useUserStatusQuery } from "./useUserStatusQuery";
 

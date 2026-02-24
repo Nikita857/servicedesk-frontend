@@ -4,6 +4,7 @@ import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
+import { usePersistentPage } from "@/lib/hooks/usePersistentPage";
 import type { TicketListItem, PagedTicketList } from "@/types/ticket";
 
 const FILTER_STORAGE_KEY = "servicedesk-tickets-filter";
@@ -52,7 +53,7 @@ export function useTicketsQuery(
   const isSpecialist = user?.specialist ?? false;
 
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePersistentPage("tickets");
 
   // -------------------------------
   // Filter state
@@ -192,7 +193,7 @@ export function useTicketsQuery(
         localStorage.setItem(FILTER_STORAGE_KEY, next);
       }
     },
-    [isSpecialist],
+    [isSpecialist, setPage],
   );
 
   const refetch = useCallback(() => {

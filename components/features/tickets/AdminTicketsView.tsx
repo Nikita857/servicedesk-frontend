@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -19,11 +18,12 @@ import { ticketApi } from "@/lib/api/tickets";
 import { queryKeys } from "@/lib/queryKeys";
 import { TicketCard } from "./TicketCard";
 import { SDPagination } from "@/components/ui/SDPagination";
+import { usePersistentPage } from "@/lib/hooks";
 
 const PAGE_SIZE = 7;
 
 export function AdminTicketsView() {
-  const [page, setPage] = useState(0);
+  const [page, setPage] = usePersistentPage("admin-tickets");
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: queryKeys.tickets.list({ filter: "all", page }),
