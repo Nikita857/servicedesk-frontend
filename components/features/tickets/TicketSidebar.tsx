@@ -15,6 +15,7 @@ import {
   LuPaperclip,
   LuUser,
 } from "react-icons/lu";
+import { DateTimePicker } from "@/components/features/layout/DateTimePicker";
 
 interface TicketSidebarProps {
   ticket: Ticket;
@@ -187,6 +188,30 @@ export default function TicketSidebar({
             <Text color="fg.default" fontSize="sm">
               {formatDate(ticket.createdAt)}
             </Text>
+          </Box>
+
+          <Separator />
+
+          <Box>
+            <Text
+              fontSize="xs"
+              color="fg.muted"
+              textTransform="uppercase"
+              mb={2}
+            >
+              Ориентировочный срок выполнения
+            </Text>
+            {ticket.estimatedCompletionDate && (
+              <Text color="fg.default" fontSize="sm" mb={2}>
+                {formatDate(ticket.estimatedCompletionDate)}
+              </Text>
+            )}
+            {isSpecialist && (
+              <DateTimePicker
+                ticketId={ticket.id}
+                currentDate={ticket.estimatedCompletionDate ?? null}
+              />
+            )}
           </Box>
 
           <Separator />

@@ -26,6 +26,7 @@ export interface Assignment {
   acceptedAt: string | null;
   rejectedAt: string | null;
   rejectedReason: string | null;
+  estimatedCompletitionDate: string | null;
 }
 
 export interface CreateAssignmentRequest {

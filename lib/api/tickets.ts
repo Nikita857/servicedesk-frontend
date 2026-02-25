@@ -221,6 +221,14 @@ export const ticketApi = {
     );
     return response.data.data;
   },
+
+  setEstimatedDate: async (id: number, estimatedCompletionDate: string): Promise<Ticket> => {
+    const response = await api.patch<ApiResponse<Ticket>>(
+      `/tickets/${id}/estimated-date`,
+      { estimatedCompletionDate },
+    );
+    return response.data.data;
+  }
 };
 
 // Request type for rating

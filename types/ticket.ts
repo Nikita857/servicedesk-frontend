@@ -74,6 +74,7 @@ export interface Ticket {
   messageCount: number;
   attachmentCount: number;
   slaDeadline: string | null;
+  estimatedCompletionDate: string | null;
   resolvedAt: string | null;
   closedAt: string | null;
   createdAt: string;

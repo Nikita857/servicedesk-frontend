@@ -1,6 +1,6 @@
 // Notification types for WebSocket
 
-export type NotificationType = 'MESSAGE' | 'STATUS_CHANGE' | 'ASSIGNMENT' | 'ESCALATION';
+export type NotificationType = 'MESSAGE' | 'STATUS_CHANGE' | 'ASSIGNMENT' | 'ESCALATION' | 'ESTIMATED_DATE' | 'RATING';
 
 export interface Notification {
   type: NotificationType;
@@ -18,4 +18,6 @@ export const notificationTypeConfig: Record<NotificationType, { icon: string; co
   STATUS_CHANGE: { icon: '🔄', color: 'orange' },
   ASSIGNMENT: { icon: '👤', color: 'green' },
   ESCALATION: { icon: '⬆️', color: 'red' },
+  ESTIMATED_DATE: { icon: '📅', color: 'blue' },
+  RATING: { icon: '⭐', color: 'yellow' },
 };
