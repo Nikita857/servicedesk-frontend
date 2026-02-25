@@ -105,6 +105,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
       username: wsMessage.senderUsername || "unknown",
       fio: wsMessage.senderFio || null,
       avatarUrl: null,
+      isSpecialist: false
     };
 
     // Хелпер для конвертации вложений из WS в тип MessageAttachment

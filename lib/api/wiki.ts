@@ -10,17 +10,22 @@ export interface WikiArticle {
   excerpt: string | null;
   categoryId: number | null;
   categoryName: string | null;
+  departmentId: number | null;
   departmentName: string | null;
   tags: string[];
   createdBy: {
     id: number;
     username: string;
     fio: string | null;
+    avatarUrl: string | null;
+    isSpecialist: boolean;
   };
   updatedBy: {
     id: number;
     username: string;
     fio: string | null;
+    avatarUrl: string | null;
+    isSpecialist: boolean;
   } | null;
   viewCount: number;
   likeCount: number;
@@ -37,7 +42,7 @@ export interface WikiCategory {
   departmentName: string | null;
   parentId: number | null;
   depth: number | null;
-  displayOrder: number;
+  displayOrder: number | null;
   children: WikiCategory[];
 }
 
@@ -124,8 +129,8 @@ export interface WikiCategoryWithArticles {
   departmentId: number | null;
   departmentName: string | null;
   parentId: number | null;
-  depth: number;
-  displayOrder: number;
+  depth: number | null;
+  displayOrder: number | null;
   article: WikiArticleListItem[];
   children: WikiCategoryWithArticles[];
 }

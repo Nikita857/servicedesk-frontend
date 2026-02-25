@@ -19,14 +19,13 @@ export interface Assignment {
   toUserId: number | null;
   toUsername: string | null;
   toFio: string | null;
-  note: string;
+  note: string | null;
   mode: AssignmentMode;
   status: AssignmentStatus;
   createdAt: string;
   acceptedAt: string | null;
   rejectedAt: string | null;
   rejectedReason: string | null;
-  estimatedCompletitionDate: string | null;
 }
 
 export interface CreateAssignmentRequest {

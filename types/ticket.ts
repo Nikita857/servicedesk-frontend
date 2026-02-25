@@ -28,11 +28,13 @@ export interface UserShort {
   username: string;
   fio: string | null;
   avatarUrl: string | null;
+  isSpecialist: boolean;
 }
 
 export interface CategoryShort {
   id: number;
   name: string;
+  is1ClinkRecommended: boolean | null;
 }
 
 export interface SupportLineShort {
@@ -97,6 +99,7 @@ export interface LastAssignment {
   toUsername: string | null;
   toFio: string | null;
   note: string | null;
+  mode: AssignmentMode;
   status: "PENDING" | "ACCEPTED" | "REJECTED";
   createdAt: string;
   acceptedAt: string | null;
