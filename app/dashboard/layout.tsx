@@ -19,6 +19,7 @@ import { NotificationSubscriber } from "@/components/features/layout/Notificatio
 import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
 import { OnboardingOverlay, USER_ONBOARDING_STEPS } from "@/components/features/onboarding";
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
+import { useHeartbeat } from "@/lib/hooks";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -37,6 +38,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     user.roles[0] === "USER"
   );
   const onboarding = useOnboarding(isOnlyUser);
+  useHeartbeat();
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {

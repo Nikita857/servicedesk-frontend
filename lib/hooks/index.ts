@@ -49,3 +49,6 @@ export * from "./ticket-chat/useChatActions";
 
 // Admin Wiki
 export * from "./admin-wiki";
+
+// Heartbeat
+export { useHeartbeat } from "./useHeartbeat";

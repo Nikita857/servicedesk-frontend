@@ -85,4 +85,11 @@ export const userApi = {
     );
     return response.data.data;
   },
+
+  /**
+   * Send heartbeat to keep user status alive
+   */
+  heartbeat: async (): Promise<void> => {
+    await api.post("/users/heartbeat");
+  },
 };
