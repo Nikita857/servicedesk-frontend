@@ -3,7 +3,7 @@ import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListItem } from "@/types/ticket";
 import { handleApiError } from "../utils";
-import { WikiCategory, WikiCategoryTree } from "./wiki";
+import { WikiCategoryTree } from "./wiki";
 
 // ==================== Types ====================
 

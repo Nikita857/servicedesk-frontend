@@ -15,7 +15,7 @@ import {
   LuChevronRight,
   LuCheck,
 } from "react-icons/lu";
-import type { OnboardingControls } from "@/lib/hooks/useOnboarding";
+import type { OnboardingControls } from "@/lib/hooks/shared/useOnboarding";
 
 // --- Шаги онбординга ---
 export interface OnboardingStep {

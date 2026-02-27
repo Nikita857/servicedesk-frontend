@@ -18,9 +18,9 @@ import Link from "next/link";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { WikiSearchBar } from "@/components/features/wiki/WikiSearchBar";
 import { WikiTreeView } from "@/components/features/wiki/WikiTreeView";
-import { WikiFilter } from "@/lib/hooks/useWikiCategoriesWithArticlesQuery";
+import { WikiFilter } from "@/lib/hooks/wiki/useWikiCategoriesWithArticlesQuery";
 import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
-import { useOnboarding } from "@/lib/hooks/useOnboarding";
+import { useOnboarding } from "@/lib/hooks/shared/useOnboarding";
 import {
   OnboardingOverlay,
   WIKI_ONBOARDING_STEPS,

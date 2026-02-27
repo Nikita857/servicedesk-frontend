@@ -28,7 +28,6 @@ export function useAssignmentsWebSocket() {
 
       // Инвалидируем список тикетов чтобы обновить UI
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
     },
@@ -53,7 +52,6 @@ export function useAssignmentsWebSocket() {
         queryKey: queryKeys.tickets.detail(assignment.ticketId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
     },

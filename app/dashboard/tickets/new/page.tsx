@@ -12,7 +12,6 @@ import {
   VStack,
   createListCollection,
   Text,
-  Tooltip,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
@@ -24,7 +23,7 @@ import {
 import { toast, handleApiError } from "@/lib/utils";
 import { DataSelect, BackButton } from "@/components/ui";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
-import { useAvailableSupportLinesQuery } from "@/lib/hooks/useAvailableSupportLinesQuery";
+import { useAvailableSupportLinesQuery } from "@/lib/hooks/support-lines/useAvailableSupportLinesQuery";
 import { OnboardingOverlay } from "@/components/features/onboarding";
 import { TICKET_FORM_ONBOARDING_STEPS } from "@/components/features/onboarding/OnboardingOverlay";
 

@@ -9,7 +9,6 @@ import {
 } from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
 import { handleApiError, toast } from "@/lib/utils";
-import { useAuthStore } from "@/stores";
 
 interface UseWikiCategoriesAdminReturn {
   categories: WikiCategory[];

@@ -18,7 +18,7 @@ import { WebSocketProvider } from "@/lib/providers";
 import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
 import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
 import { OnboardingOverlay, USER_ONBOARDING_STEPS } from "@/components/features/onboarding";
-import { useOnboarding } from "@/lib/hooks/useOnboarding";
+import { useOnboarding } from "@/lib/hooks/shared/useOnboarding";
 import { useHeartbeat } from "@/lib/hooks";
 
 interface DashboardLayoutProps {

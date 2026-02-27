@@ -1,27 +1,27 @@
 // Auth
-export { useAuth } from "./useAuth";
+export { useAuth } from "./shared/useAuth";
 
 // Dashboard
-export { useDashboardQuery } from "./useDashboardQuery";
+export { useDashboardQuery } from "./shared/useDashboardQuery";
 
 // Wiki
-export { useWikiArticlesQuery } from "./useWikiArticlesQuery";
-export { useWikiArticleQuery } from "./useWikiArticleQuery";
-export { useWikiCategoriesQuery } from "./useWikiCategoriesQuery";
-export { useWikiCategoriesWithArticlesQuery } from "./useWikiCategoriesWithArticlesQuery";
-export { useWikiTreeState } from "./useWikiTreeState";
-export type { WikiTreeState } from "./useWikiTreeState";
-export { useOnboarding } from "./useOnboarding";
-export type { OnboardingControls } from "./useOnboarding";
+export { useWikiArticlesQuery } from "./wiki/useWikiArticlesQuery";
+export { useWikiArticleQuery } from "./wiki/useWikiArticleQuery";
+export { useWikiCategoriesQuery } from "./wiki/useWikiCategoriesQuery";
+export { useWikiCategoriesWithArticlesQuery } from "./wiki/useWikiCategoriesWithArticlesQuery";
+export { useWikiTreeState } from "./wiki/useWikiTreeState";
+export type { WikiTreeState } from "./wiki/useWikiTreeState";
+export { useOnboarding } from "./shared/useOnboarding";
+export type { OnboardingControls } from "./shared/useOnboarding";
 
 // Categories
 export {
   useCategoriesQuery,
   useCategoryDetailQuery,
-} from "./useCategoriesQuery";
+} from "./shared/useCategoriesQuery";
 
 // Support Lines
-export { useAllSupportLinesQuery } from "./useAllSupportLinesQuery";
+export { useAllSupportLinesQuery } from "./support-lines/useAllSupportLinesQuery";
 
 // Tickets List Page
 export * from "./tickets-list";
@@ -30,19 +30,19 @@ export * from "./tickets-list";
 export * from "./ticket-detail";
 
 // Pagination
-export { usePersistentPage } from "./usePersistentPage";
+export { usePersistentPage } from "./shared/usePersistentPage";
 
 // User Status
-export { useUserStatusQuery } from "./useUserStatusQuery";
+export { useUserStatusQuery } from "./user/useUserStatusQuery";
 
 // Stats
-export * from "./useStatsQuery";
+export * from "./shared/useStatsQuery";
 
 // File Upload
-export { useFileUpload } from "./useFileUpload";
+export { useFileUpload } from "./shared/useFileUpload";
 
 // Assignments WebSocket
-export { useAssignmentsWebSocket } from "./useAssignmentsWebSocket";
+export { useAssignmentsWebSocket } from "./shared/useAssignmentsWebSocket";
 
 // Ticket Chat
 export * from "./ticket-chat/useChatActions";
@@ -51,4 +51,4 @@ export * from "./ticket-chat/useChatActions";
 export * from "./admin-wiki";
 
 // Heartbeat
-export { useHeartbeat } from "./useHeartbeat";
+export { useHeartbeat } from "./shared/useHeartbeat";

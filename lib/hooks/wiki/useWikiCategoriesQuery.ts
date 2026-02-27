@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { wikiApi, type WikiCategory } from "@/lib/api/wiki";
+import { wikiApi } from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
 
 interface UseWikiCategoriesQueryOptions {

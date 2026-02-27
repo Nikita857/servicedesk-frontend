@@ -12,7 +12,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { useAuth } from "@/lib/hooks/shared/useAuth";
 import { toast } from "@/lib/utils";
 
 export default function LoginPage() {

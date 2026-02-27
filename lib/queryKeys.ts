@@ -82,18 +82,6 @@ export const queryKeys = {
     detail: (id: number) =>
       [...queryKeys.categories.all, "detail", id] as const,
   },
-
-  // Reports
-  reports: {
-    all: ["reports"] as const,
-    ticketsByStatus: () =>
-      [...queryKeys.reports.all, "tickets-by-status"] as const,
-    ticketsByCategory: () =>
-      [...queryKeys.reports.all, "tickets-by-category"] as const,
-    specialistWorkload: () =>
-      [...queryKeys.reports.all, "specialist-workload"] as const,
-  },
-
   // Stats (Ticket Statistics)
   stats: {
     all: ["stats"] as const,

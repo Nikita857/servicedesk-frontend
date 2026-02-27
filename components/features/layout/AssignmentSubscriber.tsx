@@ -1,6 +1,6 @@
 "use client";
 
-import { useAssignmentsWebSocket } from "@/lib/hooks/useAssignmentsWebSocket";
+import { useAssignmentsWebSocket } from "@/lib/hooks/shared/useAssignmentsWebSocket";
 
 /**
  * Компонент-подписчик на real-time назначения тикетов.

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { queryKeys } from "@/lib/queryKeys";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
 
 interface UseTicketQueryReturn {

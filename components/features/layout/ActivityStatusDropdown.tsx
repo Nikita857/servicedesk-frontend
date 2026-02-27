@@ -1,9 +1,9 @@
 "use client";
 
 import { Box, Flex, Text, Menu, Spinner, Circle } from "@chakra-ui/react";
-import { LuChevronDown, LuCircle } from "react-icons/lu";
-import { useUserStatusQuery } from "@/lib/hooks/useUserStatusQuery";
-import { useStatusWebSocket } from "@/lib/hooks/useStatusWebSocket";
+import { LuChevronDown } from "react-icons/lu";
+import { useUserStatusQuery } from "@/lib/hooks/user/useUserStatusQuery";
+import { useStatusWebSocket } from "@/lib/hooks/user/useStatusWebSocket";
 import { activityStatusConfig } from "@/types/auth";
 import type { UserActivityStatus } from "@/lib/api/users";
 import { useAuthStore } from "@/stores";
