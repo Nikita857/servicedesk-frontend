@@ -44,6 +44,18 @@ export default function WikiPage() {
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
 
+  const userFilters = [
+      { value: "my", label: "Мой отдел" },
+      { value: "public", label: "Публичные" },
+  ];
+
+  const specialistFilters = [
+      { value: "my", label: "Мой отдел" },
+      { value: "public", label: "Публичные" },
+      { value: "all", label: "Все статьи" },
+  ];
+
+
   const {
     categories,
     isLoading,
@@ -129,11 +141,7 @@ export default function WikiPage() {
                 }
                 if (val !== "all") setShowFavorites(false);
               }}
-              items={[
-                { value: "my", label: "Мой отдел" },
-                { value: "public", label: "Публичные" },
-                { value: "all", label: "Все статьи" },
-              ]}
+              items={user?.roles.some((role) => role === "USER") ? userFilters : specialistFilters}
               size="sm"
               width={{ base: "full", md: "auto" }}
             />
