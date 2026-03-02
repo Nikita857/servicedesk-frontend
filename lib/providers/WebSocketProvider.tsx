@@ -13,7 +13,7 @@ import SockJS from "sockjs-client";
 import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
 import { refreshAccessToken } from "@/lib/api/client";
-import { Ticket, LastAssignment } from "@/types/ticket";
+import { Ticket } from "@/types/ticket";
 import { Notification } from "@/types/notification";
 import type {
   ChatMessageWS,

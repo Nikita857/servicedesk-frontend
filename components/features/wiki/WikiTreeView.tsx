@@ -12,7 +12,7 @@ import { LuChevronRight, LuChevronDown, LuFolder, LuFolderOpen } from "react-ico
 import { memo, useState, useEffect } from "react";
 import type { WikiCategoryWithArticles } from "@/lib/api/wiki";
 import { TreeViewListBoxItem } from "./TreeViewListBoxItem";
-import { useWikiTreeState } from "@/lib/hooks/useWikiTreeState";
+import { useWikiTreeState } from "@/lib/hooks/wiki/useWikiTreeState";
 
 // --- Рекурсивный узел категории ---
 interface CategoryNodeProps {

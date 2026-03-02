@@ -20,7 +20,7 @@ import {
   LuBookOpen,
 } from "react-icons/lu";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { useAuth } from "@/lib/hooks/shared/useAuth";
 import { useAuthStore } from "@/stores";
 import { userRolesBadges } from "@/types/auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";

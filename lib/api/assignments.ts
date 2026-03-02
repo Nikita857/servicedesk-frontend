@@ -1,5 +1,5 @@
 import api from "./client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse, PaginatedResponse } from "@/types/api";
 
 // Assignment types based on OpenAPI spec
 
@@ -32,24 +32,14 @@ export interface CreateAssignmentRequest {
   ticketId: number;
   toLineId: number;
   toUserId?: number;
-  fromLineId?: number;
-  fromUserId?: number;
+  fromLineId?: number | null;
+  fromUserId?: number | null;
   note: string;
   mode?: AssignmentMode;
 }
 
 export interface RejectAssignmentRequest {
   reason: string;
-}
-
-export interface PagedAssignments {
-  content: Assignment[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-  first: boolean;
-  last: boolean;
 }
 
 export const assignmentApi = {
@@ -91,8 +81,8 @@ export const assignmentApi = {
   },
 
   // Get my pending assignments
-  getMyPending: async (page = 0, size = 20): Promise<PagedAssignments> => {
-    const response = await api.get<ApiResponse<PagedAssignments>>(
+  getMyPending: async (page = 0, size = 20): Promise<PaginatedResponse<Assignment>> => {
+    const response = await api.get<ApiResponse<PaginatedResponse<Assignment>>>(
       "/assignments/pending",
       {
         params: { page, size },

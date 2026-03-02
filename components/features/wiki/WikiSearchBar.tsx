@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import { Box, Button, Flex, Input, Text, VStack } from "@chakra-ui/react";
 import { LuSearch } from "react-icons/lu";
-import { useWikiAutocomplete } from "@/lib/hooks/useWikiAutocomplete";
+import { useWikiAutocomplete } from "@/lib/hooks/wiki/useWikiAutocomplete";
 
 interface WikiSearchBarProps {
   /** Вызывается только при отправке формы (submit) — не при каждом символе */

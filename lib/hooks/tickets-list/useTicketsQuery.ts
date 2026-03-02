@@ -4,7 +4,7 @@ import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
-import { usePersistentPage } from "@/lib/hooks/usePersistentPage";
+import { usePersistentPage } from "@/lib/hooks/shared/usePersistentPage";
 import type { TicketListItem, PagedTicketList } from "@/types/ticket";
 
 const FILTER_STORAGE_KEY = "servicedesk-tickets-filter";

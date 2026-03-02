@@ -102,7 +102,8 @@ export const useChatActions = (
         );
         toast.success("Сообщение обновлено");
       } catch (error) {
-        toast.error("Ошибка", "Не удалось обновить сообщение");
+        console.error(error);
+        toast.error("Ошибка", "Не удалось обновить сообщения");
         setNewMessage(content);
       } finally {
         setEditingMessage(null);

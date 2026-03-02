@@ -45,14 +45,7 @@ export function SpecialistTicketsView() {
     staleTime: 30 * 1000,
   });
 
-  const assignmentsPageInfo: Page | undefined = assignmentsQuery.data
-    ? {
-        size: assignmentsQuery.data.size,
-        number: assignmentsQuery.data.number,
-        totalElements: assignmentsQuery.data.totalElements,
-        totalPages: assignmentsQuery.data.totalPages,
-      }
-    : undefined;
+  const assignmentsPageInfo: Page | undefined = assignmentsQuery.data?.page;
 
   // Dialog state
   const [selectedAssignment, setSelectedAssignment] =

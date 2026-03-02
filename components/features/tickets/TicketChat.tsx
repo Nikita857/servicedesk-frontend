@@ -19,7 +19,7 @@ import {
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
 import type { TicketStatus } from "@/types";
-import { useChatWebSocket } from "@/lib/hooks/useChatWebSocket";
+import { useChatWebSocket } from "@/lib/hooks/ticket-chat/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
 import ChatInput from "../ticket-chat/ChatInput";
 import { useChatActions } from "@/lib/hooks";
