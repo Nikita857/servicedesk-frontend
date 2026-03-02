@@ -57,7 +57,12 @@ export function useVoiceInput({
     baseTextRef.current = value;
 
     const SpeechRecognitionImpl =
-      window.webkitSpeechRecognition ?? window.SpeechRecognition;
+        window.webkitSpeechRecognition ?? window.SpeechRecognition;
+
+    if (!SpeechRecognitionImpl) {
+      setError("SpeechRecognition API недоступен");
+      return;
+    }
 
     const recognition = new SpeechRecognitionImpl();
     recognition.lang = lang;
