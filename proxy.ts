@@ -6,9 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 function isAllowedOrigin(origin: string): boolean {
   if (!origin) return false
   return (
-    origin.startsWith('http://localhost') ||
-    origin.startsWith('http://127.0.0.1') ||
-    origin.startsWith('http://192.168.')
+    origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')
   )
 }
 
@@ -29,18 +27,26 @@ function handleOptions(request: NextRequest): NextResponse {
   return response
 }
 
-export async function proxy(request: NextRequest) {
-  const { method } = request
+const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === 'true'
 
-  // Всегда отвечаем на preflight-запросы корректно
+export async function proxy(request: NextRequest) {
+  const { method, nextUrl } = request
+
   if (method === 'OPTIONS') {
     return handleOptions(request)
   }
 
-  // Пропускаем все остальные запросы дальше (на бэкенд или route handlers)
+  if (
+    MAINTENANCE_MODE &&
+    nextUrl.pathname !== '/maintenance' &&
+    !nextUrl.pathname.startsWith('/_next/') &&
+    !nextUrl.pathname.startsWith('/favicon')
+  ) {
+    return NextResponse.rewrite(new URL('/maintenance', request.url))
+  }
+
   const response = NextResponse.next()
 
-  // Добавляем CORS-заголовки только для разрешённых локальных origin'ов
   const origin = request.headers.get('origin') ?? ''
   if (isAllowedOrigin(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin)
@@ -50,9 +56,4 @@ export async function proxy(request: NextRequest) {
   }
 
   return response
-}
-
-// Применяем proxy ко всем API-запросам (можно расширить при необходимости)
-export const config = {
-  matcher: '/api/v1/:path*',
 }

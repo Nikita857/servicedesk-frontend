@@ -1,6 +1,7 @@
 import { Button, Flex, Input, Text } from "@chakra-ui/react";
 import { RefObject, useCallback } from "react";
 import { LuPaperclip, LuSend } from "react-icons/lu";
+import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
 import { CustomEmojiPicker } from "./CustomEmojiPicker";
 
 interface ChatInputProps {
@@ -83,6 +84,11 @@ export default function ChatInput({
       </Button>
       <CustomEmojiPicker
         onSelect={(emoji) => setNewMessage(newMessage + emoji)}
+      />
+      <VoiceInputButton
+        value={newMessage}
+        onChange={setNewMessage}
+        disabled={isChatInactive}
       />
       <Input
         value={newMessage}

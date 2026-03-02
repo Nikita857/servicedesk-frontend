@@ -115,14 +115,13 @@ export const ticketApi = {
   // Assign to specialist
   assignToSpecialist: async (
     id: number,
-    specialistId: number,
-    comment?: string
+    specialistId: number
   ): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(
       `/tickets/${id}/assign-specialist`,
       null,
       {
-        params: { specialistId, comment },
+        params: { specialistId },
       }
     );
     return response.data.data;
@@ -131,14 +130,13 @@ export const ticketApi = {
   // Assign to support line
   assignToLine: async (
     id: number,
-    lineId: number,
-    comment?: string
+    lineId: number
   ): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(
       `/tickets/${id}/assign-line`,
       null,
       {
-        params: { lineId, comment },
+        params: { lineId },
       }
     );
     return response.data.data;

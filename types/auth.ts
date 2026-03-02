@@ -23,6 +23,7 @@ export interface AuthResponse {
   refreshToken: string;
   tokenType: string;
   expiresIn: number;
+  expiresAt: string;
   userAuthResponse: User; // matches backend API field name
 }
 

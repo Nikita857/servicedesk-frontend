@@ -54,8 +54,8 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
         ticketId: ticket.id,
         toLineId: selectedLineId,
         toUserId: selectedSpecialistId,
-        fromLineId: ticket.supportLine?.id,
-        fromUserId: user?.id,
+        fromLineId: ticket.supportLine?.id ?? null,
+        fromUserId: user?.id ?? null,
         note: escalationComment,
         mode: selectedSpecialistId ? "DIRECT" : "FIRST_AVAILABLE",
       });

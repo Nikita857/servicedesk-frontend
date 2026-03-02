@@ -22,6 +22,7 @@ import {
 } from "@/lib/hooks";
 import { toast, handleApiError } from "@/lib/utils";
 import { DataSelect, BackButton } from "@/components/ui";
+import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
 import type { CreateTicketRequest, TicketPriority } from "@/types/ticket";
 import { useAvailableSupportLinesQuery } from "@/lib/hooks/support-lines/useAvailableSupportLinesQuery";
 import { OnboardingOverlay } from "@/components/features/onboarding";
@@ -251,9 +252,17 @@ export default function NewTicketPage() {
 
             {/* Description */}
             <Box data-onboarding-id="t-description">
-              <Text mb={1} fontSize="sm" fontWeight="medium" color="fg.default">
-                Подробное описание проблемы *
-              </Text>
+              <Flex align="center" justify="space-between" mb={1}>
+                <Text fontSize="sm" fontWeight="medium" color="fg.default">
+                  Подробное описание проблемы *
+                </Text>
+                <VoiceInputButton
+                  value={formData.description}
+                  onChange={(v) =>
+                    setFormData((prev) => ({ ...prev, description: v }))
+                  }
+                />
+              </Flex>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
