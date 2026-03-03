@@ -122,15 +122,9 @@ export default function DashboardPage() {
               </Box>
             ) : (
               <VStack gap={3} align="stretch" pb={4}>
-                {recentTickets
-                  .sort(
-                    (a, b) =>
-                      new Date(b.createdAt).getTime() -
-                      new Date(a.createdAt).getTime(),
-                  )
-                  .map((ticket) => (
-                    <TicketCard key={ticket.id} ticket={ticket} />
-                  ))}
+                {recentTickets.map((ticket) => (
+                  <TicketCard key={ticket.id} ticket={ticket} />
+                ))}
               </VStack>
             )}
           </Box>

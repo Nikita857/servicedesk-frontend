@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { assignmentApi, Assignment } from "@/lib/api/assignments";
 import { ticketApi } from "@/lib/api/tickets";
 import { toast, handleApiError } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
+import { queryKeys } from "@/lib/queryKeys";
 import type { Ticket } from "@/types/ticket";
 
 interface UseEscalationOptions {
@@ -27,6 +29,7 @@ interface UseEscalationReturn {
 export function useEscalation(options: UseEscalationOptions): UseEscalationReturn {
   const { ticket, onSuccess } = options;
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const [showEscalation, setShowEscalation] = useState(false);
   const [selectedLineId, setSelectedLineId] = useState<number | undefined>();
@@ -66,6 +69,11 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
           ? "Тикет назначен на специалиста"
           : "Тикет передан на линию поддержки"
       );
+
+      // Инвалидируем глобальный кэш тикетов (дашборд, плитки)
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
 
       // Refresh ticket data
       const updatedTicket = await ticketApi.get(ticket.id);

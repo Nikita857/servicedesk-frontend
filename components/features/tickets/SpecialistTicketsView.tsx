@@ -17,7 +17,9 @@ import {
   Button
 } from "@chakra-ui/react";
 import {
+  LuArrowUpRight,
   LuCircleCheck,
+  LuClock,
   LuInbox,
   LuLoader,
   LuPlus,
@@ -34,7 +36,7 @@ import { SDPagination } from "@/components/ui/SDPagination";
 import { Page } from "@/types";
 
 export function SpecialistTicketsView() {
-  const { NEW, OPEN, CLOSED } = useSpecialistTicketsByStatus(5);
+  const { NEW, OPEN, PENDING, ESCALATED, CLOSED } = useSpecialistTicketsByStatus(5);
   const { user } = useAuth();
 
   // Pending assignments query
@@ -93,6 +95,18 @@ export function SpecialistTicketsView() {
             currentUser={user?.username}
           />
 
+          {/* ESCALATED TICKETS */}
+          <TicketTile
+            title="Эскалированные"
+            icon={LuArrowUpRight}
+            colorPalette="purple"
+            tickets={ESCALATED.data?.content || []}
+            isLoading={ESCALATED.meta.isLoading}
+            page={ESCALATED.data?.page}
+            onPageChange={ESCALATED.actions.setPage}
+            currentUser={user?.username}
+          />
+
           {/* OPEN TICKETS */}
           <TicketTile
             title="В работе"
@@ -102,6 +116,18 @@ export function SpecialistTicketsView() {
             isLoading={OPEN.meta.isLoading}
             page={OPEN.data?.page}
             onPageChange={OPEN.actions.setPage}
+            currentUser={user?.username}
+          />
+
+          {/* PENDING TICKETS */}
+          <TicketTile
+            title="Ожидает ответа"
+            icon={LuClock}
+            colorPalette="yellow"
+            tickets={PENDING.data?.content || []}
+            isLoading={PENDING.meta.isLoading}
+            page={PENDING.data?.page}
+            onPageChange={PENDING.actions.setPage}
             currentUser={user?.username}
           />
 

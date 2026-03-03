@@ -1,5 +1,7 @@
-import { Assignment } from "@/lib/api/assignments";
-import { formatDate } from "@/lib/utils";
+import { assignmentApi, Assignment } from "@/lib/api/assignments";
+import { formatDate, toast } from "@/lib/utils";
+import { queryKeys } from "@/lib/queryKeys";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Badge,
   Box,
@@ -8,13 +10,16 @@ import {
   HStack,
   Heading,
   Text,
+  Textarea,
   VStack,
 } from "@chakra-ui/react";
 import {
+  LuCheck,
   LuChevronDown,
   LuChevronUp,
   LuForward,
   LuHistory,
+  LuX,
 } from "react-icons/lu";
 import { useState } from "react";
 
@@ -22,6 +27,8 @@ interface AssignmentPanelProps {
   currentAssignment: Assignment | null;
   assignmentHistory: Assignment[];
   isSpecialist: boolean;
+  currentUsername?: string;
+  onDecision?: () => void;
 }
 
 /**
@@ -32,8 +39,57 @@ export default function AssignmentPanel({
   currentAssignment,
   assignmentHistory,
   isSpecialist,
+  currentUsername,
+  onDecision,
 }: AssignmentPanelProps) {
+  const queryClient = useQueryClient();
   const [showHistory, setShowHistory] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
+  const isPendingForMe =
+    currentAssignment?.status === "PENDING" &&
+    currentAssignment.toUsername === currentUsername;
+
+  const invalidateCaches = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+  };
+
+  const handleAccept = async () => {
+    if (!currentAssignment) return;
+    setIsAccepting(true);
+    try {
+      await assignmentApi.accept(currentAssignment.id);
+      toast.success("Назначение принято");
+      invalidateCaches();
+      onDecision?.();
+    } catch {
+      toast.error("Ошибка", "Не удалось принять назначение");
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!currentAssignment || !rejectReason.trim()) return;
+    setIsRejecting(true);
+    try {
+      await assignmentApi.reject(currentAssignment.id, rejectReason.trim());
+      toast.success("Назначение отклонено");
+      invalidateCaches();
+      setShowRejectForm(false);
+      setRejectReason("");
+      onDecision?.();
+    } catch {
+      toast.error("Ошибка", "Не удалось отклонить назначение");
+    } finally {
+      setIsRejecting(false);
+    }
+  };
 
   // Не показываем панель если нет данных или пользователь не специалист
   if (!isSpecialist || (!currentAssignment && assignmentHistory.length === 0)) {
@@ -119,6 +175,63 @@ export default function AssignmentPanel({
               {formatDate(currentAssignment.createdAt)}
             </Text>
           </VStack>
+
+          {isPendingForMe && (
+            <Box mt={3} pt={3} borderTopWidth="1px" borderColor="blue.200" _dark={{ borderColor: "blue.700" }}>
+              {showRejectForm ? (
+                <VStack align="stretch" gap={2}>
+                  <Textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Укажите причину отклонения"
+                    rows={2}
+                    size="sm"
+                  />
+                  <HStack gap={2} justify="flex-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setShowRejectForm(false); setRejectReason(""); }}
+                      disabled={isRejecting}
+                    >
+                      Назад
+                    </Button>
+                    <Button
+                      colorPalette="red"
+                      size="sm"
+                      onClick={handleReject}
+                      loading={isRejecting}
+                      disabled={!rejectReason.trim()}
+                    >
+                      <LuX />
+                      Отклонить
+                    </Button>
+                  </HStack>
+                </VStack>
+              ) : (
+                <HStack gap={2} justify="flex-end">
+                  <Button
+                    variant="outline"
+                    colorPalette="red"
+                    size="sm"
+                    onClick={() => setShowRejectForm(true)}
+                  >
+                    <LuX />
+                    Отклонить
+                  </Button>
+                  <Button
+                    colorPalette="green"
+                    size="sm"
+                    onClick={handleAccept}
+                    loading={isAccepting}
+                  >
+                    <LuCheck />
+                    Принять
+                  </Button>
+                </HStack>
+              )}
+            </Box>
+          )}
         </Box>
       )}
 
