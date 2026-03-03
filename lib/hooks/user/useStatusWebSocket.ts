@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { useAuthStore } from "@/stores";
@@ -17,6 +17,18 @@ export function useStatusWebSocket() {
   const queryClient = useQueryClient();
   const { isConnected, subscribeToUserStatus, subscribeToLineStatus } =
     useWebSocket();
+
+  const prevConnectedRef = useRef<boolean>(false);
+
+  // On reconnect — refetch status from REST so we don't blindly trust stale WS state
+  useEffect(() => {
+    const wasConnected = prevConnectedRef.current;
+    prevConnectedRef.current = isConnected;
+
+    if (isConnected && !wasConnected && user?.specialist) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.myStatus() });
+    }
+  }, [isConnected, user, queryClient]);
 
   // Get lines the user belongs to
   const { data: myLines = [] } = useQuery({
