@@ -11,23 +11,22 @@ import type { ApiResponse, PaginatedResponse } from "@/types/api";
 export interface UserTicketStats {
   userId: number;
   username: string;
-  total: number;
-  open: number;
-  resolved: number;
-  closed: number;
-  waiting: number;
+  total: number,
+  newTickets: number,
+  openTickets: number,
+  closedTickets: number,
+  rejectedTickets: number,
   byStatus: Record<string, number>;
 }
 
 export interface LineTicketStats {
   lineId: number;
   lineName: string;
-  total: number;
-  open: number;
-  new: number;
-  closed: number;
-  rejected: number
-  newTickets: number;
+  total: number,
+  newTickets: number,
+  openTickets: number,
+  closedTickets: number,
+  rejectedTickets: number,
   byStatus: Record<string, number>;
 }
 

@@ -68,19 +68,19 @@ export function LineStatsCard({
     },
     {
       label: "В работе",
-      value: line.open,
+      value: line.openTickets,
       color: "orange.500",
       statusKey: TicketStatusCollection.open,
     },
     {
       label: "Закрыто",
-      value: line.closed,
+      value: line.closedTickets,
       color: "gray.500",
       statusKey: TicketStatusCollection.closed,
     },
     {
       label: "Отклонено",
-      value: line.rejected,
+      value: line.rejectedTickets,
       color: "red.500",
       statusKey: TicketStatusCollection.rejected,
     },

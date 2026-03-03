@@ -38,9 +38,9 @@ export function useTicketsCountsQuery(): UseTicketsCountsQueryReturn {
       const lineStats = lineStatsResponse?.content ?? [];
 
       const newCount = lineStats.reduce((acc, line) => acc + line.newTickets, 0);
-      const openCount = lineStats.reduce((acc, line) => acc + line.open, 0);
-      const closedCount = lineStats.reduce((acc, line) => acc + line.closed, 0);
-      const rejectedCount = lineStats.reduce((acc, line) => acc + line.rejected, 0);
+      const openCount = lineStats.reduce((acc, line) => acc + line.openTickets, 0);
+      const closedCount = lineStats.reduce((acc, line) => acc + line.closedTickets, 0);
+      const rejectedCount = lineStats.reduce((acc, line) => acc + line.rejectedTickets, 0);
       const total = lineStats.reduce((acc, line) => acc + line.total, 0);
 
       return {
