@@ -35,7 +35,9 @@ export function useStatusWebSocket() {
 
         // Update the cache for myStatus
         queryClient.setQueryData(queryKeys.users.myStatus(), (oldData: any) => {
-          if (!oldData) return oldData;
+          if (!oldData) {
+            return { userId: payload.userId, status: payload.status, updatedAt: new Date().toISOString() };
+          }
           return {
             ...oldData,
             status: payload.status,

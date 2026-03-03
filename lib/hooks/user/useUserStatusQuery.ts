@@ -27,8 +27,8 @@ export function useUserStatusQuery(): UseUserStatusQueryReturn {
   const query = useQuery({
     queryKey: queryKeys.users.myStatus(),
     queryFn: () => userApi.getMyStatus(),
-    staleTime: 0, // 30 seconds
-    refetchInterval: 0, // 15 minutes background sync
+    staleTime: Infinity, // WebSocket handles real-time updates
+    refetchOnWindowFocus: false, // Prevent REST refetch from overwriting WS updates
     retry: 1, // Don't retry much - user may not have status
   });
 
