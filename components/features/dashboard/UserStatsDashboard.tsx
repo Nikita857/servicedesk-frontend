@@ -79,9 +79,9 @@ export function UserStatsDashboard() {
 
   const cards = [
     { label: "Всего", value: stats.total, icon: LuTicket, color: "blue.500" },
-    { label: "В работе", value: stats.open, icon: LuClock, color: "orange.500" },
-    { label: "Закрыто", value: stats.closed, icon: LuArchive, color: "gray.500" },
-    { label: "Ожидание", value: stats.waiting, icon: LuTimer, color: "yellow.500" },
+    { label: "В работе", value: stats.openTickets, icon: LuClock, color: "orange.500" },
+    { label: "Закрыто", value: stats.closedTickets, icon: LuArchive, color: "gray.500" },
+    { label: "Ожидание", value: stats.newTickets, icon: LuTimer, color: "yellow.500" },
   ];
 
   return (

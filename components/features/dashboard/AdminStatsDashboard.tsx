@@ -71,7 +71,7 @@ export function AdminStatsDashboard() {
   const totalStats = [
     {
       label: "Новых",
-      value: globalStats?.byStatus?.["NEW"] ?? 0,
+      value: globalStats?.newTickets ?? 0,
       color: "blue.500",
       bgColor: "blue.50",
       darkBgColor: "blue.900/20",
@@ -79,7 +79,7 @@ export function AdminStatsDashboard() {
     },
     {
       label: "В работе",
-      value: globalStats?.open ?? 0,
+      value: globalStats?.openTickets ?? 0,
       color: "orange.500",
       bgColor: "orange.50",
       darkBgColor: "orange.900/20",
@@ -87,7 +87,7 @@ export function AdminStatsDashboard() {
     },
     {
       label: "Закрыто",
-      value: globalStats?.closed ?? 0,
+      value: globalStats?.closedTickets ?? 0,
       color: "gray.500",
       bgColor: "gray.50",
       darkBgColor: "gray.900/20",
@@ -95,7 +95,7 @@ export function AdminStatsDashboard() {
     },
     {
       label: "Отклонено",
-      value: globalStats?.waiting ?? 0,
+      value: globalStats?.rejectedTickets ?? 0,
       color: "red.500",
       bgColor: "red.50",
       darkBgColor: "red.900/20",
