@@ -70,11 +70,11 @@ const TreeItem = ({ node, depth = 0, onEdit, onDelete }: TreeItemProps) => {
             <Badge size="xs" variant="surface" colorPalette="gray" flexShrink={0}>
               #{node.id}
             </Badge>
-            {node.departmentName && (
-              <Badge size="xs" variant="subtle" colorPalette="blue" flexShrink={0}>
-                {node.departmentName}
+            {node.departments?.map((d) => (
+              <Badge key={d.id} size="xs" variant="subtle" colorPalette="blue" flexShrink={0}>
+                {d.name}
               </Badge>
-            )}
+            ))}
             {node.description && (
               <Text fontSize="xs" color="fg.muted" truncate maxW="250px">
                 {node.description}
