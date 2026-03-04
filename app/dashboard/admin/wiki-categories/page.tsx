@@ -12,12 +12,13 @@ import {
   HStack,
   Input,
   Dialog,
-  createListCollection,
   Textarea,
   Portal,
   IconButton,
+  Checkbox,
+  Badge,
 } from "@chakra-ui/react";
-import { DataSelect, BackButton, CategoryTreeSelect } from "@/components/ui";
+import { BackButton, CategoryTreeSelect } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { LuPlus, LuX } from "react-icons/lu";
 
@@ -64,34 +65,19 @@ export default function WikiCategoriesPage() {
   const [formData, setFormData] = useState<CreateWikiCategoryRequest>({
     name: "",
     description: "",
-    departmentId: undefined,
+    departmentIds: [],
     parentId: undefined,
     displayOrder: 0,
   });
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Department collection for Select
-  const departmentCollection = useMemo(
-    () =>
-      createListCollection({
-        items: [
-          { label: "Публичная (все отделы)", value: "0" },
-          ...departments.map((d: Department) => ({
-            label: d.name,
-            value: d.id.toString(),
-          })),
-        ],
-      }),
-    [departments],
-  );
-
   const handleCreateNew = () => {
     setEditingCategory(null);
     setFormData({
       name: "",
       description: "",
-      departmentId: undefined,
+      departmentIds: [],
       parentId: undefined,
       displayOrder: 0,
     });
@@ -103,11 +89,21 @@ export default function WikiCategoriesPage() {
     setFormData({
       name: node.name,
       description: node.description || "",
-      departmentId: node.departmentId || undefined,
+      departmentIds: node.departments.map((d) => d.id),
       parentId: node.parentId || undefined,
       displayOrder: node.displayOrder || 0,
     });
     setIsDialogOpen(true);
+  };
+
+  const toggleDepartment = (deptId: number) => {
+    setFormData((prev) => {
+      const current = (prev.departmentIds as number[]) ?? [];
+      const next = current.includes(deptId)
+        ? current.filter((id) => id !== deptId)
+        : [...current, deptId];
+      return { ...prev, departmentIds: next };
+    });
   };
 
   const handleSave = async () => {
@@ -290,27 +286,50 @@ export default function WikiCategoriesPage() {
                   </Box>
 
                   <Box>
-                    <DataSelect
-                      label="Отдел (опционально)"
-                      collection={departmentCollection}
-                      value={
-                        formData.departmentId
-                          ? [formData.departmentId.toString()]
-                          : ["0"]
-                      }
-                      onValueChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          departmentId:
-                            e.value[0] === "0"
-                              ? undefined
-                              : parseInt(e.value[0]),
-                        }))
-                      }
-                      helperText="Если отдел не выбран, категория будет публичной"
-                      disabled={isLoadingDepts}
-                      portalled={false}
-                    />
+                    <Text mb={1} fontSize="sm" fontWeight="medium">
+                      Отделы (опционально)
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted" mb={2}>
+                      Если не выбрано — категория публичная (видна всем)
+                    </Text>
+                    {(formData.departmentIds as number[])?.length > 0 && (
+                      <HStack wrap="wrap" mb={2} gap={1}>
+                        {(formData.departmentIds as number[]).map((id) => {
+                          const dept = departments.find((d: Department) => d.id === id);
+                          return dept ? (
+                            <Badge key={id} size="sm" colorPalette="blue">
+                              {dept.name}
+                            </Badge>
+                          ) : null;
+                        })}
+                      </HStack>
+                    )}
+                    <Box
+                      maxH="160px"
+                      overflowY="auto"
+                      borderWidth="1px"
+                      borderColor="border.default"
+                      borderRadius="md"
+                      p={2}
+                    >
+                      {isLoadingDepts ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <VStack align="start" gap={2}>
+                          {departments.map((d: Department) => (
+                            <Checkbox.Root
+                              key={d.id}
+                              checked={(formData.departmentIds as number[])?.includes(d.id)}
+                              onCheckedChange={() => toggleDepartment(d.id)}
+                            >
+                              <Checkbox.HiddenInput />
+                              <Checkbox.Control />
+                              <Checkbox.Label fontSize="sm">{d.name}</Checkbox.Label>
+                            </Checkbox.Root>
+                          ))}
+                        </VStack>
+                      )}
+                    </Box>
                   </Box>
 
                   <Box>

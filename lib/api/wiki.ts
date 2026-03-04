@@ -2,6 +2,11 @@ import api from "./client";
 import type { ApiResponse } from "@/types/api";
 
 // Types based on OpenAPI spec
+export interface DepartmentRef {
+  id: number;
+  name: string;
+}
+
 export interface WikiArticle {
   id: number;
   title: string;
@@ -10,8 +15,7 @@ export interface WikiArticle {
   excerpt: string | null;
   categoryId: number | null;
   categoryName: string | null;
-  departmentId: number | null;
-  departmentName: string | null;
+  departments: DepartmentRef[];
   tags: string[];
   createdBy: {
     id: number;
@@ -38,8 +42,7 @@ export interface WikiCategory {
   id: number;
   name: string;
   description: string | null;
-  departmentId: number | null;
-  departmentName: string | null;
+  departments: DepartmentRef[];
   parentId: number | null;
   depth: number | null;
   displayOrder: number | null;
@@ -47,29 +50,28 @@ export interface WikiCategory {
 }
 
 export interface WikiCategoryTree {
-  id: number,
-  name: string,
-  description: string | null,
-  departmentId: number | null,
-  departmentName: string | null,
-  parentId: number | null,
-  depth: number | null,
-  displayOrder: number | null,
-  children: WikiCategoryTree[]
+  id: number;
+  name: string;
+  description: string | null;
+  departments: DepartmentRef[];
+  parentId: number | null;
+  depth: number | null;
+  displayOrder: number | null;
+  children: WikiCategoryTree[];
 }
 
 export interface CreateWikiCategoryRequest {
   name: string;
   description?: string;
-  departmentId?: number | null;
-  parentId?: number | null; //null = корневая категория
+  departmentIds?: number[]; // [] или отсутствие = публичная
+  parentId?: number | null; // null = корневая категория
   displayOrder?: number;
 }
 
 export interface UpdateWikiCategoryRequest {
   name?: string;
   description?: string;
-  departmentId?: number | null;
+  departmentIds?: number[] | null; // null = не менять, [] = публичная
   parentId?: number | null;
   displayOrder?: number;
 }
@@ -80,7 +82,7 @@ export interface WikiArticleListItem {
   slug: string;
   excerpt: string | null;
   categoryName: string | null;
-  departmentName: string | null;
+  departments: DepartmentRef[];
   tags: string[];
   author: {
     id: number;
@@ -126,8 +128,7 @@ export interface WikiCategoryWithArticles {
   id: number;
   name: string;
   description: string | null;
-  departmentId: number | null;
-  departmentName: string | null;
+  departments: DepartmentRef[];
   parentId: number | null;
   depth: number | null;
   displayOrder: number | null;
@@ -317,6 +318,15 @@ export const wikiApi = {
     return response.data.data;
   },
 
+  // Search suggestions with title + excerpt
+  suggest: async (q: string, limit = 5): Promise<WikiArticleSuggestion[]> => {
+    const response = await api.get<ApiResponse<WikiArticleSuggestion[]>>(
+      "/wiki/suggest",
+      { params: { q, limit } },
+    );
+    return response.data.data;
+  },
+
   // ============ Admin: Wiki Category Management ============
 
   adminGetCategories: async (): Promise<WikiCategory[]> => {
@@ -358,6 +368,13 @@ export const wikiApi = {
     await api.delete(`/admin/wiki/categories/${id}`);
   },
 };
+
+export interface WikiArticleSuggestion {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+}
 
 // Attachment type
 export interface WikiAttachment {

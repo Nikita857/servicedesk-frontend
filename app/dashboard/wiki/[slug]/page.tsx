@@ -144,8 +144,8 @@ export default function WikiArticlePage({ params }: PageProps) {
             <HStack>
               <Tooltip
                 content={
-                  article.departmentName
-                    ? `Категория статей отдела: ${article.departmentName}`
+                  article.departments?.length > 0
+                    ? `Категория отделов: ${article.departments.map((d) => d.name).join(", ")}`
                     : "Общая категория"
                 }
               >
