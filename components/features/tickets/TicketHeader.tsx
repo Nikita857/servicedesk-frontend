@@ -189,7 +189,9 @@ export default function TicketHeader({
         <VStack align="flex-end" gap={2}>
           <HStack gap={2} wrap="wrap" justify="flex-end">
             {/* Take Ticket button - for specialists when ticket is unassigned */}
-            {isSpecialist && !ticket.assignedTo && ticket.status === "NEW" && (
+            {isSpecialist && !ticket.assignedTo &&
+              (ticket.status === "NEW" || ticket.status === "ESCALATED") &&
+              !hasPendingAssignment && (
               <Button
                 size="sm"
                 colorPalette="green"

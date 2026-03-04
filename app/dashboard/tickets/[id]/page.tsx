@@ -110,7 +110,7 @@ export default function TicketDetailPage({ params }: PageProps) {
         showEscalation={escalation.showEscalation}
         setShowEscalation={escalation.setShowEscalation}
         isOnLastLine={isOnLastLine}
-        hasPendingAssignment={currentAssignment?.status === "PENDING"}
+        hasPendingAssignment={currentAssignment?.status === "PENDING" && !!currentAssignment?.toUsername}
         user={user}
       />
 
@@ -179,6 +179,8 @@ export default function TicketDetailPage({ params }: PageProps) {
             currentAssignment={currentAssignment}
             assignmentHistory={assignmentHistory}
             isSpecialist={isSpecialist}
+            currentUsername={user?.username}
+            onDecision={refetch}
           />
         </GridItem>
 

@@ -21,6 +21,7 @@ export interface SpecialistTicketsVM {
   NEW: StatusTicketsVM;
   OPEN: StatusTicketsVM;
   PENDING: StatusTicketsVM;
+  ESCALATED: StatusTicketsVM;
   CLOSED: StatusTicketsVM;
   refetchAll: () => void;
 }
@@ -31,9 +32,9 @@ export function useSpecialistTicketsByStatus(
   const queryClient = useQueryClient();
   const { subscribeToNewTickets, isConnected } = useWebSocket();
 
-  type SpecialistTicketStatus = "NEW" | "OPEN" | "PENDING" | "CLOSED" ;
+  type SpecialistTicketStatus = "NEW" | "OPEN" | "PENDING" | "ESCALATED" | "CLOSED";
   const STORAGE_KEY = "sd_page_specialist-tickets";
-  const defaultPages: Record<SpecialistTicketStatus, number> = { NEW: 0, OPEN: 0, PENDING: 0, CLOSED: 0 };
+  const defaultPages: Record<SpecialistTicketStatus, number> = { NEW: 0, OPEN: 0, PENDING: 0, ESCALATED: 0, CLOSED: 0 };
 
   const [pages, setPages] = useState<Record<SpecialistTicketStatus, number>>(() => {
     if (typeof window === "undefined") return defaultPages;
@@ -103,19 +104,22 @@ export function useSpecialistTicketsByStatus(
   const newTickets = useStatusQuery("NEW");
   const openTickets = useStatusQuery("OPEN");
   const pendingTickets = useStatusQuery("PENDING");
+  const escalatedTickets = useStatusQuery("ESCALATED");
   const closedTickets = useStatusQuery("CLOSED");
 
   const refetchAll = useCallback(() => {
     newTickets.actions.refetch();
     openTickets.actions.refetch();
     pendingTickets.actions.refetch();
+    escalatedTickets.actions.refetch();
     closedTickets.actions.refetch();
-  }, [newTickets, openTickets, pendingTickets, closedTickets]);
+  }, [newTickets, openTickets, pendingTickets, escalatedTickets, closedTickets]);
 
   return {
     NEW: newTickets,
     OPEN: openTickets,
     PENDING: pendingTickets,
+    ESCALATED: escalatedTickets,
     CLOSED: closedTickets,
     refetchAll,
   };
