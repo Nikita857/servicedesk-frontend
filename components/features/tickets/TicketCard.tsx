@@ -3,12 +3,12 @@
 import { Box, Flex, Text, Badge, HStack } from "@chakra-ui/react";
 import { LuClock } from "react-icons/lu";
 import { useRouter } from "next/navigation";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
 import { formatDate } from "@/lib/utils";
 
 interface TicketCardProps {
-  ticket: TicketListItem;
+  ticket: TicketListResponse;
 }
 
 export function TicketCard({ ticket }: TicketCardProps) {

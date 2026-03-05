@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { supportLineApi, type SupportLine } from "@/lib/api/supportLines";
+import { supportLineApi } from "@/lib/api/supportLines";
+import type { SupportLineListResponse } from "@/types/support-line";
 import { queryKeys } from "@/lib/queryKeys";
 
-interface UseAvailableSupportLinesQuery {
-  supportLines: SupportLine[];
+interface UseAvailableSupportLinesQueryReturn {
+  supportLines: SupportLineListResponse[];
   isLoading: boolean;
   error: Error | null;
 }
 
-export function useAvailableSupportLinesQuery(): UseAvailableSupportLinesQuery {
+export function useAvailableSupportLinesQuery(): UseAvailableSupportLinesQueryReturn {
   const query = useQuery({
     queryKey: queryKeys.supportLines.available(),
     queryFn: () => supportLineApi.getAvailableForAssignment(),

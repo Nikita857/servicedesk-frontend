@@ -14,7 +14,6 @@ import {
 } from "@/types";
 import {
   Badge,
-  Box,
   Button,
   Flex,
   Heading,
@@ -23,8 +22,6 @@ import {
   Menu,
   Portal,
   Text,
-  VStack,
-  IconButton,
   Dialog,
   CloseButton,
   Textarea,
@@ -134,60 +131,42 @@ export default function TicketHeader({
   return (
     <>
       <Flex
-        mb={6}
+        mb={3}
         justify="space-between"
-        align="flex-start"
+        align="center"
         wrap="wrap"
-        gap={4}
+        gap={2}
       >
         {/* Left side: Back button, Title, Badges */}
-        <Box flex={1} minW="0">
-          <HStack mb={2}>
-            <Link href="/dashboard/tickets">
-              <Button variant="ghost" size="sm">
-                <LuArrowLeft />
-                <Text display={{ base: "none", sm: "inline" }}>Назад</Text>
-              </Button>
-            </Link>
-          </HStack>
+        <HStack flex={1} minW="0" gap={3} wrap="wrap">
+          <Link href="/dashboard/tickets">
+            <Button variant="ghost" size="sm">
+              <LuArrowLeft />
+            </Button>
+          </Link>
 
           <Heading
-            size={{ base: "md", md: "lg" }}
+            size="sm"
             color="fg.default"
-            mb={3}
             wordBreak="break-word"
+            flex={1}
+            minW="0"
           >
             #{ticket.id}: {ticket.title}
           </Heading>
 
-          {/* Status and Priority with labels */}
-          <Flex gap={4} wrap="wrap" align="center">
-            <HStack gap={2}>
-              <Text fontSize="sm" color="fg.muted" fontWeight="medium">
-                Статус:
-              </Text>
-              <Badge colorPalette={statusConf.color} size="lg">
-                {statusConf.label}
-              </Badge>
-            </HStack>
-            <HStack gap={2}>
-              <Text fontSize="sm" color="fg.muted" fontWeight="medium">
-                Приоритет:
-              </Text>
-              <Badge
-                colorPalette={priorityConf.color}
-                variant="subtle"
-                size="md"
-              >
-                {priorityConf.label}
-              </Badge>
-            </HStack>
-          </Flex>
-        </Box>
+          <HStack gap={2} flexShrink={0}>
+            <Badge colorPalette={statusConf.color} size="sm">
+              {statusConf.label}
+            </Badge>
+            <Badge colorPalette={priorityConf.color} variant="subtle" size="sm">
+              {priorityConf.label}
+            </Badge>
+          </HStack>
+        </HStack>
 
         {/* Right side: Action buttons */}
-        <VStack align="flex-end" gap={2}>
-          <HStack gap={2} wrap="wrap" justify="flex-end">
+        <HStack gap={2} wrap="wrap" justify="flex-end" flexShrink={0}>
             {/* Take Ticket button - for specialists when ticket is unassigned */}
             {isSpecialist && !ticket.assignedTo &&
               (ticket.status === "NEW" || ticket.status === "ESCALATED") &&
@@ -279,19 +258,14 @@ export default function TicketHeader({
                 );
               })()}
 
-            {/* Cancel button - for ticket creator or admin */}
-            {canCancel && isTicketCreator && (
+            {/* Cancel button - только если тикет ещё не взят в работу */}
+            {canCancel && isTicketCreator && (!ticket.assignedTo || ticket.status === "NEW") && (
               <Button
                 size="sm"
                 variant="outline"
                 colorPalette="red"
                 onClick={() => setShowCancelDialog(true)}
-                disabled={!!ticket.assignedTo && ticket.status !== "NEW"}
-                title={
-                  !!ticket.assignedTo && ticket.status !== "NEW"
-                    ? "Нельзя отменить тикет, который уже взяли в работу"
-                    : "Отменить тикет"
-                }
+                title="Отменить заявку"
               >
                 <Text display={{ base: "none", md: "inline" }}>
                   Отменить тикет
@@ -299,8 +273,7 @@ export default function TicketHeader({
                 <LuX />
               </Button>
             )}
-          </HStack>
-        </VStack>
+        </HStack>
       </Flex>
 
       {/* Cancel Confirmation Dialog */}
@@ -314,12 +287,12 @@ export default function TicketHeader({
             <Dialog.Content>
               <Dialog.Header>
                 {isTicketCreator && (
-                  <Dialog.Title>Отменить тикет?</Dialog.Title>
+                  <Dialog.Title>Отменить заявку?</Dialog.Title>
                 )}
               </Dialog.Header>
               <Dialog.Body>
                 <Text mb={4} color="fg.muted">
-                  Тикет будет отменён и закрыт. Это действие нельзя отменить.
+                  Заявка будет отменена и закрыта. Это действие нельзя отменить.
                 </Text>
                 <Textarea
                   placeholder="Причина отмены (необязательно)"
@@ -343,7 +316,7 @@ export default function TicketHeader({
                   onClick={handleCancelTicket}
                   loading={isCancelling}
                 >
-                  Отменить тикет
+                  Отменить Заявку
                 </Button>
               </Dialog.Footer>
               <Dialog.CloseTrigger asChild>

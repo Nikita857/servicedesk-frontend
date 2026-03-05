@@ -9,7 +9,7 @@ interface Item {
   disabled?: boolean;
 }
 
-export interface SegmentedControlProps extends SegmentGroup.RootProps {
+interface SegmentedControlProps extends SegmentGroup.RootProps {
   items: Array<string | Item>;
 }
 

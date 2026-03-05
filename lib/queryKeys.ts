@@ -26,6 +26,8 @@ export const queryKeys = {
       [...queryKeys.assignments.all, "current", ticketId] as const,
     history: (ticketId: number) =>
       [...queryKeys.assignments.all, "history", ticketId] as const,
+    coExecutors: (ticketId: number) =>
+      [...queryKeys.assignments.all, "co-executors", ticketId] as const,
   },
 
   // Support Lines

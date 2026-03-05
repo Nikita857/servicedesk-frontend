@@ -1,68 +1,21 @@
 import api from "./client";
 import type { ApiResponse } from "@/types/api";
-
-// ==================== Types ====================
-
-import type { AssignmentMode } from "@/types/ticket";
-
-export type ActivityStatus =
-  | "AVAILABLE"
-  | "UNAVAILABLE"
-  | "BUSY"
-  | "TECHNICAL_ISSUE"
-  | "OFFLINE";
-
-export interface Specialist {
-  id: number;
-  username: string;
-  fio: string | null;
-  active: boolean;
-  roles: string[];
-  activityStatus?: ActivityStatus;
-  availableForAssignment?: boolean;
-}
-
-export interface SupportLine {
-  id: number;
-  name: string;
-  description: string | null;
-  slaMinutes: number;
-  specialistCount: number;
-  displayOrder: number;
-}
-
-// Full version with specialists and assignment mode
-export interface SupportLineDetail extends SupportLine {
-  assignmentMode: AssignmentMode;
-  targetRole: string;
-  specialists: Specialist[];
-  telegramChatId?: number | null;
-}
-
-// Alias for backwards compatibility
-export type SupportLineShort = SupportLine;
-
-export interface UpdateSupportLineRequest {
-  description?: string;
-  slaMinutes?: number;
-  assignmentMode?: AssignmentMode;
-  displayOrder?: number;
-}
+import type { SupportLineListResponse, SupportLineDetail, Specialist, UpdateSupportLineRequest } from "@/types/support-line";
 
 // ==================== API ====================
 
 export const supportLineApi = {
   // Get all support lines
-  list: async (): Promise<SupportLine[]> => {
-    const response = await api.get<ApiResponse<SupportLine[]>>(
+  list: async (): Promise<SupportLineListResponse[]> => {
+    const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
       "/support-lines"
     );
     return response.data.data;
   },
 
   // Alias for list
-  getAll: async (): Promise<SupportLine[]> => {
-    const response = await api.get<ApiResponse<SupportLine[]>>(
+  getAll: async (): Promise<SupportLineListResponse[]> => {
+    const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
       "/support-lines"
     );
     return response.data.data;
@@ -76,8 +29,8 @@ export const supportLineApi = {
     return response.data.data;
   },
 
-  getAvailableForAssignment: async (): Promise<SupportLine[]> => {
-    const response = await api.get<ApiResponse<SupportLine[]>>(
+  getAvailableForAssignment: async (): Promise<SupportLineListResponse[]> => {
+    const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
       `/support-lines/available-for-assignment`
     );
     return response.data.data;
@@ -92,8 +45,8 @@ export const supportLineApi = {
   },
 
   // Get my lines (for specialists)
-  getMyLines: async (): Promise<SupportLine[]> => {
-    const response = await api.get<ApiResponse<SupportLine[]>>(
+  getMyLines: async (): Promise<SupportLineListResponse[]> => {
+    const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
       "/support-lines/my-lines"
     );
     return response.data.data;
@@ -147,16 +100,4 @@ export const supportLineApi = {
   },
 };
 
-// Assignment API - forwarding related
-export const assignmentApi = {
-  /**
-   * Get available lines for forwarding based on user role
-   * Respects forwarding rules: SYSADMIN → ONE_C_SUPPORT, etc.
-   */
-  getAvailableForwardingLines: async (): Promise<SupportLine[]> => {
-    const response = await api.get<ApiResponse<SupportLine[]>>(
-      "/assignments/available-lines"
-    );
-    return response.data.data;
-  },
-};
+export type { Specialist };

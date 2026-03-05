@@ -1,6 +1,9 @@
 // Ticket types based on OpenAPI spec
 
 import { Page } from "./api";
+import type { CategoryResponse } from "./category";
+import type { SupportLineListResponse } from "./support-line";
+import type { AssignmentResponse, CoExecutorResponse } from "./assignment";
 
 export type TicketStatus =
   | "NEW"
@@ -23,7 +26,7 @@ export const TicketStatusCollection: Record<string, TicketStatus[]> = {
 
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
-export interface UserShort {
+export interface UserShortResponse {
   id: number;
   username: string;
   fio: string | null;
@@ -31,23 +34,8 @@ export interface UserShort {
   isSpecialist: boolean;
 }
 
-export interface CategoryShort {
-  id: number;
-  name: string;
-  is1ClinkRecommended: boolean | null;
-}
-
-export interface SupportLineShort {
-  id: number;
-  name: string;
-  description: string | null;
-  slaMinutes: number;
-  specialistCount: number;
-  displayOrder: number;
-}
-
 // List item (for tables)
-export interface TicketListItem {
+export interface TicketListResponse {
   id: number;
   title: string;
   status: TicketStatus;
@@ -67,11 +55,11 @@ export interface Ticket {
   link1c: string | null;
   status: TicketStatus;
   priority: TicketPriority;
-  createdBy: UserShort;
-  assignedTo: UserShort | null;
-  supportLine: SupportLineShort | null;
-  categoryUser: CategoryShort | null;
-  categorySupport: CategoryShort | null;
+  createdBy: UserShortResponse;
+  assignedTo: UserShortResponse | null;
+  supportLine: SupportLineListResponse | null;
+  categoryUser: CategoryResponse | null;
+  categorySupport: CategoryResponse | null;
   timeSpentSeconds: number;
   messageCount: number;
   attachmentCount: number;
@@ -81,30 +69,8 @@ export interface Ticket {
   closedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  lastAssignment: LastAssignment | null;
-}
-
-// Assignment embedded in ticket response
-export interface LastAssignment {
-  id: number;
-  ticketId: number;
-  fromLineId: number | null;
-  fromLineName: string | null;
-  fromUserId: number | null;
-  fromUsername: string | null;
-  fromFio: string | null;
-  toLineId: number;
-  toLineName: string;
-  toUserId: number | null;
-  toUsername: string | null;
-  toFio: string | null;
-  note: string | null;
-  mode: AssignmentMode;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  createdAt: string;
-  acceptedAt: string | null;
-  rejectedAt: string | null;
-  rejectedReason: string | null;
+  lastAssignment: AssignmentResponse | null;
+  coExecutors: CoExecutorResponse[];
 }
 
 // Request DTOs
@@ -132,12 +98,12 @@ export interface ChangeStatusRequest {
 
 // Paginated response
 export interface PagedTicketList {
-  content: TicketListItem[];
+  content: TicketListResponse[];
   page: Page
 }
 
 // Status labels and colors
-export interface StatusConfig {
+interface StatusConfig {
   label: string;
   color: string;
 }
@@ -202,20 +168,6 @@ export const statusTransitions: Record<TicketStatus, TicketStatus[]> = {
   CANCELLED: [],
 };
 
-// User-allowed transitions (regular users)
-export const userStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
-  NEW: ["CANCELLED"],
-  OPEN: ["CANCELLED"],
-  PENDING: ["CANCELLED"],
-  ESCALATED: [],
-  RESOLVED: ["REOPENED"],
-  PENDING_CLOSURE: ["CLOSED", "REOPENED"],
-  CLOSED: ["REOPENED"],
-  REOPENED: ["CANCELLED"],
-  REJECTED: [],
-  CANCELLED: [],
-};
-
 // Specialist-allowed transitions (specialists except admin) - NO CANCELLED
 // Specialists should use cancel button instead
 export const specialistStatusTransitions: Record<TicketStatus, TicketStatus[]> =
@@ -242,4 +194,9 @@ export interface TicketStatusHistory {
   changedByUsername: string | null;
   changedByFio: string | null;
   comment: string | null;
+}
+
+export interface RateTicketRequest {
+  rating: number;
+  feedback?: string;
 }

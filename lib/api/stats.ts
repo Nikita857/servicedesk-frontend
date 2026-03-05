@@ -1,46 +1,17 @@
-import { PagedTicketList, TicketStatus } from "@/types";
+import { PagedTicketList } from "@/types";
 import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type {
+  UserTicketStatsResponse,
+  LineTicketStatsResponse,
+  StatsQueryParams,
+  ListBySupLineAndStatusParams,
+} from "@/types/stats";
 
 /**
  * Stats API
- * Эндпоинты статистики тикетов
+ * Эндпоинты статистики заявок
  */
-
-// Types
-export interface UserTicketStats {
-  userId: number;
-  username: string;
-  total: number,
-  newTickets: number,
-  openTickets: number,
-  closedTickets: number,
-  rejectedTickets: number,
-  byStatus: Record<string, number>;
-}
-
-export interface LineTicketStats {
-  lineId: number;
-  lineName: string;
-  total: number,
-  newTickets: number,
-  openTickets: number,
-  closedTickets: number,
-  rejectedTickets: number,
-  byStatus: Record<string, number>;
-}
-
-interface StatsQueryParams {
-  page?: number;
-  size?: number;
-}
-
-interface listBySupLineAndStatusParams {
-  ticketStatus: TicketStatus[];
-  lineId: number;
-  page: number;
-  size: number;
-}
 
 // API Methods
 export const statsApi = {
@@ -48,8 +19,8 @@ export const statsApi = {
    * Моя статистика тикетов
    * Доступно всем пользователям
    */
-  async getMyStats(params?: StatsQueryParams): Promise<UserTicketStats> {
-    const response = await api.get<ApiResponse<UserTicketStats>>(
+  async getMyStats(params?: StatsQueryParams): Promise<UserTicketStatsResponse> {
+    const response = await api.get<ApiResponse<UserTicketStatsResponse>>(
       "/stats/tickets/my",
       { params },
     );
@@ -60,10 +31,10 @@ export const statsApi = {
    * Возвращает список тикетов отсортированный по статусу и линии поддержки
    * @param ticketStatus статус тикета для сортировки
    * @param lineId ID линии поддержки для сортировки
-   * @param page 
-   * @param size 
+   * @param page
+   * @param size
    */
-  async listBySupportLineAndStatus(params: listBySupLineAndStatusParams) : Promise<PagedTicketList> {
+  async listBySupportLineAndStatus(params: ListBySupLineAndStatusParams) : Promise<PagedTicketList> {
       const response = await api.get<ApiResponse<PagedTicketList>>(
         "/stats/tickets/by-line-with-tickets",
         {params},
@@ -77,8 +48,8 @@ export const statsApi = {
    */
   async getStatsByAllLines(
     params?: StatsQueryParams,
-  ): Promise<PaginatedResponse<LineTicketStats>> {
-    const response = await api.get<ApiResponse<PaginatedResponse<LineTicketStats>>>(
+  ): Promise<PaginatedResponse<LineTicketStatsResponse>> {
+    const response = await api.get<ApiResponse<PaginatedResponse<LineTicketStatsResponse>>>(
       "/stats/tickets/by-line",
       { params }
     );
@@ -92,8 +63,8 @@ export const statsApi = {
   async getStatsByLine(
     lineId: number,
     params?: StatsQueryParams,
-  ): Promise<LineTicketStats> {
-    const response = await api.get<ApiResponse<LineTicketStats>>(
+  ): Promise<LineTicketStatsResponse> {
+    const response = await api.get<ApiResponse<LineTicketStatsResponse>>(
       `/stats/tickets/by-line/${lineId}`,
       { params },
     );
@@ -104,8 +75,8 @@ export const statsApi = {
    * Глобальная статистика
    * Только для ADMIN
    */
-  async getGlobalStats(params?: StatsQueryParams): Promise<UserTicketStats> {
-    const response = await api.get<ApiResponse<UserTicketStats>>(
+  async getGlobalStats(params?: StatsQueryParams): Promise<UserTicketStatsResponse> {
+    const response = await api.get<ApiResponse<UserTicketStatsResponse>>(
       "/stats/tickets/global",
       { params },
     );

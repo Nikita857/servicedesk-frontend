@@ -26,12 +26,14 @@ import {
   LuUserCheck,
 } from "react-icons/lu";
 import { useAuth, useSpecialistTicketsByStatus } from "@/lib/hooks";
+import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { TicketCompactCard } from "./TicketCompactCard";
 import { AssignmentCompactCard } from "./AssignmentCompactCard";
 import { AssignmentDecisionDialog } from "./AssignmentDecisionDialog";
-import { assignmentApi, type Assignment } from "@/lib/api/assignments";
+import { assignmentApi } from "@/lib/api/assignments";
+import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 import { SDPagination } from "@/components/ui/SDPagination";
 import { Page } from "@/types";
 
@@ -51,7 +53,7 @@ export function SpecialistTicketsView() {
 
   // Dialog state
   const [selectedAssignment, setSelectedAssignment] =
-    useState<Assignment | null>(null);
+    useState<AssignmentResponse | null>(null);
 
   return (
     <>
@@ -68,6 +70,7 @@ export function SpecialistTicketsView() {
           </Box>
 
           <HStack gap={3}>
+            <TicketStatusHelpModal />
             <Link href="/dashboard/tickets/new">
               <Button
                 size="sm"
@@ -132,12 +135,12 @@ export function SpecialistTicketsView() {
           />
 
           {/* ASSIGNMENTS (pending for me) */}
-          <AssignmentsTile
+          <AssignmentResponsesTile
             assignments={assignmentsQuery.data?.content || []}
             isLoading={assignmentsQuery.isLoading}
             page={assignmentsPageInfo}
             onPageChange={setAssignmentsPage}
-            onAssignmentClick={setSelectedAssignment}
+            onAssignmentResponseClick={setSelectedAssignment}
           />
 
           {/* CLOSED TICKETS */}
@@ -167,7 +170,7 @@ interface TicketTileProps {
   title: string;
   icon: React.ElementType;
   colorPalette: string;
-  tickets: TicketListItem[];
+  tickets: TicketListResponse[];
   isLoading: boolean;
   page: Page | undefined;
   onPageChange: (page: number) => void;
@@ -252,19 +255,19 @@ function TicketTile({
 
 // Tile component for pending assignments
 interface AssignmentsTileProps {
-  assignments: Assignment[];
+  assignments: AssignmentResponse[];
   isLoading: boolean;
   page: Page | undefined;
   onPageChange: (page: number) => void;
-  onAssignmentClick: (assignment: Assignment) => void;
+  onAssignmentResponseClick: (assignment: AssignmentResponse) => void;
 }
 
-function AssignmentsTile({
+function AssignmentResponsesTile({
   assignments,
   isLoading,
   page,
   onPageChange,
-  onAssignmentClick,
+  onAssignmentResponseClick,
 }: AssignmentsTileProps) {
   return (
     <Box
@@ -318,7 +321,7 @@ function AssignmentsTile({
               <AssignmentCompactCard
                 key={assignment.id}
                 assignment={assignment}
-                onClick={onAssignmentClick}
+                onClick={onAssignmentResponseClick}
               />
             ))}
           </VStack>

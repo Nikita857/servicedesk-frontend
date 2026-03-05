@@ -2,13 +2,13 @@
 
 import { Box, Flex, Text, Badge, HStack } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 import { ticketPriorityConfig } from "@/types/ticket";
 import { LuCheck, LuX } from "react-icons/lu";
 import { Tooltip } from "@/components/ui";
 
 interface TicketCompactCardProps {
-  ticket: TicketListItem;
+  ticket: TicketListResponse;
   currentUserName: string | undefined;
 }
 

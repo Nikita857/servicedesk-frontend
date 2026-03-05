@@ -12,6 +12,7 @@ import {
   LuUsers,
   LuNetwork,
   LuSearch,
+  LuClipboardList,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -29,9 +30,10 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   { label: "Дашборд", href: "/dashboard", icon: LuLayoutDashboard },
-  { label: "Тикеты", href: "/dashboard/tickets", icon: LuTicket },
+  { label: "Заявки", href: "/dashboard/tickets", icon: LuTicket },
+  { label: "Мои обращения", href: "/dashboard/my-tickets", icon: LuClipboardList },
   //{ label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
-  { label: "Wiki", href: "/dashboard/wiki", icon: LuBook },
+  { label: "Статьи", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
 ];
 
@@ -49,7 +51,7 @@ const adminItems: NavItem[] = [
     icon: LuNetwork,
   },
   {
-    label: "Категории Wiki",
+    label: "Категории статей",
     href: "/dashboard/admin/wiki-categories",
     icon: LuBook,
   },
@@ -62,11 +64,12 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { colorMode } = useColorMode();
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const isSpecialist = user?.specialist || false;
 
   // Filter nav items based on role
   const filteredNavItems = navItems.filter((item) => {
-    // Reports only for admins
     if (item.href === "/dashboard/reports") return isAdmin;
+    if (item.href === "/dashboard/my-tickets") return isSpecialist && !isAdmin;
     return true;
   });
 
