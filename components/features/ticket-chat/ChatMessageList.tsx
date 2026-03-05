@@ -230,7 +230,18 @@ export function ChatMessageList({
                       <Menu.Item
                         value="copy"
                         onClick={() => {
-                          navigator.clipboard.writeText(msg.content);
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(msg.content);
+                          } else {
+                            const el = document.createElement("textarea");
+                            el.value = msg.content;
+                            el.style.position = "fixed";
+                            el.style.opacity = "0";
+                            document.body.appendChild(el);
+                            el.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(el);
+                          }
                         }}
                       >
                         <LuCopy />

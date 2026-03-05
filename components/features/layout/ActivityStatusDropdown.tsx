@@ -5,7 +5,7 @@ import { LuChevronDown } from "react-icons/lu";
 import { useUserStatusQuery } from "@/lib/hooks/user/useUserStatusQuery";
 import { useStatusWebSocket } from "@/lib/hooks/user/useStatusWebSocket";
 import { activityStatusConfig } from "@/types/auth";
-import type { UserActivityStatus } from "@/lib/api/users";
+import type { UserActivityStatus } from "@/types/auth";
 import { useAuthStore } from "@/stores";
 
 const statusOrder: UserActivityStatus[] = [

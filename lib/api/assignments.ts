@@ -1,51 +1,12 @@
 import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
-
-// Assignment types based on OpenAPI spec
-
-import type { AssignmentStatus, AssignmentMode } from "@/types/ticket";
-
-export interface Assignment {
-  id: number;
-  ticketId: number;
-  ticketTitle: string;
-  fromLineId: number | null;
-  fromLineName: string | null;
-  fromUserId: number | null;
-  fromUsername: string | null;
-  fromFio: string | null;
-  toLineId: number;
-  toLineName: string;
-  toUserId: number | null;
-  toUsername: string | null;
-  toFio: string | null;
-  note: string | null;
-  mode: AssignmentMode;
-  status: AssignmentStatus;
-  createdAt: string;
-  acceptedAt: string | null;
-  rejectedAt: string | null;
-  rejectedReason: string | null;
-}
-
-export interface CreateAssignmentRequest {
-  ticketId: number;
-  toLineId: number;
-  toUserId?: number;
-  fromLineId?: number | null;
-  fromUserId?: number | null;
-  note: string;
-  mode?: AssignmentMode;
-}
-
-export interface RejectAssignmentRequest {
-  reason: string;
-}
+import type { AssignmentResponse, CreateAssignmentRequest, RejectAssignmentRequest } from "@/types/assignment";
+import type { SupportLineListResponse } from "@/types/support-line";
 
 export const assignmentApi = {
   // Create new assignment (escalate ticket)
-  create: async (data: CreateAssignmentRequest): Promise<Assignment> => {
-    const response = await api.post<ApiResponse<Assignment>>(
+  create: async (data: CreateAssignmentRequest): Promise<AssignmentResponse> => {
+    const response = await api.post<ApiResponse<AssignmentResponse>>(
       "/assignments",
       data
     );
@@ -53,17 +14,17 @@ export const assignmentApi = {
   },
 
   // Get assignment by ID
-  get: async (id: number): Promise<Assignment> => {
-    const response = await api.get<ApiResponse<Assignment>>(
+  get: async (id: number): Promise<AssignmentResponse> => {
+    const response = await api.get<ApiResponse<AssignmentResponse>>(
       `/assignments/${id}`
     );
     return response.data.data;
   },
 
   // Get current active assignment for ticket
-  getCurrentForTicket: async (ticketId: number): Promise<Assignment | null> => {
+  getCurrentForTicket: async (ticketId: number): Promise<AssignmentResponse | null> => {
     try {
-      const response = await api.get<ApiResponse<Assignment>>(
+      const response = await api.get<ApiResponse<AssignmentResponse>>(
         `/tickets/${ticketId}/current-assignment`
       );
       return response.data.data;
@@ -73,16 +34,16 @@ export const assignmentApi = {
   },
 
   // Get assignment history for ticket
-  getTicketHistory: async (ticketId: number): Promise<Assignment[]> => {
-    const response = await api.get<ApiResponse<Assignment[]>>(
+  getTicketHistory: async (ticketId: number): Promise<AssignmentResponse[]> => {
+    const response = await api.get<ApiResponse<AssignmentResponse[]>>(
       `/tickets/${ticketId}/assignments`
     );
     return response.data.data;
   },
 
   // Get my pending assignments
-  getMyPending: async (page = 0, size = 20): Promise<PaginatedResponse<Assignment>> => {
-    const response = await api.get<ApiResponse<PaginatedResponse<Assignment>>>(
+  getMyPending: async (page = 0, size = 20): Promise<PaginatedResponse<AssignmentResponse>> => {
+    const response = await api.get<ApiResponse<PaginatedResponse<AssignmentResponse>>>(
       "/assignments/pending",
       {
         params: { page, size },
@@ -100,18 +61,29 @@ export const assignmentApi = {
   },
 
   // Accept assignment
-  accept: async (id: number): Promise<Assignment> => {
-    const response = await api.post<ApiResponse<Assignment>>(
+  accept: async (id: number): Promise<AssignmentResponse> => {
+    const response = await api.post<ApiResponse<AssignmentResponse>>(
       `/assignments/${id}/accept`
     );
     return response.data.data;
   },
 
   // Reject assignment
-  reject: async (id: number, reason: string): Promise<Assignment> => {
-    const response = await api.post<ApiResponse<Assignment>>(
+  reject: async (id: number, reason: string): Promise<AssignmentResponse> => {
+    const response = await api.post<ApiResponse<AssignmentResponse>>(
       `/assignments/${id}/reject`,
       { reason }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get available lines for forwarding based on user role
+   * Respects forwarding rules: SYSADMIN → ONE_C_SUPPORT, etc.
+   */
+  getAvailableForwardingLines: async (): Promise<SupportLineListResponse[]> => {
+    const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
+      "/assignments/available-lines"
     );
     return response.data.data;
   },

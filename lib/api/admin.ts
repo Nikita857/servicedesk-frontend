@@ -1,49 +1,10 @@
 import { SenderType } from "@/types";
 import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 import { handleApiError } from "../utils";
-import { WikiCategoryTree } from "./wiki";
-
-// ==================== Types ====================
-
-export interface AdminUser {
-  id: number;
-  fio: string | null;
-  username: string;
-  avatarUrl: string | null;
-  telegramId: number | null;
-  specialist: boolean;
-  departmentName: string | null;
-  positionName: string | null;
-  roles: string[];
-  active: boolean;
-}
-
-export interface CreateUserParams {
-  username: string;
-  password: string;
-  fio: string | null;
-  email: string | null;
-  roles: SenderType[] | null;
-  active: boolean;
-  departmentId: number | null;
-  positionId: number | null;
-}
-
-export interface Department {
-  id: number;
-  name: string;
-  description: string | null;
-  positionCount: number;
-}
-
-export interface Position {
-  id: number;
-  name: string;
-  departmentId: number;
-  departmentName: string;
-}
+import type { WikiCategoryTree } from "@/types/wiki";
+import type { AdminUserResponse, CreateUserRequest, DepartmentResponse, PositionResponse } from "@/types/admin";
 
 // ==================== API ====================
 
@@ -53,14 +14,14 @@ export const adminApi = {
     page: number = 0,
     size: number = 20,
     search?: string,
-  ): Promise<PaginatedResponse<AdminUser>> => {
+  ): Promise<PaginatedResponse<AdminUserResponse>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
     if (search) params.append("search", search);
 
     const response = await api.get<
-      ApiResponse<PaginatedResponse<AdminUser>>
+      ApiResponse<PaginatedResponse<AdminUserResponse>>
     >(`/admin/users?${params.toString()}`);
     return response.data.data;
   },
@@ -70,41 +31,41 @@ export const adminApi = {
     role: string,
     page: number = 0,
     size: number = 50,
-  ): Promise<PaginatedResponse<AdminUser>> => {
+  ): Promise<PaginatedResponse<AdminUserResponse>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
 
     const response = await api.get<
-      ApiResponse<PaginatedResponse<AdminUser>>
+      ApiResponse<PaginatedResponse<AdminUserResponse>>
     >(`/admin/users/by-role/${role}?${params.toString()}`);
     return response.data.data;
   },
 
   // Get user by ID
-  getUser: async (id: number): Promise<AdminUser> => {
-    const response = await api.get<ApiResponse<AdminUser>>(
+  getUser: async (id: number): Promise<AdminUserResponse> => {
+    const response = await api.get<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}`,
     );
     return response.data.data;
   },
 
   // Create new user
-  createUser: async (params: CreateUserParams): Promise<AdminUser> => {
+  createUser: async (params: CreateUserRequest): Promise<AdminUserResponse> => {
 
-  const payload: Partial<CreateUserParams> = {
+  const payload: Partial<CreateUserRequest> = {
     username: params.username,
     password: params.password,
-    fio: params.fio,           
+    fio: params.fio,
     email: params.email ?? null,
-    roles: params.roles ?? [],       
+    roles: params.roles ?? [],
     active: params.active,
     departmentId: params.departmentId ?? null,
     positionId: params.positionId ?? null,
   };
 
   try {
-    const response = await api.post<ApiResponse<AdminUser>>(
+    const response = await api.post<ApiResponse<AdminUserResponse>>(
       "/admin/users",           // без query-параметров
       payload                   // ← JSON в теле
     );
@@ -130,27 +91,27 @@ export const adminApi = {
   },
 
   // Update user roles
-  updateRoles: async (id: number, roles: string[]): Promise<AdminUser> => {
+  updateRoles: async (id: number, roles: string[]): Promise<AdminUserResponse> => {
     const queryParams = new URLSearchParams();
     roles.forEach((role) => queryParams.append("roles", role));
 
-    const response = await api.patch<ApiResponse<AdminUser>>(
+    const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/roles?${queryParams.toString()}`,
     );
     return response.data.data;
   },
 
   // Update user FIO
-  updateFio: async (id: number, fio: string): Promise<AdminUser> => {
-    const response = await api.patch<ApiResponse<AdminUser>>(
+  updateFio: async (id: number, fio: string): Promise<AdminUserResponse> => {
+    const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/fio?fio=${encodeURIComponent(fio)}`,
     );
     return response.data.data;
   },
 
   // Toggle user active status
-  toggleActive: async (id: number, active: boolean): Promise<AdminUser> => {
-    const response = await api.patch<ApiResponse<AdminUser>>(
+  toggleActive: async (id: number, active: boolean): Promise<AdminUserResponse> => {
+    const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/active?active=${active}`,
     );
     return response.data.data;
@@ -161,7 +122,7 @@ export const adminApi = {
     id: number,
     departmentId?: number | null,
     positionId?: number | null,
-  ): Promise<AdminUser> => {
+  ): Promise<AdminUserResponse> => {
     const queryParams = new URLSearchParams();
     if (departmentId !== undefined)
       queryParams.append(
@@ -174,7 +135,7 @@ export const adminApi = {
         positionId === null ? "" : positionId.toString(),
       );
 
-    const response = await api.patch<ApiResponse<AdminUser>>(
+    const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/department-position?${queryParams.toString()}`,
     );
     return response.data.data;
@@ -186,9 +147,9 @@ export const adminApi = {
   getNewTickets: async (
     page: number = 0,
     size: number = 20,
-  ): Promise<PaginatedResponse<TicketListItem>> => {
+  ): Promise<PaginatedResponse<TicketListResponse>> => {
     const response = await api.get<
-      ApiResponse<PaginatedResponse<TicketListItem>>
+      ApiResponse<PaginatedResponse<TicketListResponse>>
     >(`/admin/tickets/new?page=${page}&size=${size}`);
     return response.data.data;
   },
@@ -197,24 +158,24 @@ export const adminApi = {
   getClosedTickets: async (
     page: number = 0,
     size: number = 20,
-  ): Promise<PaginatedResponse<TicketListItem>> => {
+  ): Promise<PaginatedResponse<TicketListResponse>> => {
     const response = await api.get<
-      ApiResponse<PaginatedResponse<TicketListItem>>
+      ApiResponse<PaginatedResponse<TicketListResponse>>
     >(`/admin/tickets/closed?page=${page}&size=${size}`);
     return response.data.data;
   },
 
   // ==================== Departments ====================
 
-  getDepartments: async (): Promise<Department[]> => {
+  getDepartments: async (): Promise<DepartmentResponse[]> => {
     const response =
-      await api.get<ApiResponse<Department[]>>("/admin/departments");
+      await api.get<ApiResponse<DepartmentResponse[]>>("/admin/departments");
     return response.data.data;
   },
 
   // Get all positions
-  getAllPositions: async (): Promise<Position[]> => {
-    const response = await api.get<ApiResponse<Position[]>>(
+  getAllPositions: async (): Promise<PositionResponse[]> => {
+    const response = await api.get<ApiResponse<PositionResponse[]>>(
       "/admin/departments/positions",
     );
     return response.data.data;
@@ -223,8 +184,8 @@ export const adminApi = {
   // Get positions by department
   getPositionsByDepartment: async (
     departmentId: number,
-  ): Promise<Position[]> => {
-    const response = await api.get<ApiResponse<Position[]>>(
+  ): Promise<PositionResponse[]> => {
+    const response = await api.get<ApiResponse<PositionResponse[]>>(
       `/admin/departments/${departmentId}/positions`,
     );
     return response.data.data;

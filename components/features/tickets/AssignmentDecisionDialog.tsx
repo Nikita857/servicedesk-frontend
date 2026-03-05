@@ -14,12 +14,13 @@ import {
 import { LuCheck, LuX, LuArrowRight, LuUser } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { assignmentApi, type Assignment } from "@/lib/api/assignments";
+import { assignmentApi } from "@/lib/api/assignments";
+import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
 import { toast } from "@/lib/utils";
 
 interface AssignmentDecisionDialogProps {
-  assignment: Assignment | null;
+  assignment: AssignmentResponse | null;
   onClose: () => void;
 }
 
@@ -90,7 +91,7 @@ export function AssignmentDecisionDialog({
         <Dialog.Positioner>
           <Dialog.Content maxW="lg">
             <Dialog.Header>
-              <Dialog.Title>Назначение на тикет</Dialog.Title>
+              <Dialog.Title>Назначение на заявку</Dialog.Title>
             </Dialog.Header>
 
             <Dialog.Body>
