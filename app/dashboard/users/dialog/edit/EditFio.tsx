@@ -1,4 +1,4 @@
-import { AdminUser } from "@/lib/api/admin";
+import type { AdminUserResponse } from "@/types/admin";
 import {
   Field,
   Button,
@@ -16,7 +16,7 @@ interface EditFioProps {
   closeEditFio: () => void;
   handleUpdateFio: () => Promise<void>;
   isSubmitting: boolean;
-  selectedUser: AdminUser | null;
+  selectedUser: AdminUserResponse | null;
 }
 
 export default function EditFio({

@@ -17,27 +17,6 @@ export function formatDate(dateStr: string): string {
 }
 
 /**
- * Форматирование даты (только дата, без времени)
- */
-export function formatDateShort(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-/**
- * Форматирование времени
- */
-export function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-/**
  * Форматирование размера файла в читаемый формат
  */
 export function formatFileSize(bytes: number): string {
@@ -77,24 +56,4 @@ export function formatDurationFull(seconds: number): string {
     return `${minutes} мин ${secs} сек`;
   }
   return `${secs} сек`;
-}
-
-/**
- * Относительное время (например, "5 минут назад")
- */
-export function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHours = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSec < 60) return "только что";
-  if (diffMin < 60) return `${diffMin} мин назад`;
-  if (diffHours < 24) return `${diffHours} ч назад`;
-  if (diffDays < 7) return `${diffDays} дн назад`;
-
-  return formatDateShort(dateStr);
 }

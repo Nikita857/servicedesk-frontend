@@ -29,7 +29,7 @@ interface HandleApiErrorOptions {
 /**
  * Извлечь сообщение об ошибке из ответа API
  */
-export function getErrorMessage(error: unknown): string {
+function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiErrorResponse | undefined;
 
@@ -50,7 +50,7 @@ export function getErrorMessage(error: unknown): string {
 /**
  * Получить HTTP статус код из ошибки
  */
-export function getErrorStatus(error: unknown): number | null {
+function getErrorStatus(error: unknown): number | null {
   if (axios.isAxiosError(error) && error.response) {
     return error.response.status;
   }
@@ -123,42 +123,4 @@ export function handleApiError(
         toast.error("Ошибка", message);
       }
   }
-}
-
-/**
- * Обёртка для async функций с автоматической обработкой ошибок
- *
- * @example
- * const result = await withErrorHandling(
- *   () => ticketApi.create(data),
- *   { context: "создать тикет" }
- * );
- */
-export async function withErrorHandling<T>(
-  fn: () => Promise<T>,
-  options: HandleApiErrorOptions = {}
-): Promise<T | null> {
-  try {
-    return await fn();
-  } catch (error) {
-    handleApiError(error, options);
-    return null;
-  }
-}
-
-/**
- * Проверить, является ли ошибка определённым статусом
- */
-export function isStatus(error: unknown, status: number): boolean {
-  return getErrorStatus(error) === status;
-}
-
-/**
- * Проверить, является ли ошибка ошибкой сети
- */
-export function isNetworkError(error: unknown): boolean {
-  if (axios.isAxiosError(error)) {
-    return !error.response && error.code === "ERR_NETWORK";
-  }
-  return false;
 }

@@ -1,5 +1,5 @@
 import { Tooltip } from "@/components/ui/tooltip";
-import { AdminUser } from "@/lib/api/admin";
+import type { AdminUserResponse } from "@/types/admin";
 import { userRolesBadges } from "@/types/auth";
 import {
   HStack,
@@ -14,7 +14,7 @@ import { LuCheck } from "react-icons/lu";
 
 interface EditRolesProps {
   isEditRolesOpen: boolean;
-  selectedUser: AdminUser | null;
+  selectedUser: AdminUserResponse | null;
   editRoles: string[];
   setEditRoles: (roles: string[]) => void;
   toggleRole: (

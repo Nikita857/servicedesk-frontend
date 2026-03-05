@@ -1,4 +1,4 @@
-import { AdminUser } from "@/lib/api/admin";
+import type { AdminUserResponse } from "@/types/admin";
 import {
   Text,
   Button,
@@ -13,7 +13,7 @@ interface DeleteUserProps {
   closeDelete: () => void;
   handleDeleteUser: () => Promise<void>;
   isSubmitting: boolean;
-  selectedUser: AdminUser | null;
+  selectedUser: AdminUserResponse | null;
 }
 
 export default function DeleteUser({

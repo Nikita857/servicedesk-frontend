@@ -1,6 +1,7 @@
 import { DataSelect } from "@/components/ui";
 import { Tooltip } from "@/components/ui/tooltip";
-import { adminApi, CreateUserParams } from "@/lib/api/admin";
+import { adminApi } from "@/lib/api/admin";
+import type { CreateUserRequest } from "@/types/admin";
 import { SenderType, userRolesBadges } from "@/types";
 import {
   Badge,
@@ -23,7 +24,7 @@ import { toast } from "@/lib/utils";
 interface CreateUserProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (user: CreateUserParams) => void;
+  onCreate: (user: CreateUserRequest) => void;
   isSubmitting: boolean;
 }
 
@@ -33,7 +34,7 @@ export default function CreateUser({
   onCreate,
   isSubmitting,
 }: CreateUserProps) {
-  const [newUser, setNewUser] = useState<CreateUserParams>({
+  const [newUser, setNewUser] = useState<CreateUserRequest>({
     username: "",
     password: "",
     fio: "",
