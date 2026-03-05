@@ -3,7 +3,7 @@ import type { ApiResponse } from "@/types/api";
 
 export const searchAdminApi = {
   /**
-   * Полная переиндексация всех сущностей (Wiki, Тикеты и т.д.)
+   * Полная переиндексация всех сущностей (Статьи, Заявки и т.д.)
    */
   reindexAll: async (): Promise<void> => {
     await api.post<ApiResponse<void>>("/admin/search/reindex");

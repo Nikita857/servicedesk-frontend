@@ -1,4 +1,5 @@
-import { AdminUser, adminApi } from "@/lib/api/admin";
+import { adminApi } from "@/lib/api/admin";
+import type { AdminUserResponse } from "@/types/admin";
 import {
   Button,
   CloseButton,
@@ -14,7 +15,7 @@ import { useMemo, useEffect, useRef } from "react";
 interface EditOrgModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedUser: AdminUser | null;
+  selectedUser: AdminUserResponse | null;
   departmentId: number | null;
   setDepartmentId: (id: number | null) => void;
   positionId: number | null;

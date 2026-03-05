@@ -2,7 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "../config";
 import { useAuthStore } from "@/stores/authStore";
 
-export const api = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
@@ -27,7 +27,7 @@ function onTokenRefreshed(newToken: string) {
 }
 
 // Decode JWT to get expiration time (without library)
-export function getTokenExpiration(token: string): number | null {
+function getTokenExpiration(token: string): number | null {
   try {
     const payload = token.split(".")[1];
     const decoded = JSON.parse(atob(payload));
@@ -43,7 +43,7 @@ export function getTokenExpiration(token: string): number | null {
 }
 
 // Check if token is expired or will expire soon (within 60 seconds)
-export function isTokenExpiringSoon(
+function isTokenExpiringSoon(
   token: string,
   thresholdMs = 60 * 1000,
 ): boolean {

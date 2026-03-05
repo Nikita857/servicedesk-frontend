@@ -2,11 +2,11 @@
 
 import { Box, Flex, Text, Badge, HStack } from "@chakra-ui/react";
 import { LuArrowRight } from "react-icons/lu";
-import type { Assignment } from "@/lib/api/assignments";
+import type { AssignmentResponse } from "@/types/assignment";
 
 interface AssignmentCompactCardProps {
-  assignment: Assignment;
-  onClick: (assignment: Assignment) => void;
+  assignment: AssignmentResponse;
+  onClick: (assignment: AssignmentResponse) => void;
 }
 
 export function AssignmentCompactCard({

@@ -6,7 +6,7 @@
 /**
  * Заблокированные расширения файлов (исполняемые)
  */
-export const BLOCKED_EXTENSIONS = [
+const BLOCKED_EXTENSIONS = [
   '.exe',
   '.bat',
   '.cmd',
@@ -23,23 +23,12 @@ export const BLOCKED_EXTENSIONS = [
 /**
  * Максимальный размер файла в байтах (10 MB)
  */
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /**
  * Максимальный размер файла в человекочитаемом формате
  */
-export const MAX_FILE_SIZE_LABEL = '200 MB';
-
-/**
- * Разрешённые MIME-типы изображений
- */
-export const IMAGE_MIME_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml',
-] as const;
+const MAX_FILE_SIZE_LABEL = '200 MB';
 
 /**
  * Проверка, является ли файл изображением
@@ -69,17 +58,3 @@ export function validateFile(file: File): string | null {
   return null;
 }
 
-/**
- * Проверка, можно ли предпросмотреть файл как изображение
- */
-export function canPreviewAsImage(file: File): boolean {
-  return isImageType(file.type);
-}
-
-/**
- * Получение расширения файла
- */
-export function getFileExtension(filename: string): string {
-  const lastDot = filename.lastIndexOf('.');
-  return lastDot === -1 ? '' : filename.slice(lastDot).toLowerCase();
-}

@@ -106,10 +106,10 @@ export default function NewTicketPage() {
         categoryUserId: formData.categoryUserId,
       });
 
-      toast.success("Тикет создан", `Тикет #${ticket.id} успешно создан`);
+      toast.success("Заявка создан", `Заявка #${ticket.id} успешно создан`);
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
-      handleApiError(error, { context: "создать тикет" });
+      handleApiError(error, { context: "создать заявку" });
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +127,7 @@ export default function NewTicketPage() {
           <BackButton href="/dashboard/tickets" />
         </HStack>
         <Heading size="lg" color="fg.default">
-          Новый тикет
+          Новая заявка
         </Heading>
         <Text color="fg.muted" fontSize="sm">
           Создание новой заявки в службу поддержки
@@ -280,7 +280,7 @@ export default function NewTicketPage() {
 
             <Flex justify="space-between" pt={4}>
               <Button
-                aria-label="Показать обучение по созданию тикета"
+                aria-label="Показать обучение по созданию заявки"
                 variant="ghost"
                 size="md"
                 color="white"
@@ -297,7 +297,7 @@ export default function NewTicketPage() {
                 _hover={{ bg: "gray.800" }}
                 loading={isSubmitting}
               >
-                Создать тикет
+                Создать заявку
               </Button>
             </Flex>
           </VStack>

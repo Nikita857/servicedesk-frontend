@@ -189,7 +189,7 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 />
               </HStack>
               <Text fontSize="xs" color="fg.muted" mt={1}>
-                ID чата или группы для отправки уведомлений о новых тикетах
+                ID чата или группы для отправки уведомлений о новых заявках
               </Text>
             </Box>
 

@@ -5,13 +5,6 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
-export interface ApiError {
-  success: boolean;
-  message: string;
-  errors?: Record<string, string[]>;
-  timestamp: string;
-}
-
 export interface PaginatedResponse<T> {
   content: T[];
   page: Page

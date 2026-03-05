@@ -2,9 +2,7 @@ import { Ticket } from "@/types";
 import { formatDate, formatDuration } from "@/lib/utils";
 import {
   Box,
-  Heading,
   HStack,
-  Separator,
   VStack,
   Text,
 } from "@chakra-ui/react";
@@ -16,67 +14,61 @@ import {
   LuUser,
 } from "react-icons/lu";
 import { DateTimePicker } from "@/components/features/layout/DateTimePicker";
+import CoExecutorPanel from "./CoExecutorPanel";
 
 interface TicketSidebarProps {
   ticket: Ticket;
   isSpecialist: boolean;
 }
 
-/**
- * Рассчитывает время работы над тикетом в секундах.
- * Если тикет закрыт - разница между createdAt и closedAt.
- * Если не закрыт - разница между createdAt и текущим временем.
- */
 function calculateTimeSpent(ticket: Ticket): number {
   const createdAt = new Date(ticket.createdAt).getTime();
   const endTime = ticket.closedAt
     ? new Date(ticket.closedAt).getTime()
     : Date.now();
-
   return Math.floor((endTime - createdAt) / 1000);
 }
 
-export default function TicketSidebar({
-  ticket,
-  isSpecialist,
-}: TicketSidebarProps) {
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Box>
+      <Text fontSize="10px" color="fg.muted" textTransform="uppercase" fontWeight="semibold" mb={0.5}>
+        {label}
+      </Text>
+      {children}
+    </Box>
+  );
+}
+
+export default function TicketSidebar({ ticket, isSpecialist }: TicketSidebarProps) {
   const timeSpentSeconds = calculateTimeSpent(ticket);
 
   return (
-    <VStack gap={4} align="stretch">
-      {/* Rejection Alert - shown when last assignment was rejected (only for specialists) */}
+    <VStack gap={3} align="stretch">
+      {/* Rejection Alert */}
       {isSpecialist && ticket.lastAssignment?.status === "REJECTED" && (
         <Box
           bg="red.50"
-          borderRadius="xl"
+          borderRadius="lg"
           borderWidth="1px"
           borderColor="red.200"
-          p={4}
+          p={3}
           _dark={{ bg: "red.900/20", borderColor: "red.700" }}
         >
-          <HStack gap={2} mb={2}>
-            <LuCircleX color="var(--chakra-colors-red-500)" />
-            <Text
-              fontWeight="semibold"
-              color="red.600"
-              _dark={{ color: "red.300" }}
-            >
+          <HStack gap={2} mb={1}>
+            <LuCircleX color="var(--chakra-colors-red-500)" size={14} />
+            <Text fontWeight="semibold" color="red.600" fontSize="sm" _dark={{ color: "red.300" }}>
               Переадресация отклонена
             </Text>
           </HStack>
           {ticket.lastAssignment.rejectedReason && (
-            <Text fontSize="sm" color="red.700" _dark={{ color: "red.200" }}>
-              Причина: {ticket.lastAssignment.rejectedReason}
+            <Text fontSize="xs" color="red.700" _dark={{ color: "red.200" }}>
+              {ticket.lastAssignment.rejectedReason}
             </Text>
           )}
-          <Text fontSize="xs" color="red.500" mt={2}>
-            Отклонено:{" "}
-            {ticket.lastAssignment.toFio ||
-              ticket.lastAssignment.toUsername ||
-              "—"}
-          </Text>
-          <Text fontSize="xs" color="red.500">
-            Дата: {formatDate(ticket.lastAssignment.rejectedAt || "")}
+          <Text fontSize="xs" color="red.500" mt={1}>
+            {ticket.lastAssignment.toFio || ticket.lastAssignment.toUsername || "—"} ·{" "}
+            {formatDate(ticket.lastAssignment.rejectedAt || "")}
           </Text>
         </Box>
       )}
@@ -87,122 +79,56 @@ export default function TicketSidebar({
         borderRadius="xl"
         borderWidth="1px"
         borderColor="border.default"
-        p={6}
+        p={4}
       >
-        <Heading size="md" mb={4} color="fg.default">
-          Информация
-        </Heading>
-
-        <VStack gap={4} align="stretch">
-          <Box>
-            <Text
-              fontSize="xs"
-              color="fg.muted"
-              textTransform="uppercase"
-              mb={1}
-            >
-              Автор
-            </Text>
-            <HStack>
-              <LuUser size={16} />
-              <Text color="fg.default">
+        <VStack gap={3} align="stretch">
+          <InfoRow label="Автор">
+            <HStack gap={1.5}>
+              <LuUser size={13} />
+              <Text fontSize="sm" color="fg.default">
                 {ticket.createdBy?.fio || ticket.createdBy?.username || "—"}
               </Text>
             </HStack>
-          </Box>
+          </InfoRow>
 
-          <Separator />
-
-          <Box>
-            <Text
-              fontSize="xs"
-              color="fg.muted"
-              textTransform="uppercase"
-              mb={1}
-            >
-              Исполнитель
-            </Text>
-            <Text color="fg.default">
+          <InfoRow label="Исполнитель">
+            <Text fontSize="sm" color="fg.default">
               {ticket.assignedTo
                 ? ticket.assignedTo.fio || ticket.assignedTo.username
                 : "—"}
             </Text>
-          </Box>
+          </InfoRow>
 
-          <Separator />
+          <InfoRow label="Линия поддержки">
+            <Text fontSize="sm" color="fg.default">{ticket.supportLine?.name || "—"}</Text>
+          </InfoRow>
 
-          <Box>
-            <Text
-              fontSize="xs"
-              color="fg.muted"
-              textTransform="uppercase"
-              mb={1}
-            >
-              Линия поддержки
-            </Text>
-            <Text color="fg.default">{ticket.supportLine?.name || "—"}</Text>
-          </Box>
+          <InfoRow label="Категория">
+            <Text fontSize="sm" color="fg.default">{ticket.categoryUser?.name || "—"}</Text>
+          </InfoRow>
 
-          <Separator />
-
-          <Box>
-            <Text
-              fontSize="xs"
-              color="fg.muted"
-              textTransform="uppercase"
-              mb={1}
-            >
-              Категория
-            </Text>
-            <Text color="fg.default">{ticket.categoryUser?.name || "—"}</Text>
-          </Box>
-
-          <Separator />
-
-          <HStack justify="space-between">
-            <HStack color="fg.muted" fontSize="sm">
-              <LuClock size={14} />
+          <HStack justify="space-between" pt={1}>
+            <HStack color="fg.muted" fontSize="xs" gap={1}>
+              <LuClock size={12} />
               <Text>{formatDuration(timeSpentSeconds)}</Text>
             </HStack>
-            <HStack color="fg.muted" fontSize="sm">
-              <LuMessageSquare size={14} />
+            <HStack color="fg.muted" fontSize="xs" gap={1}>
+              <LuMessageSquare size={12} />
               <Text>{ticket.messageCount}</Text>
             </HStack>
-            <HStack color="fg.muted" fontSize="sm">
-              <LuPaperclip size={14} />
+            <HStack color="fg.muted" fontSize="xs" gap={1}>
+              <LuPaperclip size={12} />
               <Text>{ticket.attachmentCount}</Text>
             </HStack>
           </HStack>
 
-          <Separator />
+          <InfoRow label="Создан">
+            <Text fontSize="sm" color="fg.default">{formatDate(ticket.createdAt)}</Text>
+          </InfoRow>
 
-          <Box>
-            <Text
-              fontSize="xs"
-              color="fg.muted"
-              textTransform="uppercase"
-              mb={1}
-            >
-              Создан
-            </Text>
-            <Text color="fg.default" fontSize="sm">
-              {formatDate(ticket.createdAt)}
-            </Text>
-          </Box>
-
-          <Separator />
-
-          <Box>
-            <Text
-              fontSize="xs"
-              color="fg.muted"
-              textTransform="uppercase"
-              mb={2}
-            >
-              Ориентировочный срок выполнения
-            </Text>
+          <InfoRow label="Ориентировочный срок">
             {ticket.estimatedCompletionDate && (
-              <Text color="fg.default" fontSize="sm" mb={2}>
+              <Text fontSize="sm" color="fg.default" mb={isSpecialist ? 1 : 0}>
                 {formatDate(ticket.estimatedCompletionDate)}
               </Text>
             )}
@@ -212,27 +138,18 @@ export default function TicketSidebar({
                 currentDate={ticket.estimatedCompletionDate ?? null}
               />
             )}
-          </Box>
-
-          <Separator />
+          </InfoRow>
 
           {ticket.resolvedAt && (
-            <Box>
-              <Text
-                fontSize="xs"
-                color="fg.muted"
-                textTransform="uppercase"
-                mb={1}
-              >
-                Решён
-              </Text>
-              <Text color="fg.default" fontSize="sm">
-                {formatDate(ticket.resolvedAt)}
-              </Text>
-            </Box>
+            <InfoRow label="Решён">
+              <Text fontSize="sm" color="fg.default">{formatDate(ticket.resolvedAt)}</Text>
+            </InfoRow>
           )}
         </VStack>
       </Box>
+
+      {/* Co-executors: specialists see full panel with add/remove, users see read-only list */}
+      <CoExecutorPanel ticket={ticket} canEdit={isSpecialist} />
     </VStack>
   );
 }

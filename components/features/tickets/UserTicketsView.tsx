@@ -13,6 +13,7 @@ import { SDPagination } from "@/components/ui/SDPagination";
 import Link from "next/link";
 import { LuPlus } from "react-icons/lu";
 import { TicketCard } from "./TicketCard";
+import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { useTicketsQuery, useTicketsWebSocket } from "@/lib/hooks";
 import type { TicketStatus } from "@/types/ticket";
 
@@ -21,15 +22,18 @@ interface UserTicketsViewProps {
   hideHeader?: boolean;
   pageSize?: number;
   currentUserName?: string;
+  initialFilter?: "my";
 }
 
 export const UserTicketsView = ({
   status,
   hideHeader = false,
-  pageSize
+  pageSize,
+  initialFilter,
 }: UserTicketsViewProps) => {
   const { data, meta, optimistic, actions } = useTicketsQuery({
     pageSize,
+    initialFilter,
   });
 
   useTicketsWebSocket({
@@ -59,6 +63,7 @@ export const UserTicketsView = ({
           </Box>
 
           <HStack gap={3}>
+            <TicketStatusHelpModal />
             <Link href="/dashboard/tickets/new">
               <Button
                 size="sm"
@@ -89,11 +94,11 @@ export const UserTicketsView = ({
           borderWidth="1px"
           borderColor="border.default"
         >
-          <Text color="fg.muted">Тикеты не найдены</Text>
+          <Text color="fg.muted">Заявки не найдены</Text>
           {!hideHeader && (
             <Link href="/dashboard/tickets/new">
               <Button mt={4} size="sm" variant="outline">
-                Создать первый тикет
+                Создать первую заявку
               </Button>
             </Link>
           )}

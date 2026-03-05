@@ -1,3 +1,13 @@
+import type { ActivityStatus } from "./support-line";
+
+export type UserActivityStatus = ActivityStatus;
+
+export interface UserStatusResponse {
+  status: UserActivityStatus;
+  availableForAssignment: boolean;
+  updatedAt: string;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -10,6 +20,14 @@ export interface User {
   positionName: string | null;
   active: boolean;
 }
+
+export type SenderType =
+  | "USER"
+  | "SYSADMIN"
+  | "ONE_C_SUPPORT"
+  | "DEV1C"
+  | "DEVELOPER"
+  | "ADMIN";
 
 export interface AuthRequest {
   username: string;
@@ -71,7 +89,7 @@ export const activityStatusConfig: Record<
   AVAILABLE: {
     label: "Доступен",
     color: "green",
-    description: "Готов принимать новые тикеты",
+    description: "Готов принимать новые заявки",
   },
   UNAVAILABLE: {
     label: "Недоступен",

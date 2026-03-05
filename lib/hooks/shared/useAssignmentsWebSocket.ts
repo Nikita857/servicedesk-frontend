@@ -9,8 +9,8 @@ import { AssignmentWS } from "@/types/websocket";
 import { queryKeys } from "@/lib/queryKeys";
 
 /**
- * Хук для подписки на real-time назначения тикетов.
- * Показывает тост и обновляет список тикетов при получении нового назначения или отклонения.
+ * Хук для подписки на real-time назначения заявок.
+ * Показывает тост и обновляет список заявок при получении нового назначения или отклонения.
  */
 export function useAssignmentsWebSocket() {
   const { subscribeToAssignments, subscribeToAssignmentRejected, isConnected } =
@@ -20,10 +20,10 @@ export function useAssignmentsWebSocket() {
 
   const handleNewAssignment = useCallback(
     (assignment: AssignmentWS) => {
-      // Показываем тост с информацией о новом назначении
+      const isCoExecutor = (assignment as { type?: string }).type === "CO_EXECUTOR";
       toast.info(
-        "Новое назначение",
-        `Вам назначен тикет #${assignment.ticketId}: ${assignment.ticketTitle}`
+        isCoExecutor ? "Вы добавлены соисполнителем" : "Новое назначение",
+        `Тикет #${assignment.ticketId}: ${assignment.ticketTitle}`
       );
 
       // Инвалидируем список тикетов чтобы обновить UI

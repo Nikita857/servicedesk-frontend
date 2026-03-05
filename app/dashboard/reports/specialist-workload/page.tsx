@@ -62,7 +62,7 @@ export default function SpecialistWorkloadReportPage() {
           Загрузка специалистов
         </Heading>
         <Text color="fg.muted">
-          Текущая загрузка специалистов: активные тикеты и статистика за сегодня
+          Текущая загрузка специалистов: активные заявки и статистика за сегодня
         </Text>
       </Box>
 
@@ -102,7 +102,7 @@ export default function SpecialistWorkloadReportPage() {
               </VStack>
               <VStack align="start" gap={0}>
                 <Text fontSize="xs" color="fg.muted">
-                  Активных тикетов
+                  Активных заявок
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="orange.600">
                   {totalActive}

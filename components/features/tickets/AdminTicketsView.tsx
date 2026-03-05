@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ticketApi } from "@/lib/api/tickets";
 import { queryKeys } from "@/lib/queryKeys";
 import { TicketCard } from "./TicketCard";
+import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { SDPagination } from "@/components/ui/SDPagination";
 import { usePersistentPage } from "@/lib/hooks";
 
@@ -39,17 +40,18 @@ export function AdminTicketsView() {
       <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
           <Heading size="lg" color="fg.default" mb={1}>
-            Все тикеты
+            Все заявки
             {isFetching && !isLoading && (
               <Spinner size="sm" ml={2} color="gray.400" />
             )}
           </Heading>
           <Text color="fg.muted" fontSize="sm">
-            Просмотр всех тикетов системы
+            Просмотр всех заявок системы
           </Text>
         </Box>
 
         <HStack gap={3}>
+          <TicketStatusHelpModal />
           <Link href="/dashboard/tickets/new">
             <Button
               size="sm"
@@ -58,7 +60,7 @@ export function AdminTicketsView() {
               _hover={{ bg: "gray.800" }}
             >
               <LuPlus />
-              Новый тикет
+              Новая заявка
             </Button>
           </Link>
         </HStack>
@@ -80,7 +82,7 @@ export function AdminTicketsView() {
           borderWidth="1px"
           borderColor="border.default"
         >
-          <Text color="fg.muted">Тикеты не найдены</Text>
+          <Text color="fg.muted">Заявки не найдены</Text>
         </Flex>
       ) : (
         <VStack gap={3} align="stretch">

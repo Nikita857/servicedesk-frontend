@@ -5,12 +5,12 @@ import { useAuthStore } from "@/stores";
 import { messageApi } from "@/lib/api/messages";
 import { useWebSocket } from "@/lib/providers";
 import type { Message, MessageAttachment } from "@/types/message";
-import type { SenderType } from "@/types/message";
 import type {
   ChatMessageWS,
   TypingIndicator,
   AttachmentWS,
 } from "@/types/websocket";
+import {SenderType} from "@/types";
 
 interface TypingUser {
   fio: string | null;

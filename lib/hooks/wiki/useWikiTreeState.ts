@@ -22,7 +22,7 @@ function writeToStorage(ids: Set<number>): void {
   }
 }
 
-export interface WikiTreeState {
+interface WikiTreeState {
   isOpen: (id: number) => boolean;
   toggle: (id: number) => void;
   openAll: (ids: number[]) => void;

@@ -33,7 +33,7 @@ export default function AllTicketsReportPage() {
       setPage(pageNum);
     } catch (error) {
       handleApiError(error, {
-        context: "Получить тикеты",
+        context: "Получить заявки",
       });
     } finally {
       setIsLoading(false);
@@ -59,9 +59,9 @@ export default function AllTicketsReportPage() {
       <Box mb={6}>
         <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
-          Все тикеты
+          Все заявки
         </Heading>
-        <Text color="fg.muted">Полный список тикетов, включая удалённые</Text>
+        <Text color="fg.muted">Полный список заявок, включая удалённые</Text>
       </Box>
 
       {/* Loading */}
@@ -91,7 +91,7 @@ export default function AllTicketsReportPage() {
           >
             <VStack align="start" gap={0}>
               <Text fontSize="xs" color="fg.muted">
-                Всего тикетов
+                Всего заявок
               </Text>
               <Text fontSize="lg" fontWeight="semibold" color="fg.default">
                 {(data.totalElements ?? 0).toLocaleString("ru-RU")}

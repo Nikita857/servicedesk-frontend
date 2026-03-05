@@ -68,7 +68,7 @@ export default function BySupportCategoryReportPage() {
           По категориям поддержки
         </Heading>
         <Text color="fg.muted">
-          Статистика тикетов по категориям, назначенным специалистами поддержки
+          Статистика заявок по категориям, назначенным специалистами поддержки
         </Text>
       </Box>
 
@@ -108,7 +108,7 @@ export default function BySupportCategoryReportPage() {
               </VStack>
               <VStack align="start" gap={0}>
                 <Text fontSize="xs" color="fg.muted">
-                  Всего тикетов
+                  Всего заявок
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="pink.600">
                   {totalCount.toLocaleString("ru-RU")}
@@ -137,7 +137,7 @@ export default function BySupportCategoryReportPage() {
                   <Table.ColumnHeader>Категория</Table.ColumnHeader>
                   <Table.ColumnHeader>Тип</Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="right">
-                    Тикетов
+                    Заявок
                   </Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="right" w="150px">
                     Процент

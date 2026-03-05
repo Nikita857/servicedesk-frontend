@@ -13,7 +13,7 @@ import {
 import { LuArrowRight } from "react-icons/lu";
 import Link from "next/link";
 import { useAuthStore } from "@/stores";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 import { TicketCard } from "@/components/features/tickets";
 import {
   useTicketsWebSocket,
@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
   // Handle new ticket from WebSocket - refetch to update stats
   const handleNewTicket = useCallback(
-    (_ticket: TicketListItem) => {
+    (_ticket: TicketListResponse) => {
       refetch();
     },
     [refetch],
@@ -82,7 +82,7 @@ export default function DashboardPage() {
         <Flex direction="column" flex={1} minH={0} mb={6}>
           <Flex justify="space-between" align="center" mb={4} flexShrink={0}>
             <Heading size="md" color="fg.default">
-              Невзятые тикеты
+              Невзятые заявки
             </Heading>
             <Link href="/dashboard/tickets?filter=unprocessed">
               <Button variant="ghost" size="sm" color="fg.muted">
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                 p={8}
                 textAlign="center"
               >
-                <Text color="fg.muted">Нет невзятых тикетов</Text>
+                <Text color="fg.muted">Нет невзятых заявок</Text>
               </Box>
             ) : (
               <VStack gap={3} align="stretch" pb={4}>

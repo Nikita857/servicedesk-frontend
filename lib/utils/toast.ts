@@ -84,14 +84,14 @@ export const toast = {
    * Тикет обновлён
    */
   ticketUpdated: (ticketId: number, message: string) => {
-    toast.info(`Тикет #${ticketId}`, message);
+    toast.info(`Заявка #${ticketId}`, message);
   },
 
   /**
    * Новый тикет
    */
   newTicket: (ticketId: number, title: string) => {
-    toast.info(`Новый тикет #${ticketId}`, title);
+    toast.info(`Новая заявка #${ticketId}`, title);
   },
 
   /**

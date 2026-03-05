@@ -13,7 +13,7 @@ import {
 import { LuClock, LuUsers, LuChevronRight } from "react-icons/lu";
 import Link from "next/link";
 import { useSupportLines } from "@/lib/hooks/admin-support-lines";
-import { type SupportLine } from "@/lib/api/supportLines";
+import type { SupportLineListResponse } from "@/types/support-line";
 
 export default function SupportLinesPage() {
   const { lines, isLoading } = useSupportLines();
@@ -52,7 +52,7 @@ export default function SupportLinesPage() {
         </Flex>
       ) : (
         <VStack gap={3} align="stretch">
-          {lines.map((line: SupportLine) => (
+          {lines.map((line: SupportLineListResponse) => (
             <SupportLineCard key={line.id} line={line} />
           ))}
         </VStack>
@@ -61,7 +61,7 @@ export default function SupportLinesPage() {
   );
 }
 
-function SupportLineCard({ line }: { line: SupportLine }) {
+function SupportLineCard({ line }: { line: SupportLineListResponse }) {
   return (
     <Link href={`/dashboard/admin/support-lines/${line.id}`}>
       <Box

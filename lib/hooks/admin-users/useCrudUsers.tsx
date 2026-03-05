@@ -1,4 +1,5 @@
-import { adminApi, AdminUser, CreateUserParams } from "@/lib/api/admin";
+import { adminApi } from "@/lib/api/admin";
+import type { AdminUserResponse, CreateUserRequest } from "@/types/admin";
 import { handleApiError, toast } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
@@ -36,7 +37,7 @@ export const useCrudUsers = () => {
   const [isEditOrgOpen, setIsEditOrgOpen] = useState(false);
 
   // Selected user for editing
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUserResponse | null>(null);
 
   // Form states
   const [editRoles, setEditRoles] = useState<string[]>([]);
@@ -69,7 +70,7 @@ export const useCrudUsers = () => {
   // ==================== MUTATIONS ====================
 
   const createUserMutation = useMutation({
-    mutationFn: (params: CreateUserParams) => adminApi.createUser(params),
+    mutationFn: (params: CreateUserRequest) => adminApi.createUser(params),
     onSuccess: () => {
       toast.success("Пользователь создан");
       setIsCreateOpen(false);
@@ -175,12 +176,12 @@ export const useCrudUsers = () => {
     // Query will automatically refetch due to searchQuery change
   };
 
-  const handleCreateUser = async (params: CreateUserParams) => {
+  const handleCreateUser = async (params: CreateUserRequest) => {
     createUserMutation.mutate(params);
   };
 
   const handleToggleActive = useCallback(
-    (targetUser: AdminUser) => {
+    (targetUser: AdminUserResponse) => {
       toggleActiveMutation.mutate({
         id: targetUser.id,
         active: !targetUser.active,
@@ -223,34 +224,34 @@ export const useCrudUsers = () => {
 
   // ==================== DIALOG OPENERS ====================
 
-  const openEditRoles = useCallback((targetUser: AdminUser) => {
+  const openEditRoles = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
     setEditRoles([...targetUser.roles]);
     setIsEditRolesOpen(true);
   }, []);
 
-  const openEditFio = useCallback((targetUser: AdminUser) => {
+  const openEditFio = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
     setEditFio(targetUser.fio || "");
     setIsEditFioOpen(true);
   }, []);
 
-  const openChangePassword = useCallback((targetUser: AdminUser) => {
+  const openChangePassword = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
     setNewPassword("");
     setIsChangePasswordOpen(true);
   }, []);
 
-  const openDelete = useCallback((targetUser: AdminUser) => {
+  const openDelete = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
     setIsDeleteOpen(true);
   }, []);
 
-  const openEditOrg = useCallback((targetUser: AdminUser) => {
+  const openEditOrg = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
     // These might need to be resolved from names if the API doesn't return IDs in the user object
-    // But AdminUser should have departmentId/positionId if the API provides it.
-    // Looking at AdminUser type in admin.ts - it only has departmentName/positionName.
+    // But AdminUserResponse should have departmentId/positionId if the API provides it.
+    // Looking at AdminUserResponse type in admin.ts - it only has departmentName/positionName.
     // I might need to fetch the full user to get IDs if needed, or matched by name.
     // According to OpenAPI, UserAuthResponse has departmentName and positionName.
     // So I might need to initialize them as null and let the user re-select, or find IDs by name.

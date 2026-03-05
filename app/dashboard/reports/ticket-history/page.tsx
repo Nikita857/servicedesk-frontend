@@ -35,7 +35,7 @@ export default function TicketHistoryReportPage() {
 
     const id = parseInt(ticketId);
     if (!id || isNaN(id)) {
-      toast.error("Ошибка", "Введите корректный ID тикета");
+      toast.error("Ошибка", "Введите корректный ID заявки");
       return;
     }
 
@@ -44,7 +44,7 @@ export default function TicketHistoryReportPage() {
       const result = await reportsApi.getTicketHistory(id);
       setData(result);
     } catch (error) {
-      handleApiError(error, { context: "Получить историю тикета" });
+      handleApiError(error, { context: "Получить историю заявки" });
       setData(null);
     } finally {
       setIsLoading(false);
@@ -57,10 +57,10 @@ export default function TicketHistoryReportPage() {
       <Box mb={6}>
         <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
-          История тикета
+          История заявки
         </Heading>
         <Text color="fg.muted">
-          Полная история статусов и временная статистика по тикету
+          Полная история статусов и временная статистика по заявке
         </Text>
       </Box>
 
@@ -78,7 +78,7 @@ export default function TicketHistoryReportPage() {
         <HStack gap={4}>
           <VStack align="start" gap={1}>
             <Text fontSize="sm" fontWeight="medium" color="fg.default">
-              ID тикета
+              ID заявки
             </Text>
             <Input
               type="number"
@@ -121,7 +121,7 @@ export default function TicketHistoryReportPage() {
           >
             <HStack justify="space-between" mb={4}>
               <Heading size="md" color="fg.default">
-                Тикет #{data.ticketId}
+                Заявка #{data.ticketId}
               </Heading>
               <HStack>
                 <Badge

@@ -1,4 +1,4 @@
-import { Specialist, SupportLine } from "@/lib/api";
+import type { Specialist, SupportLineListResponse } from "@/types/support-line";
 import {
   Badge,
   Box,
@@ -18,7 +18,7 @@ import { LuForward, LuUserPlus, LuTriangleAlert } from "react-icons/lu";
 // Status labels are no longer used as we use badges in the select list
 
 interface EscalationPanelProps {
-  supportLines: SupportLine[];
+  supportLines: SupportLineListResponse[];
   specialists: Specialist[];
   selectedLineId: number | undefined;
   setSelectedLineId: (arg: number | undefined) => void;

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { assignmentApi, Assignment } from "@/lib/api/assignments";
+import { assignmentApi } from "@/lib/api/assignments";
+import type { AssignmentResponse } from "@/types/assignment";
 import { ticketApi } from "@/lib/api/tickets";
 import { toast, handleApiError } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
@@ -9,7 +10,7 @@ import type { Ticket } from "@/types/ticket";
 
 interface UseEscalationOptions {
   ticket: Ticket | null;
-  onSuccess?: (ticket: Ticket, assignment: Assignment) => void;
+  onSuccess?: (ticket: Ticket, assignment: AssignmentResponse) => void;
 }
 
 interface UseEscalationReturn {
@@ -64,10 +65,10 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
       });
 
       toast.success(
-        "Тикет переадресован",
+        "Заявка переадресована",
         selectedSpecialistId
-          ? "Тикет назначен на специалиста"
-          : "Тикет передан на линию поддержки"
+          ? "Заявка назначена на специалиста"
+          : "Заявка передана на линию поддержки"
       );
 
       // Инвалидируем глобальный кэш тикетов (дашборд, плитки)

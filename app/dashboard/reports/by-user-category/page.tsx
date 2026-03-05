@@ -51,7 +51,7 @@ export default function ByUserCategoryReportPage() {
           По категориям пользователя
         </Heading>
         <Text color="fg.muted">
-          Статистика тикетов по категориям, выбранным пользователями при
+          Статистика заявок по категориям, выбранным пользователями при
           создании
         </Text>
       </Box>
@@ -92,7 +92,7 @@ export default function ByUserCategoryReportPage() {
               </VStack>
               <VStack align="start" gap={0}>
                 <Text fontSize="xs" color="fg.muted">
-                  Всего тикетов
+                  Всего заявок
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="cyan.600">
                   {totalCount.toLocaleString("ru-RU")}
@@ -120,7 +120,7 @@ export default function ByUserCategoryReportPage() {
                 <Table.Row>
                   <Table.ColumnHeader>Категория</Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="right">
-                    Тикетов
+                    Заявок
                   </Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="right" w="150px">
                     Процент

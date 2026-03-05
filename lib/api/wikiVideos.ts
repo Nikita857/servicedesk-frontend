@@ -1,21 +1,7 @@
 import api from "./client";
 import axios from "axios";
 import type { ApiResponse } from "@/types/api";
-
-export interface WikiVideoResponse {
-  url: string;
-  filename: string;
-  size: number;
-  mimeType: string;
-  fileKey: string;
-}
-
-interface WikiMediaUploadUrlResponse {
-  uploadUrl: string;
-  fileKey: string;
-  filename: string;
-  bucket: string;
-}
+import type { WikiMediaResponse, WikiMediaUploadUrlResponse } from "@/types/attachment";
 
 export const wikiVideoApi = {
   /**
@@ -27,7 +13,7 @@ export const wikiVideoApi = {
   uploadVideo: async (
     file: File,
     onProgress?: (percent: number) => void,
-  ): Promise<WikiVideoResponse> => {
+  ): Promise<WikiMediaResponse> => {
     // Step 1: request presigned URL
     const { data: urlResp } = await api.post<
       ApiResponse<WikiMediaUploadUrlResponse>
@@ -47,7 +33,7 @@ export const wikiVideoApi = {
     });
 
     // Step 3: confirm on backend
-    const { data: confirmResp } = await api.post<ApiResponse<WikiVideoResponse>>(
+    const { data: confirmResp } = await api.post<ApiResponse<WikiMediaResponse>>(
       "/wiki/videos/confirm",
       {
         fileKey,

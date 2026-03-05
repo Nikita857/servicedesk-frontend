@@ -139,7 +139,7 @@ export function AdminStatsDashboard() {
                         <Icon as={LuGlobe} color="purple.500"/>
                         <Heading size="md">Общая статистика</Heading>
                         <Text color="fg.muted" fontSize="sm" ml="auto">
-                            Всего тикетов: {globalStats.total}
+                            Всего заявок: {globalStats.total}
                         </Text>
                     </HStack>
 

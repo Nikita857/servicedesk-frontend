@@ -8,7 +8,7 @@ import {
   HStack,
 } from "@chakra-ui/react";
 import { LuUsers } from "react-icons/lu";
-import type { LineTicketStats } from "@/lib/api/stats";
+import type { LineTicketStatsResponse } from "@/types/stats";
 import { TicketStatusCollection, type TicketStatus } from "@/types/ticket";
 
 interface StatBoxProps {
@@ -56,7 +56,7 @@ export function LineStatsCard({
   line,
   onStatClick,
 }: {
-  line: LineTicketStats;
+  line: LineTicketStatsResponse;
   onStatClick: (title: string, statusKey: TicketStatus[], lineId: number) => void;
 }) {
   const stats = [

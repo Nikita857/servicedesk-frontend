@@ -8,7 +8,9 @@ import type {
   ChangeStatusRequest,
   TicketStatus,
   TicketStatusHistory,
+  RateTicketRequest,
 } from "@/types/ticket";
+import type { CoExecutorResponse } from "@/types/assignment";
 
 export const ticketApi = {
   // List all tickets (paginated)
@@ -226,11 +228,27 @@ export const ticketApi = {
       { estimatedCompletionDate },
     );
     return response.data.data;
-  }
-};
+  },
 
-// Request type for rating
-export interface RateTicketRequest {
-  rating: number; // 1-5
-  feedback?: string;
-}
+  // ============ Co-executors ============
+
+  getCoExecutors: async (ticketId: number): Promise<CoExecutorResponse[]> => {
+    const response = await api.get<ApiResponse<CoExecutorResponse[]>>(
+      `/tickets/${ticketId}/co-executors`
+    );
+    return response.data.data;
+  },
+
+  addCoExecutor: async (ticketId: number, specialistId: number): Promise<CoExecutorResponse> => {
+    const response = await api.post<ApiResponse<CoExecutorResponse>>(
+      `/tickets/${ticketId}/co-executors`,
+      null,
+      { params: { specialistId } }
+    );
+    return response.data.data;
+  },
+
+  removeCoExecutor: async (ticketId: number, userId: number): Promise<void> => {
+    await api.delete(`/tickets/${ticketId}/co-executors/${userId}`);
+  },
+};

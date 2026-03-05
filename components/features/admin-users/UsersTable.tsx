@@ -27,22 +27,22 @@ import {
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { userRolesBadges as userRolesConfig } from "@/types/auth";
-import { AdminUser } from "@/lib/api/admin";
+import type { AdminUserResponse } from "@/types/admin";
 
 interface UsersTableProps {
   isLoading: boolean;
   searchQuery: string;
-  users: AdminUser[];
-  handleToggleActive: (arg: AdminUser) => void;
-  openEditFio: (arg: AdminUser) => void;
-  openEditRoles: (arg: AdminUser) => void;
-  openChangePassword: (arg: AdminUser) => void;
-  openDelete: (arg: AdminUser) => void;
+  users: AdminUserResponse[];
+  handleToggleActive: (arg: AdminUserResponse) => void;
+  openEditFio: (arg: AdminUserResponse) => void;
+  openEditRoles: (arg: AdminUserResponse) => void;
+  openChangePassword: (arg: AdminUserResponse) => void;
+  openDelete: (arg: AdminUserResponse) => void;
   totalPages: number;
   page: number;
   setPage: (arg: number) => void;
-  user: AdminUser | null;
-  openEditOrg: (arg: AdminUser) => void;
+  user: AdminUserResponse | null;
+  openEditOrg: (arg: AdminUserResponse) => void;
 }
 const getRoleBadge = (role: string) => {
   const roleData = userRolesConfig[role] || {
@@ -129,7 +129,7 @@ const UsersTable = memo(function UsersTable({
                         <Text fontSize="sm" color="fg.muted">
                           @{u.username}{" "}
                           {u.specialist && (
-                            <Tooltip content="Пользователь способный обрабатывать тикеты">
+                            <Tooltip content="Пользователь способный обрабатывать заявки">
                               <Badge
                                 colorPalette="orange"
                                 size="sm"

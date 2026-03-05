@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { ticketApi } from "@/lib/api/tickets";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 import { queryKeys } from "@/lib/queryKeys";
 
 interface UseDashboardQueryReturn {
-  recentTickets: TicketListItem[];
+  recentTickets: TicketListResponse[];
   isLoading: boolean;
   refetch: () => void;
 }

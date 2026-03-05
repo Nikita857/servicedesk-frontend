@@ -16,7 +16,7 @@ import { Table } from "@chakra-ui/react";
 import { LuRefreshCw } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketStatsByStatus } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError } from "@/lib/utils";
 import { ticketStatusConfig } from "@/types/ticket";
 
 export default function ByStatusReportPage() {
@@ -52,7 +52,7 @@ export default function ByStatusReportPage() {
         <Heading size="xl" color="fg.default" mb={2}>
           По статусам
         </Heading>
-        <Text color="fg.muted">Распределение тикетов по статусам</Text>
+        <Text color="fg.muted">Распределение заявок по статусам</Text>
       </Box>
 
       {/* Loading */}
@@ -91,7 +91,7 @@ export default function ByStatusReportPage() {
               </VStack>
               <VStack align="start" gap={0}>
                 <Text fontSize="xs" color="fg.muted">
-                  Всего тикетов
+                  Всего заявок
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold" color="yellow.600">
                   {totalCount.toLocaleString("ru-RU")}
@@ -119,7 +119,7 @@ export default function ByStatusReportPage() {
                 <Table.Row>
                   <Table.ColumnHeader>Статус</Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="right">
-                    Тикетов
+                    Заявок
                   </Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="right" w="200px">
                     Процент

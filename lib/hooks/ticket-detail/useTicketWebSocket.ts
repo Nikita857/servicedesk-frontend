@@ -89,7 +89,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         newTicket.assignedTo
       ) {
         const name = newTicket.assignedTo.fio || newTicket.assignedTo.username;
-        return `Тикет принял специалист: ${name}`;
+        return `Заявку принял специалист: ${name}`;
       }
 
       // Status changed
@@ -104,7 +104,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         oldTicket.supportLine?.id !== newTicket.supportLine?.id &&
         newTicket.supportLine
       ) {
-        return `Тикет переадресован: ${newTicket.supportLine.name}`;
+        return `Заявка переадресована: ${newTicket.supportLine.name}`;
       }
 
       // Priority changed
@@ -114,10 +114,10 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
 
       // Title/Description changed
       if (oldTicket.title !== newTicket.title) {
-        return "Заголовок тикета обновлён";
+        return "Заголовок заявки обновлён";
       }
       if (oldTicket.description !== newTicket.description) {
-        return "Описание тикета обновлено";
+        return "Описание заявки обновлено";
       }
 
       return null;
@@ -142,23 +142,25 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
           currentUser?.id === updatedTicket.createdBy?.id;
 
         // If specialist and assignee changed to someone else — kick them out
+        // unless they are a co-executor (they still have access)
         if (isSpecialist && !isAdmin && !isTicketCreator) {
           const wasAssignedToMe = oldTicket?.assignedTo?.id === currentUser?.id;
           const nowAssignedToMe =
             updatedTicket.assignedTo?.id === currentUser?.id;
           const assigneeChanged =
             oldTicket?.assignedTo?.id !== updatedTicket.assignedTo?.id;
+          const isCoExecutor = updatedTicket.coExecutors?.some(
+            (ce) => ce.userId === currentUser?.id
+          );
 
-          // Case 1: Was assigned to me, now assigned to someone else
-          // Case 2: I was viewing unassigned ticket, now someone else took it
-          if (assigneeChanged && !nowAssignedToMe && updatedTicket.assignedTo) {
+          if (assigneeChanged && !nowAssignedToMe && !isCoExecutor && updatedTicket.assignedTo) {
             const newAssigneeName =
               updatedTicket.assignedTo.fio || updatedTicket.assignedTo.username;
 
             toast.warning(
               wasAssignedToMe
-                ? `Тикет передан специалисту ${newAssigneeName}. Вы больше не имеете доступа.`
-                : `Тикет принял специалист ${newAssigneeName}. Вы больше не имеете доступа.`
+                ? `Заявка передана специалисту ${newAssigneeName}. Вы больше не имеете доступа.`
+                : `Заявку принял специалист ${newAssigneeName}. Вы больше не имеете доступа.`
             );
 
             router.push("/dashboard/tickets");

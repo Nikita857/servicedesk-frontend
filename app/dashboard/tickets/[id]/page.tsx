@@ -3,13 +3,17 @@
 import { use, useCallback } from "react";
 import {
   Box,
+  Collapsible,
   Flex,
   Heading,
   Text,
   Spinner,
   Grid,
   GridItem,
+  Button,
 } from "@chakra-ui/react";
+import { useState } from "react";
+import { LuChevronDown, LuChevronUp } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 import TicketHeader from "@/components/features/tickets/TicketHeader";
@@ -34,6 +38,7 @@ interface PageProps {
 export default function TicketDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const ticketId = Number(id);
+  const [descOpen, setDescOpen] = useState(false);
   const router = useRouter();
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
@@ -133,7 +138,7 @@ export default function TicketDetailPage({ params }: PageProps) {
         />
       )}
 
-      <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
+      <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={4}>
         {/* Main content */}
         <GridItem>
           {/* Диалог подтверждения закрытия для автора тикета */}
@@ -142,31 +147,49 @@ export default function TicketDetailPage({ params }: PageProps) {
             onTicketUpdate={updateTicket}
           />
 
-          <Box
-            bg="bg.surface"
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor="border.default"
-            p={6}
-          >
-            <Heading size="md" mb={4} color="fg.default">
-              Описание
-            </Heading>
-            <Text color="fg.default" whiteSpace="pre-wrap">
-              {ticket.description}
-            </Text>
-
-            {ticket.link1c && (
-              <Box mt={4} p={3} bg="bg.subtle" borderRadius="lg">
-                <Text fontSize="sm" color="fg.muted">
-                  Ссылка 1С: {ticket.link1c}
-                </Text>
-              </Box>
-            )}
-          </Box>
+          <Collapsible.Root open={descOpen} onOpenChange={(e) => setDescOpen(e.open)}>
+            <Box
+              bg="bg.surface"
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor="border.default"
+              overflow="hidden"
+            >
+              <Collapsible.Trigger asChild>
+                <Button
+                  variant="ghost"
+                  w="full"
+                  justifyContent="space-between"
+                  px={4}
+                  py={3}
+                  h="auto"
+                  borderRadius="none"
+                  fontSize="sm"
+                  fontWeight="semibold"
+                >
+                  Описание
+                  {descOpen ? <LuChevronUp size={14} /> : <LuChevronDown size={14} />}
+                </Button>
+              </Collapsible.Trigger>
+              <Collapsible.Content>
+                <Box px={4} pb={4}>
+                  <Text color="fg.default" whiteSpace="pre-wrap" fontSize="sm">
+                    {ticket.description}
+                  </Text>
+                  {ticket.link1c && (
+                    <Box mt={3} p={2} bg="bg.subtle" borderRadius="md">
+                      <Text fontSize="xs" color="fg.muted">
+                        Ссылка 1С: {ticket.link1c}
+                      </Text>
+                    </Box>
+                  )}
+                </Box>
+              </Collapsible.Content>
+            </Box>
+          </Collapsible.Root>
 
           {/* Messages section */}
-          <Box mt={6}>
+          <Box mt={3}>
             <TicketChat
               ticketId={ticket.id}
               ticketStatus={ticket.status}

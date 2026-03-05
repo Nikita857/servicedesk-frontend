@@ -72,7 +72,7 @@ export default function TimeByLineReportPage() {
           Время по линиям поддержки
         </Heading>
         <Text color="fg.muted">
-          Затраченное время на тикеты по линиям поддержки за выбранный период
+          Затраченное время на заявки по линиям поддержки за выбранный период
         </Text>
       </Box>
 
@@ -165,7 +165,7 @@ export default function TimeByLineReportPage() {
                 </VStack>
                 <VStack align="start" gap={0}>
                   <Text fontSize="xs" color="fg.muted">
-                    Всего тикетов
+                    Всего заявок
                   </Text>
                   <Text fontSize="lg" fontWeight="semibold" color="fg.default">
                     {totalTickets}
@@ -201,7 +201,7 @@ export default function TimeByLineReportPage() {
                       Специалистов
                     </Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="right">
-                      Тикетов
+                      Заявок
                     </Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="right">
                       Время
