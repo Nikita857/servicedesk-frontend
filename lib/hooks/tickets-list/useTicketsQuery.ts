@@ -1,15 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
-import { assignmentApi, Assignment } from "@/lib/api/assignments";
+import { assignmentApi } from "@/lib/api/assignments";
+import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 import { usePersistentPage } from "@/lib/hooks/shared/usePersistentPage";
-import type { TicketListItem, PagedTicketList } from "@/types/ticket";
+import type { TicketListResponse, PagedTicketList } from "@/types/ticket";
 
 const FILTER_STORAGE_KEY = "servicedesk-tickets-filter";
 
-export type FilterType =
+type FilterType =
   | "unprocessed"
   | "my"
   | "assigned"
@@ -21,9 +22,9 @@ interface UseTicketsQueryOptions {
   pageSize?: number;
 }
 
-export interface TicketsPageResult {
+interface TicketsPageResult {
   data: PagedTicketList | null;
-  pendingAssignments?: Assignment[];
+  pendingAssignmentResponses?: AssignmentResponse[];
 
   meta: {
     filter: FilterType;
@@ -39,8 +40,8 @@ export interface TicketsPageResult {
   };
 
   optimistic: {
-    addTicket: (ticket: TicketListItem) => void;
-    updateTicket: (ticket: TicketListItem) => void;
+    addTicket: (ticket: TicketListResponse) => void;
+    updateTicket: (ticket: TicketListResponse) => void;
     removeTicket: (ticketId: number) => void;
   };
 }
@@ -122,7 +123,7 @@ export function useTicketsQuery(
   // Optimistic updates
   // -------------------------------
   const addTicket = useCallback(
-    (ticket: TicketListItem) => {
+    (ticket: TicketListResponse) => {
       queryClient.setQueryData<PagedTicketList>(
         queryKeys.tickets.list({ filter, page }),
         (old) =>
@@ -142,7 +143,7 @@ export function useTicketsQuery(
   );
 
   const updateTicket = useCallback(
-    (ticket: TicketListItem) => {
+    (ticket: TicketListResponse) => {
       queryClient.setQueryData<PagedTicketList>(
         queryKeys.tickets.list({ filter, page }),
         (old) =>
@@ -210,7 +211,7 @@ export function useTicketsQuery(
   return {
     data: isPending ? null : ticketsQuery.data ?? null,
 
-    pendingAssignments: isPending
+    pendingAssignmentResponses: isPending
       ? pendingQuery.data?.content ?? []
       : undefined,
 

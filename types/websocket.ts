@@ -3,7 +3,7 @@
  * Используются в WebSocketProvider и всех WebSocket хуках
  */
 
-import { UserShort } from "./ticket";
+import type { UserShortResponse } from "./ticket";
 
 // ==================== Chat Types ====================
 
@@ -14,7 +14,7 @@ export interface ChatMessageWS {
   id: number;
   ticketId: number;
   content: string;
-  sender?: UserShort;
+  sender?: UserShortResponse;
   senderId?: number;
   senderUsername?: string;
   senderFio?: string | null;
@@ -50,36 +50,6 @@ export interface AttachmentWS {
   uploadedById: number;
   uploadedByUsername: string;
   createdAt: string;
-}
-
-// ==================== Ticket Types ====================
-
-/**
- * Payload обновления тикета через WebSocket
- */
-export interface TicketUpdatePayload {
-  ticketId: number;
-  eventType:
-    | "created"
-    | "updated"
-    | "deleted"
-    | "taken"
-    | "assigned"
-    | "status_changed";
-}
-
-// ==================== Callback Types ====================
-
-/**
- * Коллбеки для подписки на события чата тикета
- */
-export interface ChatWebSocketCallbacks {
-  onMessage?: (message: ChatMessageWS) => void;
-  onTyping?: (indicator: TypingIndicator) => void;
-  onAttachment?: (attachment: AttachmentWS) => void;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: string) => void;
 }
 
 // ==================== Assignment Types ====================

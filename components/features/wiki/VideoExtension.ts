@@ -1,9 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 
-export interface VideoOptions {
-  HTMLAttributes: Record<string, any>;
-}
-
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     video: {

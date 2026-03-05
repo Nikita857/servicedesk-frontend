@@ -2,7 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ticketApi } from "@/lib/api/tickets";
-import { assignmentApi, Assignment } from "@/lib/api/assignments";
+import { assignmentApi } from "@/lib/api/assignments";
+import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
 import { handleApiError } from "@/lib/utils";
 import type { Ticket } from "@/types/ticket";
@@ -11,8 +12,8 @@ interface UseTicketQueryReturn {
   ticket: Ticket | null;
   isLoading: boolean;
   isError: boolean;
-  currentAssignment: Assignment | null;
-  assignmentHistory: Assignment[];
+  currentAssignment: AssignmentResponse | null;
+  assignmentHistory: AssignmentResponse[];
   updateTicket: (ticket: Ticket) => void;
   refetch: () => void;
 }

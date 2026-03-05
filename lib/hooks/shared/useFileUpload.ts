@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { attachmentApi, Attachment } from '@/lib/api/attachments';
+import { attachmentApi } from '@/lib/api/attachments';
+import type { AttachmentResponse } from '@/types/attachment';
 import { toast } from '@/lib/utils';
 
 interface UseFileUploadReturn {
@@ -8,7 +9,7 @@ interface UseFileUploadReturn {
     file: File, 
     targetType: 'TICKET' | 'MESSAGE' | 'DIRECT_MESSAGE' | 'WIKI_ARTICLE', 
     targetId: number
-  ) => Promise<Attachment | null>;
+  ) => Promise<AttachmentResponse | null>;
   isUploading: boolean;
   error: string | null;
 }
@@ -21,7 +22,7 @@ export const useFileUpload = (): UseFileUploadReturn => {
     file: File,
     targetType: 'TICKET' | 'MESSAGE' | 'DIRECT_MESSAGE' | 'WIKI_ARTICLE',
     targetId: number
-  ): Promise<Attachment | null> => {
+  ): Promise<AttachmentResponse | null> => {
     setIsUploading(true);
     setError(null);
 

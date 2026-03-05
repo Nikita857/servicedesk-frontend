@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { supportLineApi, assignmentApi, SupportLine, Specialist } from "@/lib/api/supportLines";
+import { supportLineApi } from "@/lib/api/supportLines";
+import { assignmentApi } from "@/lib/api/assignments";
+import type { SupportLineListResponse, Specialist } from "@/types/support-line";
 import { queryKeys } from "@/lib/queryKeys";
 import { useAuthStore } from "@/stores";
 import type { Ticket } from "@/types/ticket";
@@ -10,7 +12,7 @@ interface UseSupportLinesQueryOptions {
 }
 
 interface UseSupportLinesQueryReturn {
-  supportLines: SupportLine[];
+  supportLines: SupportLineListResponse[];
   specialists: Specialist[];
   isLoadingLines: boolean;
   isLoadingSpecialists: boolean;

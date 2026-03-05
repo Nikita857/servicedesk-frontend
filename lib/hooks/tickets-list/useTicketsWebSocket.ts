@@ -4,10 +4,10 @@ import { useWebSocket } from "@/lib/providers";
 import { toast } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Ticket } from "@/types/ticket";
-import type { TicketListItem } from "@/types/ticket";
+import type { TicketListResponse } from "@/types/ticket";
 
 interface UseTicketsWebSocketOptions {
-  onNewTicket?: (ticket: TicketListItem) => void;
+  onNewTicket?: (ticket: TicketListResponse) => void;
   enabled?: boolean;
 }
 
@@ -30,8 +30,8 @@ export function useTicketsWebSocket(options: UseTicketsWebSocketOptions = {}) {
     if (!enabled || !isConnected) return;
 
     const unsubscribe = subscribeToNewTickets((ticket: Ticket) => {
-      // Convert Ticket to TicketListItem format for the list
-      const listItem: TicketListItem = {
+      // Convert Ticket to TicketListResponse format for the list
+      const listItem: TicketListResponse = {
         id: ticket.id,
         title: ticket.title,
         status: ticket.status,

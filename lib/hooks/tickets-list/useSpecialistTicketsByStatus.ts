@@ -5,7 +5,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import type { TicketStatus, PagedTicketList, Ticket } from "@/types/ticket";
 
-export interface StatusTicketsVM {
+interface StatusTicketsVM {
   data: PagedTicketList | null;
   meta: {
     isLoading: boolean;
@@ -17,7 +17,7 @@ export interface StatusTicketsVM {
   };
 }
 
-export interface SpecialistTicketsVM {
+interface SpecialistTicketsVM {
   NEW: StatusTicketsVM;
   OPEN: StatusTicketsVM;
   PENDING: StatusTicketsVM;

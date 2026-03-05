@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  userApi,
-  type UserActivityStatus,
-  type UserStatusResponse,
-} from "@/lib/api/users";
+import { userApi } from "@/lib/api/users";
+import type { UserActivityStatus, UserStatusResponse } from "@/types/auth";
 import { queryKeys } from "@/lib/queryKeys";
 import { handleApiError, toast } from "@/lib/utils";
 

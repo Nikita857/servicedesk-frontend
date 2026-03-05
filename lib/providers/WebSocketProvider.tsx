@@ -23,27 +23,6 @@ import type {
   UserStatusWS,
 } from "@/types/websocket";
 
-// Re-export types for convenience
-export type {
-  ChatMessageWS,
-  TypingIndicator,
-  AttachmentWS,
-  UserStatusWS,
-} from "@/types/websocket";
-
-// ==================== Types ====================
-
-export interface TicketUpdatePayload {
-  ticket: Ticket;
-  eventType:
-    | "created"
-    | "updated"
-    | "deleted"
-    | "taken"
-    | "assigned"
-    | "status_changed";
-}
-
 interface WebSocketContextValue {
   isConnected: boolean;
   // Ticket subscriptions
