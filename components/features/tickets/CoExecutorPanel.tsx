@@ -21,9 +21,14 @@ interface CoExecutorPanelProps {
   canEdit?: boolean;
 }
 
+const BLOCKED_STATUSES = new Set(["CLOSED", "PENDING_CLOSURE", "REJECTED", "CANCELLED"]);
+
 export default function CoExecutorPanel({ ticket, canEdit = false }: CoExecutorPanelProps) {
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string>("");
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // Редактирование заблокировано в финальных статусах
+  const effectiveCanEdit = canEdit && !BLOCKED_STATUSES.has(ticket.status);
 
   const lineId = ticket.supportLine?.id;
 
@@ -55,7 +60,7 @@ export default function CoExecutorPanel({ ticket, canEdit = false }: CoExecutorP
   };
 
   // Пользователям показываем только если есть кто-то
-  if (!canEdit && !isLoading && coExecutors.length === 0) {
+  if (!effectiveCanEdit && !isLoading && coExecutors.length === 0) {
     return null;
   }
 
@@ -74,7 +79,7 @@ export default function CoExecutorPanel({ ticket, canEdit = false }: CoExecutorP
             Соисполнители
           </Heading>
         </HStack>
-        {canEdit && !showAddForm && (
+        {effectiveCanEdit && !showAddForm && (
           <IconButton
             aria-label="Добавить соисполнителя"
             variant="ghost"
@@ -87,7 +92,7 @@ export default function CoExecutorPanel({ ticket, canEdit = false }: CoExecutorP
       </HStack>
 
       {/* Add form - только для редакторов */}
-      {canEdit && showAddForm && (
+      {effectiveCanEdit && showAddForm && (
         <Box mb={3}>
           <NativeSelect.Root size="sm" mb={2} disabled={specialistsQuery.isLoading}>
             <NativeSelect.Field
@@ -134,14 +139,14 @@ export default function CoExecutorPanel({ ticket, canEdit = false }: CoExecutorP
         </Text>
       ) : coExecutors.length === 0 ? (
         <Text fontSize="sm" color="fg.muted">
-          {canEdit ? "Соисполнители не назначены" : "—"}
+          {effectiveCanEdit ? "Соисполнители не назначены" : "—"}
         </Text>
       ) : (
         <VStack align="stretch" gap={1}>
           {coExecutors.map((ce) => (
             <HStack key={ce.assignmentId} justify="space-between">
               <Text fontSize="sm">{ce.fio || ce.username}</Text>
-              {canEdit && (
+              {effectiveCanEdit && (
                 <IconButton
                   aria-label="Удалить соисполнителя"
                   variant="ghost"
