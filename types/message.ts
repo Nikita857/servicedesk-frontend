@@ -1,15 +1,7 @@
 // Message types based on OpenAPI spec
 
-import type { UserShort } from "./ticket";
-
-// Role hierarchy: USER < SYSADMIN (1 line) < DEV1C (2 line) < DEVELOPER (3 line + admin)
-export type SenderType =
-  | "USER"
-  | "SYSADMIN"
-  | "ONE_C_SUPPORT"
-  | "DEV1C"
-  | "DEVELOPER"
-  | "ADMIN";
+import type { UserShortResponse } from "./ticket";
+import { SenderType } from "@/types/auth";
 
 export interface MessageAttachment {
   id: number;
@@ -24,7 +16,7 @@ export interface Message {
   id: number;
   ticketId: number;
   content: string;
-  sender: UserShort;
+  sender: UserShortResponse;
   senderType: SenderType;
   internal: boolean;
   readByUser: boolean;
@@ -56,13 +48,13 @@ export interface PagedMessages {
 
 // Sender type labels and colors
 // Role hierarchy: USER < SYSADMIN (1 line) < DEV1C (2 line) < DEVELOPER (3 line + admin)
-export interface SenderTypeConfig {
+interface SenderTypeConfig {
   label: string;
   color: string;
   line?: number;
 }
 
-export const senderTypeConfig: Record<SenderType, SenderTypeConfig> = {
+const senderTypeConfig: Record<SenderType, SenderTypeConfig> = {
   USER: { label: "Пользователь", color: "blue" },
   SYSADMIN: { label: "Сисадмин", color: "green", line: 1 },
   ONE_C_SUPPORT: { label: "1С Поддержка", color: "blue", line: 2 },
@@ -81,19 +73,4 @@ export const getSenderConfig = (
       color: "gray",
     }
   );
-};
-
-// Check if role is a specialist (all except USER)
-export const isSpecialistRole = (role: string): boolean => {
-  return ["SYSADMIN", "DEV1C", "DEVELOPER"].includes(role);
-};
-
-// Check if role can escalate to another role (higher priority)
-export const canEscalateTo = (fromRole: string, toRole: string): boolean => {
-  const priority: Record<string, number> = {
-    SYSADMIN: 1,
-    DEV1C: 2,
-    DEVELOPER: 3,
-  };
-  return (priority[fromRole] || 0) < (priority[toRole] || 0);
 };

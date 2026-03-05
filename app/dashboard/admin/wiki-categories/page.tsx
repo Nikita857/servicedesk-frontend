@@ -23,8 +23,9 @@ import { useQuery } from "@tanstack/react-query";
 import { LuPlus, LuX } from "react-icons/lu";
 
 import { useWikiCategoriesAdmin } from "@/lib/hooks";
-import { adminApi, Department } from "@/lib/api/admin";
-import {
+import { adminApi } from "@/lib/api/admin";
+import type { DepartmentResponse } from "@/types/admin";
+import type {
   WikiCategoryTree,
   CreateWikiCategoryRequest,
   UpdateWikiCategoryRequest,
@@ -295,7 +296,7 @@ export default function WikiCategoriesPage() {
                     {(formData.departmentIds as number[])?.length > 0 && (
                       <HStack wrap="wrap" mb={2} gap={1}>
                         {(formData.departmentIds as number[]).map((id) => {
-                          const dept = departments.find((d: Department) => d.id === id);
+                          const dept = departments.find((d: DepartmentResponse) => d.id === id);
                           return dept ? (
                             <Badge key={id} size="sm" colorPalette="blue">
                               {dept.name}
@@ -316,7 +317,7 @@ export default function WikiCategoriesPage() {
                         <Spinner size="sm" />
                       ) : (
                         <VStack align="start" gap={2}>
-                          {departments.map((d: Department) => (
+                          {departments.map((d: DepartmentResponse) => (
                             <Checkbox.Root
                               key={d.id}
                               checked={(formData.departmentIds as number[])?.includes(d.id)}

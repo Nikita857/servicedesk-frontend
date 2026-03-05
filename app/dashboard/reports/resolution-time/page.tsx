@@ -52,9 +52,9 @@ export default function ResolutionTimeReportPage() {
       <Box mb={6}>
         <BackButton href="/dashboard/reports" label="Назад к отчётам" mb={2} />
         <Heading size="xl" color="fg.default" mb={2}>
-          Время решения тикетов
+          Время решения заявок
         </Heading>
-        <Text color="fg.muted">Статистика по времени решения тикетов</Text>
+        <Text color="fg.muted">Статистика по времени решения заявок</Text>
       </Box>
 
       {/* Loading */}
@@ -81,7 +81,7 @@ export default function ResolutionTimeReportPage() {
               </Box>
               <VStack align="start" gap={0}>
                 <Text fontSize="sm" color="fg.muted">
-                  Всего решено тикетов
+                  Всего решено заявок
                 </Text>
                 <Text fontSize="3xl" fontWeight="bold" color="fg.default">
                   {data.totalResolved.toLocaleString("ru-RU")}

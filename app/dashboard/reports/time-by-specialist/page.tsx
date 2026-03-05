@@ -70,7 +70,7 @@ export default function TimeBySpecialistReportPage() {
           Время по специалистам
         </Heading>
         <Text color="fg.muted">
-          Затраченное время на тикеты по каждому специалисту за выбранный период
+          Затраченное время на заявки по каждому специалисту за выбранный период
         </Text>
       </Box>
 
@@ -163,7 +163,7 @@ export default function TimeBySpecialistReportPage() {
                 </VStack>
                 <VStack align="start" gap={0}>
                   <Text fontSize="xs" color="fg.muted">
-                    Всего тикетов
+                    Всего заявок
                   </Text>
                   <Text fontSize="lg" fontWeight="semibold" color="fg.default">
                     {totalTickets}
@@ -186,7 +186,7 @@ export default function TimeBySpecialistReportPage() {
                     <Table.ColumnHeader>Специалист</Table.ColumnHeader>
                     <Table.ColumnHeader>Username</Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="right">
-                      Тикетов
+                      Заявок
                     </Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="right">
                       Время

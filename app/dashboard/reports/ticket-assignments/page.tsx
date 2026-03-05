@@ -18,7 +18,7 @@ import { LuSearch, LuArrowRight } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type ReassignmentHistory } from "@/lib/api/reports";
 import { handleApiError, toast } from "@/lib/utils";
-import { assignmentStatusConfig, assignmentModeConfig } from "@/types/ticket";
+import { assignmentModeConfig, assignmentStatusConfig } from "@/types/ticket";
 
 export default function TicketAssignmentsReportPage() {
   const [ticketId, setTicketId] = useState("");
@@ -30,7 +30,7 @@ export default function TicketAssignmentsReportPage() {
 
     const id = parseInt(ticketId);
     if (!id || isNaN(id)) {
-      toast.error("Ошибка", "Введите корректный ID тикета");
+      toast.error("Ошибка", "Введите корректный ID заявки");
       return;
     }
 
@@ -66,7 +66,7 @@ export default function TicketAssignmentsReportPage() {
           История переназначений
         </Heading>
         <Text color="fg.muted">
-          История переадресации тикета между специалистами и линиями поддержки
+          История переадресации заявки между специалистами и линиями поддержки
         </Text>
       </Box>
 
@@ -84,7 +84,7 @@ export default function TicketAssignmentsReportPage() {
         <HStack gap={4}>
           <VStack align="start" gap={1}>
             <Text fontSize="sm" fontWeight="medium" color="fg.default">
-              ID тикета
+              ID заявки
             </Text>
             <Input
               type="number"
@@ -134,7 +134,7 @@ export default function TicketAssignmentsReportPage() {
           >
             <VStack align="start" gap={0}>
               <Text fontSize="xs" color="fg.muted">
-                Тикет
+                Заявка
               </Text>
               <Text fontSize="lg" fontWeight="semibold" color="fg.default">
                 #{ticketId}

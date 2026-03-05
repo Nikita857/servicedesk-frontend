@@ -18,7 +18,7 @@ import {
 import type { OnboardingControls } from "@/lib/hooks/shared/useOnboarding";
 
 // --- Шаги онбординга ---
-export interface OnboardingStep {
+interface OnboardingStep {
   /** Значение атрибута data-onboarding-id на целевом элементе */
   targetId: string;
   title: string;

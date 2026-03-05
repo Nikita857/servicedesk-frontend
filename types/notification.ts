@@ -12,12 +12,3 @@ export interface Notification {
   senderName: string | null;
   createdAt: string;
 }
-
-export const notificationTypeConfig: Record<NotificationType, { icon: string; color: string }> = {
-  MESSAGE: { icon: '💬', color: 'blue' },
-  STATUS_CHANGE: { icon: '🔄', color: 'orange' },
-  ASSIGNMENT: { icon: '👤', color: 'green' },
-  ESCALATION: { icon: '⬆️', color: 'red' },
-  ESTIMATED_DATE: { icon: '📅', color: 'blue' },
-  RATING: { icon: '⭐', color: 'yellow' },
-};

@@ -88,12 +88,12 @@ export default function SearchAdminPage() {
             <Card.Header>
               <Stack direction="row" align="center" gap={3}>
                 <Icon as={LuBook} boxSize={6} color="green.600" />
-                <Heading size="md">База знаний (Wiki)</Heading>
+                <Heading size="md">Статьи</Heading>
               </Stack>
             </Card.Header>
             <Card.Body>
               <Text fontSize="sm" color="fg.muted">
-                Обновление индекса статей Wiki. Используйте, если новые статьи
+                Обновление индекса статей. Используйте, если новые статьи
                 не появляются в поиске или отображаются некорректно.
               </Text>
             </Card.Body>
@@ -115,13 +115,13 @@ export default function SearchAdminPage() {
             <Card.Header>
               <Stack direction="row" align="center" gap={3}>
                 <Icon as={LuTicket} boxSize={6} color="orange.600" />
-                <Heading size="md">Тикеты</Heading>
+                <Heading size="md">Заявки</Heading>
               </Stack>
             </Card.Header>
             <Card.Body>
               <Text fontSize="sm" color="fg.muted">
                 Обновление индекса заявок. Позволяет актуализировать поиск по
-                содержимому тикетов и комментариям.
+                содержимому заявок и комментариям.
               </Text>
             </Card.Body>
             <Card.Footer>
@@ -132,7 +132,7 @@ export default function SearchAdminPage() {
                 onClick={() => handleReindex("tickets")}
               >
                 <Icon as={LuRefreshCw} />
-                Обновить Тикеты
+                Обновить заявки
               </Button>
             </Card.Footer>
           </Card.Root>

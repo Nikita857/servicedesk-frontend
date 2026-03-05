@@ -20,6 +20,7 @@ import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSub
 import { OnboardingOverlay, USER_ONBOARDING_STEPS } from "@/components/features/onboarding";
 import { useOnboarding } from "@/lib/hooks/shared/useOnboarding";
 import { useHeartbeat } from "@/lib/hooks";
+import { useTabTitle } from "@/lib/hooks/shared/useTabTitle";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -39,6 +40,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   );
   const onboarding = useOnboarding(isOnlyUser);
   useHeartbeat();
+  useTabTitle(!!(user?.specialist));
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
