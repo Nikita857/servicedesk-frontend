@@ -71,9 +71,6 @@ export default function DashboardPage() {
           <Heading size="lg" color="fg.default" mb={1}>
             Дашборд
           </Heading>
-          <Text color="fg.muted" fontSize="sm">
-            Обзор системы поддержки
-          </Text>
         </Box>
       </Flex>
 
@@ -86,7 +83,7 @@ export default function DashboardPage() {
             </Heading>
             <Link href="/dashboard/tickets?filter=unprocessed">
               <Button variant="ghost" size="sm" color="fg.muted">
-                Все невзятые
+                Все заявки
                 <LuArrowRight />
               </Button>
             </Link>

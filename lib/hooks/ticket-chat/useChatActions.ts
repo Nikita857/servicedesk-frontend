@@ -11,12 +11,10 @@ interface UseChatActionsReturn {
   selectedFile: File | null;
   isUploading: boolean;
   isSending: boolean;
-  editingMessage: Message | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePasteFile: (file: File) => void;
   handleRemoveFile: () => void;
-  handleEditMessage: (msg: Message) => void;
   handleDeleteMessage: (msgId: number) => Promise<void>;
   sendMessage: (content: string, file: File | null) => Promise<void>;
 }
@@ -31,7 +29,6 @@ export const useChatActions = (
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { upload } = useFileUpload();
@@ -66,12 +63,6 @@ export const useChatActions = (
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Установка сообщения для редактирования
-  const handleEditMessage = (msg: Message) => {
-    setEditingMessage(msg);
-    setNewMessage(msg.content);
-  };
-
   // Удаление сообщения
   const handleDeleteMessage = async (msgId: number) => {
     try {
@@ -90,26 +81,6 @@ export const useChatActions = (
     setNewMessage("");
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-
-    // Режим редактирования
-    if (editingMessage) {
-      try {
-        const updatedMessage = await messageApi.edit(editingMessage.id, {
-          content,
-        });
-        setMessages((prev) =>
-          prev.map((m) => (m.id === editingMessage.id ? updatedMessage : m)),
-        );
-        toast.success("Сообщение обновлено");
-      } catch (error) {
-        console.error(error);
-        toast.error("Ошибка", "Не удалось обновить сообщения");
-        setNewMessage(content);
-      } finally {
-        setEditingMessage(null);
-      }
-      return;
-    }
 
     // Если есть файл, отправляем его через HTTP API + MinIO
     if (file) {
@@ -203,12 +174,10 @@ export const useChatActions = (
     selectedFile,
     isUploading,
     isSending,
-    editingMessage,
     fileInputRef,
     handleFileSelect,
     handlePasteFile,
     handleRemoveFile,
-    handleEditMessage,
     handleDeleteMessage,
     sendMessage,
   };

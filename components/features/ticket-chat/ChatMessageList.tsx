@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, ReactNode } from "react";
+import { useRef, useEffect, ReactNode, useState } from "react";
 import {
   Box,
   Flex,
@@ -10,19 +10,17 @@ import {
   Spinner,
   Avatar,
   Badge,
-  Menu,
   Portal,
-  Link,
 } from "@chakra-ui/react";
-import { LuPencil, LuTrash2, LuCopy } from "react-icons/lu";
+import { LuTrash2, LuCheck, LuCheckCheck } from "react-icons/lu";
 import { getSenderConfig, type Message } from "@/types/message";
 import { AttachmentItem } from "./AttachmentItem";
 
 interface ChatMessageListProps {
   messages: Message[];
   currentUserId: number | undefined;
+  isSpecialist: boolean;
   isLoading: boolean;
-  onEditMessage?: (message: Message) => void;
   onDeleteMessage?: (messageId: number) => void;
   onImageClick?: (url: string) => void;
 }
@@ -64,34 +62,193 @@ const linkifyText = (text: string, isOwn: boolean): ReactNode[] => {
 
   return parts.map((part, index) => {
     if (URL_REGEX.test(part)) {
-      // Reset regex lastIndex for next test
       URL_REGEX.lastIndex = 0;
       return (
-        <Link
+        <a
           key={index}
           href={part}
           target="_blank"
           rel="noopener noreferrer"
-          color={isOwn ? "blue.200" : "blue.500"}
-          textDecoration="underline"
-          _hover={{ color: isOwn ? "blue.100" : "blue.600" }}
+          style={{
+            color: isOwn ? "#93c5fd" : "#3b82f6",
+            textDecoration: "underline",
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {part}
-        </Link>
+        </a>
       );
     }
-    // Reset regex lastIndex
     URL_REGEX.lastIndex = 0;
     return part;
   });
 };
 
+interface MessageBubbleProps {
+  msg: Message;
+  isOwn: boolean;
+  isSpecialist: boolean;
+  onDeleteMessage?: (messageId: number) => void;
+  onImageClick?: (url: string) => void;
+}
+
+function MessageBubble({
+  msg,
+  isOwn,
+  isSpecialist,
+  onDeleteMessage,
+  onImageClick,
+}: MessageBubbleProps) {
+  const senderConf = getSenderConfig(msg.senderType);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Есть ли что показать в контекст-меню
+  const canDelete = isOwn && isSpecialist && !!onDeleteMessage;
+  const hasContextActions = canDelete;
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    // Если есть выделенный текст — не показываем кастомное меню, даём браузерное
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) return;
+
+    if (!hasContextActions) return;
+
+    e.preventDefault();
+    setMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const closeMenu = () => setMenuPos(null);
+
+  return (
+    <>
+      <Box
+        maxW={{ base: "85%", md: "70%" }}
+        bg={isOwn ? "gray.900" : "bg.subtle"}
+        color={isOwn ? "white" : "fg.default"}
+        px={{ base: 2.5, md: 3 }}
+        py={2}
+        borderRadius="lg"
+        borderTopRightRadius={isOwn ? "sm" : "lg"}
+        borderTopLeftRadius={isOwn ? "lg" : "sm"}
+        userSelect="text"
+        onContextMenu={handleContextMenu}
+      >
+        {!isOwn && (
+          <HStack mb={1} gap={1.5}>
+            <Text fontSize="xs" fontWeight="semibold" color={isOwn ? "white" : `${senderConf.color}.600`}>
+              {msg.sender.fio || msg.sender.username}
+            </Text>
+            {msg.senderType !== "USER" && (
+              <Text fontSize="xs" color={isOwn ? "whiteAlpha.600" : "fg.subtle"}>
+                {senderConf.label}
+              </Text>
+            )}
+          </HStack>
+        )}
+        {msg.internal && (
+          <Badge
+            size="sm"
+            colorPalette="orange"
+            variant="subtle"
+            mb={1}
+          >
+            Внутреннее
+          </Badge>
+        )}
+        <Text
+          fontSize="sm"
+          whiteSpace="pre-wrap"
+          wordBreak="break-word"
+          userSelect="text"
+          cursor="text"
+        >
+          {linkifyText(msg.content, isOwn)}
+        </Text>
+        {/* Attachments */}
+        {msg.attachments && msg.attachments.length > 0 && (
+          <VStack gap={2} mt={2} align="stretch">
+            {msg.attachments.map((att) => (
+              <AttachmentItem
+                key={att.id}
+                attachment={att}
+                isOwn={isOwn}
+                onImageClick={onImageClick}
+              />
+            ))}
+          </VStack>
+        )}
+        <HStack justify="flex-end" gap={1} mt={1}>
+          {msg.edited && (
+            <Text fontSize="xs" opacity={0.5}>
+              изм.
+            </Text>
+          )}
+          <Text fontSize="xs" opacity={0.7}>
+            {formatTime(msg.createdAt)}
+          </Text>
+          {isOwn && (() => {
+            const isRead = isSpecialist ? msg.readByUser : msg.readBySpecialist;
+            return isRead ? (
+              <LuCheckCheck size={14} style={{ opacity: 0.9, color: "#60a5fa" }} />
+            ) : (
+              <LuCheck size={14} style={{ opacity: 0.5 }} />
+            );
+          })()}
+        </HStack>
+      </Box>
+
+      {/* Context menu — только для специалистов, позиционируется по координатам клика */}
+      {menuPos && hasContextActions && (
+        <Portal>
+          {/* Overlay для закрытия */}
+          <Box
+            position="fixed"
+            inset={0}
+            zIndex={1000}
+            onClick={closeMenu}
+            onContextMenu={(e) => { e.preventDefault(); closeMenu(); }}
+          />
+          <Box
+            position="fixed"
+            left={`${menuPos.x}px`}
+            top={`${menuPos.y}px`}
+            zIndex={1001}
+            bg="bg.panel"
+            borderWidth="1px"
+            borderColor="border.default"
+            borderRadius="md"
+            shadow="lg"
+            py={1}
+            minW="150px"
+          >
+            {canDelete && (
+              <Flex
+                px={3}
+                py={2}
+                gap={2}
+                align="center"
+                cursor="pointer"
+                _hover={{ bg: "bg.subtle" }}
+                fontSize="sm"
+                color="fg.error"
+                onClick={() => { onDeleteMessage(msg.id); closeMenu(); }}
+              >
+                <LuTrash2 size={14} />
+                Удалить
+              </Flex>
+            )}
+          </Box>
+        </Portal>
+      )}
+    </>
+  );
+}
+
 export function ChatMessageList({
   messages,
   currentUserId,
+  isSpecialist,
   isLoading,
-  onEditMessage,
   onDeleteMessage,
   onImageClick,
 }: ChatMessageListProps) {
@@ -121,10 +278,9 @@ export function ChatMessageList({
   }
 
   return (
-    <VStack gap={3} align="stretch">
+    <VStack gap={2} align="stretch">
       {messages.map((msg, index) => {
         const isOwn = msg.sender.id === currentUserId;
-        const senderConf = getSenderConfig(msg.senderType);
         const showDateLabel =
           index === 0 ||
           formatDate(messages[index - 1].createdAt) !==
@@ -133,12 +289,12 @@ export function ChatMessageList({
         return (
           <Box key={msg.id}>
             {showDateLabel && (
-              <Flex justify="center" mb={2}>
+              <Flex justify="center" mb={2} mt={index > 0 ? 2 : 0}>
                 <Text
                   fontSize="xs"
                   color="fg.muted"
                   bg="bg.subtle"
-                  px={2}
+                  px={3}
                   py={0.5}
                   borderRadius="full"
                 >
@@ -146,9 +302,13 @@ export function ChatMessageList({
                 </Text>
               </Flex>
             )}
-            <Flex justify={isOwn ? "flex-end" : "flex-start"} gap={2}>
+            <Flex
+              justify={isOwn ? "flex-end" : "flex-start"}
+              gap={2}
+              align="flex-end"
+            >
               {!isOwn && (
-                <Avatar.Root size="sm">
+                <Avatar.Root size="sm" flexShrink={0}>
                   <Avatar.Fallback>
                     {getInitials(msg.sender.fio, msg.sender.username)}
                   </Avatar.Fallback>
@@ -157,119 +317,13 @@ export function ChatMessageList({
                   )}
                 </Avatar.Root>
               )}
-              <Menu.Root>
-                <Menu.ContextTrigger asChild>
-                  <Box
-                    maxW="70%"
-                    bg={isOwn ? "gray.900" : "bg.subtle"}
-                    color={isOwn ? "white" : "fg.default"}
-                    px={3}
-                    py={2}
-                    borderRadius="lg"
-                    borderTopRightRadius={isOwn ? "sm" : "lg"}
-                    borderTopLeftRadius={isOwn ? "lg" : "sm"}
-                    cursor="context-menu"
-                  >
-                    {!isOwn && (
-                      <HStack mb={1} gap={2}>
-                        <Text fontSize="xs" fontWeight="medium">
-                          {msg.sender.fio || msg.sender.username}
-                        </Text>
-                        {msg.senderType !== "USER" && (
-                          <Badge
-                            size="sm"
-                            colorPalette={senderConf.color}
-                            variant="subtle"
-                          >
-                            {senderConf.label}
-                          </Badge>
-                        )}
-                      </HStack>
-                    )}
-                    {msg.internal && (
-                      <Badge
-                        size="sm"
-                        colorPalette="orange"
-                        variant="subtle"
-                        mb={1}
-                      >
-                        Внутреннее
-                      </Badge>
-                    )}
-                    <Text fontSize="sm" whiteSpace="pre-wrap">
-                      {linkifyText(msg.content, isOwn)}
-                    </Text>
-                    {/* Attachments */}
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <VStack gap={2} mt={2} align="stretch">
-                        {msg.attachments.map((att) => (
-                          <AttachmentItem
-                            key={att.id}
-                            attachment={att}
-                            isOwn={isOwn}
-                            onImageClick={onImageClick}
-                          />
-                        ))}
-                      </VStack>
-                    )}
-                    <HStack justify="flex-end" gap={1} mt={1}>
-                      {msg.edited && (
-                        <Text fontSize="xs" opacity={0.5}>
-                          изм.
-                        </Text>
-                      )}
-                      <Text fontSize="xs" opacity={0.7}>
-                        {formatTime(msg.createdAt)}
-                      </Text>
-                    </HStack>
-                  </Box>
-                </Menu.ContextTrigger>
-                <Portal>
-                  <Menu.Positioner>
-                    <Menu.Content minW="150px">
-                      <Menu.Item
-                        value="copy"
-                        onClick={() => {
-                          if (navigator.clipboard) {
-                            navigator.clipboard.writeText(msg.content);
-                          } else {
-                            const el = document.createElement("textarea");
-                            el.value = msg.content;
-                            el.style.position = "fixed";
-                            el.style.opacity = "0";
-                            document.body.appendChild(el);
-                            el.select();
-                            document.execCommand("copy");
-                            document.body.removeChild(el);
-                          }
-                        }}
-                      >
-                        <LuCopy />
-                        Копировать
-                      </Menu.Item>
-                      {isOwn && onEditMessage && (
-                        <Menu.Item
-                          value="edit"
-                          onClick={() => onEditMessage(msg)}
-                        >
-                          <LuPencil />
-                          Редактировать
-                        </Menu.Item>
-                      )}
-                      {isOwn && onDeleteMessage && (
-                        <Menu.Item
-                          value="delete"
-                          color="fg.error"
-                          onClick={() => onDeleteMessage(msg.id)}
-                        >
-                          <LuTrash2 />
-                          Удалить
-                        </Menu.Item>
-                      )}
-                    </Menu.Content>
-                  </Menu.Positioner>
-                </Portal>
-              </Menu.Root>
+              <MessageBubble
+                msg={msg}
+                isOwn={isOwn}
+                isSpecialist={isSpecialist}
+                onDeleteMessage={onDeleteMessage}
+                onImageClick={onImageClick}
+              />
             </Flex>
           </Box>
         );

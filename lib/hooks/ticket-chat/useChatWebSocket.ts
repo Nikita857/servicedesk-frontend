@@ -9,6 +9,7 @@ import type {
   ChatMessageWS,
   TypingIndicator,
   AttachmentWS,
+  ReadReceiptWS,
 } from "@/types/websocket";
 import {SenderType} from "@/types";
 
@@ -40,6 +41,8 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     subscribeToInternalComments,
     subscribeToTyping,
     subscribeToAttachments,
+    subscribeToReadReceipts,
+    sendReadReceipt,
     sendMessage: wsSendMessage,
     sendTyping,
   } = useWebSocket();
@@ -58,18 +61,28 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const pendingTimeoutsRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const lastTypingSentRef = useRef<number>(0);
 
+  // Помечаем прочитанными только если вкладка видна
+  const markReadIfVisible = useCallback(() => {
+    if (document.hidden) return;
+    if (isConnected) {
+      sendReadReceipt(ticketId);
+    } else {
+      messageApi.markAsRead(ticketId);
+    }
+  }, [ticketId, isConnected, sendReadReceipt]);
+
   // Получение начальных сообщений
   const fetchMessages = useCallback(async () => {
     try {
       const response = await messageApi.list(ticketId, 0, 100);
       setMessages(response.content.reverse());
-      await messageApi.markAsRead(ticketId);
+      markReadIfVisible();
     } catch (error) {
       console.error("Не удалось загрузить сообщения", error);
     } finally {
       setIsLoading(false);
     }
-  }, [ticketId]);
+  }, [ticketId, markReadIfVisible]);
 
   // Отправка индикатора печати (с задержкой)
   const sendTypingIndicator = useCallback(
@@ -321,6 +334,65 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
 
     return unsubscribe;
   }, [isConnected, ticketId, subscribeToAttachments, fetchMessages]);
+
+  // Подписка на read receipts — обновляем readByUser/readBySpecialist в стейте
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const unsubscribe = subscribeToReadReceipts(
+      ticketId,
+      (receipt: ReadReceiptWS) => {
+        // Не обновляем свои собственные receipts
+        if (receipt.userId === user?.id) return;
+
+        setMessages((prev) =>
+          prev.map((msg) => {
+            // Обновляем только чужие сообщения (которые отправил текущий пользователь)
+            // receipt от specialist → обновляем readBySpecialist
+            // receipt от user → обновляем readByUser
+            if (receipt.specialist) {
+              return msg.readBySpecialist ? msg : { ...msg, readBySpecialist: true };
+            } else {
+              return msg.readByUser ? msg : { ...msg, readByUser: true };
+            }
+          })
+        );
+      }
+    );
+
+    return unsubscribe;
+  }, [isConnected, ticketId, subscribeToReadReceipts, user?.id]);
+
+  // Авто-пометка прочитанными при получении чужого сообщения (только если вкладка видна)
+  const prevMessagesLengthRef = useRef(0);
+  const hasUnreadRef = useRef(false);
+
+  useEffect(() => {
+    if (messages.length > prevMessagesLengthRef.current && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.sender.id !== user?.id) {
+        if (document.hidden) {
+          // Вкладка скрыта — запомним что есть непрочитанные
+          hasUnreadRef.current = true;
+        } else {
+          markReadIfVisible();
+        }
+      }
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages.length, markReadIfVisible, user?.id, messages]);
+
+  // Когда пользователь возвращается на вкладку — помечаем непрочитанные
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden && hasUnreadRef.current) {
+        hasUnreadRef.current = false;
+        markReadIfVisible();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [markReadIfVisible]);
 
   return {
     messages,

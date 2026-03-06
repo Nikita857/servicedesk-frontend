@@ -25,6 +25,7 @@ import {
   useEscalation,
   useTicketWebSocket,
 } from "@/lib/hooks";
+import { useCoExecutors } from "@/lib/hooks/ticket-detail/useCoExecutors";
 import {
   ClosureConfirmationDialog,
   TicketChat,
@@ -38,11 +39,12 @@ interface PageProps {
 export default function TicketDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const ticketId = Number(id);
-  const [descOpen, setDescOpen] = useState(false);
+  const [descOpen, setDescOpen] = useState(true);
   const router = useRouter();
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const canEscalate = isSpecialist;
+  const isAdmin = user?.roles?.includes("ADMIN") || false;
 
   // ==================== React Query Hooks ====================
   const {
@@ -81,6 +83,15 @@ export default function TicketDetailPage({ params }: PageProps) {
     [setSelectedLineId, escalation]
   );
 
+  const { coExecutors } = useCoExecutors(ticketId);
+
+  // Может ли текущий пользователь менять статус тикета
+  const canManageStatus =
+    isAdmin ||
+    user?.id === ticket?.assignedTo?.id ||
+    user?.id === ticket?.createdBy?.id ||
+    coExecutors.some((ce) => ce.userId === user?.id);
+
   // WebSocket for real-time updates
   useTicketWebSocket({
     ticketId,
@@ -112,6 +123,7 @@ export default function TicketDetailPage({ params }: PageProps) {
         setTicket={updateTicket}
         isSpecialist={isSpecialist}
         canEscalate={canEscalate}
+        canManageStatus={canManageStatus}
         showEscalation={escalation.showEscalation}
         setShowEscalation={escalation.setShowEscalation}
         isOnLastLine={isOnLastLine}

@@ -21,6 +21,7 @@ import type {
   AttachmentWS,
   AssignmentWS,
   UserStatusWS,
+  ReadReceiptWS,
 } from "@/types/websocket";
 
 interface WebSocketContextValue {
@@ -59,6 +60,11 @@ interface WebSocketContextValue {
     ticketId: number,
     callback: (attachment: AttachmentWS) => void,
   ) => () => void;
+  subscribeToReadReceipts: (
+    ticketId: number,
+    callback: (receipt: ReadReceiptWS) => void,
+  ) => () => void;
+  sendReadReceipt: (ticketId: number) => void;
   // User subscriptions
   subscribeToUserNotifications: (
     userId: number,
@@ -332,6 +338,30 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     [subscribe],
   );
 
+  const subscribeToReadReceipts = useCallback(
+    (ticketId: number, callback: (receipt: ReadReceiptWS) => void) => {
+      return subscribe(`/topic/ticket/${ticketId}/read`, (message) => {
+        try {
+          const receipt: ReadReceiptWS = JSON.parse(message.body);
+          callback(receipt);
+        } catch (e) {
+          console.error("[WS] Ошибка подписки на read receipts: ", e);
+        }
+      });
+    },
+    [subscribe],
+  );
+
+  const sendReadReceipt = useCallback((ticketId: number) => {
+    const client = clientRef.current;
+    if (!client?.connected) return;
+
+    client.publish({
+      destination: `/app/ticket/${ticketId}/read`,
+      body: "{}",
+    });
+  }, []);
+
   // ==================== User Subscriptions ====================
 
   const subscribeToUserNotifications = useCallback(
@@ -459,6 +489,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     subscribeToInternalComments,
     subscribeToTyping,
     subscribeToAttachments,
+    subscribeToReadReceipts,
+    sendReadReceipt,
     subscribeToUserStatus,
     subscribeToLineStatus,
   };

@@ -40,7 +40,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   );
   const onboarding = useOnboarding(isOnlyUser);
   useHeartbeat();
-  useTabTitle(!!(user?.specialist));
+  useTabTitle({
+    isAdmin: !!(user?.roles?.includes("ADMIN")),
+    isSpecialist: !!(user?.specialist),
+  });
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {

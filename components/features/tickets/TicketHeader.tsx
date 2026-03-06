@@ -40,6 +40,7 @@ interface TicketHeaderProps {
   setTicket: (ticket: Ticket) => void;
   isSpecialist: boolean;
   canEscalate: boolean;
+  canManageStatus: boolean;
   showEscalation: boolean;
   setShowEscalation: (isSet: boolean) => void;
   isOnLastLine: boolean;
@@ -52,6 +53,7 @@ export default function TicketHeader({
   setTicket,
   isSpecialist,
   canEscalate,
+  canManageStatus,
   showEscalation,
   setShowEscalation,
   isOnLastLine,
@@ -211,13 +213,19 @@ export default function TicketHeader({
               </Button>
             )}
 
-            {/* Status change menu - only for specialists */}
-            {isSpecialist &&
+            {/* Status change menu - только если пользователь управляет тикетом */}
+            {canManageStatus &&
               (() => {
                 // Admin can use all transitions, specialists use restricted list (no CANCELLED)
-                const availableTransitions = isAdmin
+                let availableTransitions = isAdmin
                   ? statusTransitions[ticket.status]
                   : specialistStatusTransitions[ticket.status];
+
+                // OPEN требует назначенного исполнителя — скрываем если тикет никем не взят
+                if (!ticket.assignedTo) {
+                  availableTransitions = availableTransitions.filter((s) => s !== "OPEN");
+                }
+
                 if (availableTransitions.length === 0) return null;
 
                 return (
