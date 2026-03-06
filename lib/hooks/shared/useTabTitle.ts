@@ -1,28 +1,55 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { statsApi } from "@/lib/api/stats";
+import { ticketApi } from "@/lib/api/tickets";
 import { queryKeys } from "@/lib/queryKeys";
+import { ticketStatusConfig } from "@/types/ticket";
 
 const BASE_TITLE = "ServiceDesk";
+const FRAME_INTERVAL = 2000;
 
-/**
- * Анимирует заголовок вкладки браузера для специалистов:
- * показывает количество новых, эскалированных и назначенных тикетов.
- */
-export function useTabTitle(enabled: boolean) {
+// Статусы, которые показываем в заголовке (исключаем NEW и финальные)
+const ACTIVE_STATUSES = new Set([
+  "OPEN", "PENDING", "ESCALATED", "RESOLVED", "PENDING_CLOSURE", "REOPENED",
+]);
+
+function statusLabel(status: string): string {
+  return ticketStatusConfig[status as keyof typeof ticketStatusConfig]?.label ?? status;
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + "…" : text;
+}
+
+interface TabTitleOptions {
+  isAdmin: boolean;
+  isSpecialist: boolean;
+}
+
+export function useTabTitle({ isAdmin, isSpecialist }: TabTitleOptions) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const frameRef = useRef(0);
 
-  const { data: stats } = useQuery({
-    queryKey: queryKeys.stats.my(),
-    queryFn: () => statsApi.getMyStats(),
+  const enabled = isAdmin || isSpecialist;
+
+  // Профессиональная статистика (admin → global, specialist → my line)
+  const { data: proStats } = useQuery({
+    queryKey: isAdmin ? queryKeys.stats.global() : queryKeys.stats.my(),
+    queryFn: isAdmin ? () => statsApi.getGlobalStats() : () => statsApi.getMyStats(),
     enabled,
     refetchInterval: 30 * 1000,
     staleTime: 30 * 1000,
   });
 
+  // Тикеты, созданные лично (admin/specialist как автор + user)
+  const { data: myTicketsPage } = useQuery({
+    queryKey: [...queryKeys.tickets.all, "my-tab-title"],
+    queryFn: () => ticketApi.listMy(0, 10),
+    refetchInterval: 30 * 1000,
+    staleTime: 30 * 1000,
+  });
+
   useEffect(() => {
-    // Cleanup helper
     const clearAnim = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -30,51 +57,54 @@ export function useTabTitle(enabled: boolean) {
       }
     };
 
-    if (!enabled || !stats) {
+    const myTickets = myTicketsPage?.content ?? [];
+    const frames: string[] = [];
+
+    if (isAdmin || isSpecialist) {
+      // Кол-во новых тикетов (глобально для admin, по линии для specialist)
+      const newCount = proStats?.byStatus?.["NEW"] ?? 0;
+      if (newCount > 0) {
+        frames.push(`(${newCount}) новых — ${BASE_TITLE}`);
+      }
+
+      // Собственные тикеты в активных статусах (кроме NEW)
+      const activeOwn = myTickets.filter((t) => ACTIVE_STATUSES.has(t.status));
+      for (const t of activeOwn) {
+        frames.push(`#${t.id} ${statusLabel(t.status)} — ${BASE_TITLE}`);
+      }
+    } else {
+      // Обычный пользователь — последний тикет в активном статусе
+      const latest = myTickets.find((t) => ACTIVE_STATUSES.has(t.status));
+      if (latest) {
+        frames.push(`#${latest.id}: ${truncate(latest.title, 25)} · ${statusLabel(latest.status)}`);
+      }
+    }
+
+    if (frames.length === 0) {
       document.title = BASE_TITLE;
       clearAnim();
       return;
     }
 
-    const byStatus = stats.byStatus ?? {};
-    const newCount = byStatus["NEW"] ?? 0;
-    const escalatedCount = byStatus["ESCALATED"] ?? 0;
-    const assignedCount =
-      (byStatus["OPEN"] ?? 0) +
-      (byStatus["PENDING"] ?? 0) +
-      (byStatus["REOPENED"] ?? 0);
-
-    const total = newCount + escalatedCount + assignedCount;
-
-    if (total === 0) {
-      document.title = BASE_TITLE;
-      clearAnim();
-      return;
+    // Цикл: frame[0] → BASE_TITLE → frame[1] → BASE_TITLE → ...
+    const sequence: string[] = [];
+    for (const f of frames) {
+      sequence.push(f);
+      sequence.push(BASE_TITLE);
     }
-
-    // Формируем строку уведомления
-    const parts: string[] = [];
-    if (newCount > 0) parts.push(`${newCount} новых`);
-    if (escalatedCount > 0) parts.push(`${escalatedCount} эскал.`);
-    if (assignedCount > 0) parts.push(`${assignedCount} в работе`);
-    const alertTitle = `(${total}) ${parts.join(" · ")} — ${BASE_TITLE}`;
-
-    // Кадры анимации: пульсирующий bullet + обычный заголовок
-    const frames = [alertTitle, BASE_TITLE];
 
     clearAnim();
     frameRef.current = 0;
-    document.title = alertTitle;
+    document.title = sequence[0];
 
     intervalRef.current = setInterval(() => {
-      frameRef.current = (frameRef.current + 1) % frames.length;
-      document.title = frames[frameRef.current];
-    }, 1500);
+      frameRef.current = (frameRef.current + 1) % sequence.length;
+      document.title = sequence[frameRef.current];
+    }, FRAME_INTERVAL);
 
     return clearAnim;
-  }, [enabled, stats]);
+  }, [isAdmin, isSpecialist, proStats, myTicketsPage]);
 
-  // Восстанавливаем заголовок при размонтировании
   useEffect(() => {
     return () => {
       document.title = BASE_TITLE;

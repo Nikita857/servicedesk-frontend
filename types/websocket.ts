@@ -52,6 +52,17 @@ export interface AttachmentWS {
   createdAt: string;
 }
 
+/**
+ * Уведомление о прочтении сообщений
+ */
+export interface ReadReceiptWS {
+  ticketId: number;
+  userId: number;
+  username: string;
+  specialist: boolean;
+  readAt: string;
+}
+
 // ==================== Assignment Types ====================
 
 /**

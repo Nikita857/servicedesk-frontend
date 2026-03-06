@@ -10,11 +10,13 @@ import {
   HStack,
   Dialog,
   Portal,
+  Skeleton,
 } from "@chakra-ui/react";
 import { LuCheck, LuX, LuArrowRight, LuUser } from "react-icons/lu";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { assignmentApi } from "@/lib/api/assignments";
+import { ticketApi } from "@/lib/api/tickets";
 import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
 import { toast } from "@/lib/utils";
@@ -30,6 +32,12 @@ export function AssignmentDecisionDialog({
 }: AssignmentDecisionDialogProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: ticket, isLoading: isLoadingTicket } = useQuery({
+    queryKey: queryKeys.tickets.detail(assignment?.ticketId ?? 0),
+    queryFn: () => ticketApi.get(assignment!.ticketId),
+    enabled: !!assignment,
+  });
+
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -103,9 +111,29 @@ export function AssignmentDecisionDialog({
                       borderRadius="lg"
                       p={4}
                     >
-                      <Text fontWeight="semibold" mb={2}>
-                        #{assignment.ticketId} — {assignment.ticketTitle}
+                      <Text fontSize="xs" color="fg.muted" mb={1}>
+                        Заявка #{assignment.ticketId}
                       </Text>
+                      <Text fontWeight="semibold" mb={3}>
+                        {assignment.ticketTitle}
+                      </Text>
+
+                      {isLoadingTicket ? (
+                        <Skeleton height="48px" borderRadius="md" mb={3} />
+                      ) : ticket?.description ? (
+                        <Box
+                          bg="bg.canvas"
+                          borderRadius="md"
+                          p={3}
+                          mb={3}
+                          maxH="120px"
+                          overflowY="auto"
+                        >
+                          <Text fontSize="sm" color="fg.muted" whiteSpace="pre-wrap">
+                            {ticket.description}
+                          </Text>
+                        </Box>
+                      ) : null}
 
                       {assignment.fromLineName && (
                         <HStack gap={1} fontSize="sm" color="fg.muted">

@@ -58,12 +58,10 @@ export function TicketChat({
     selectedFile,
     isUploading,
     isSending,
-    editingMessage,
     fileInputRef,
     handleFileSelect,
     handlePasteFile,
     handleRemoveFile,
-    handleEditMessage,
     handleDeleteMessage,
     sendMessage,
   } = useChatActions(ticketId, setMessages, wsSendMessage, isConnected);
@@ -139,8 +137,8 @@ export function TicketChat({
           <ChatMessageList
             messages={messages}
             currentUserId={user?.id}
+            isSpecialist={isSpecialist}
             isLoading={isLoading}
-            onEditMessage={handleEditMessage}
             onDeleteMessage={handleDeleteMessage}
             onImageClick={setLightboxImage}
           />
@@ -220,7 +218,6 @@ export function TicketChat({
               isSending={isSending}
               selectedFile={selectedFile}
               isChatInactive={false}
-              isEditing={!!editingMessage}
               onPasteFile={handlePasteFile}
             />
           ) : (
@@ -234,7 +231,6 @@ export function TicketChat({
               isSending={isSending}
               selectedFile={selectedFile}
               isChatInactive={true}
-              isEditing={!!editingMessage}
             />
           )}
         </Box>

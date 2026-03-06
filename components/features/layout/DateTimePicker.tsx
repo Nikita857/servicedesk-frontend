@@ -76,7 +76,7 @@ export function DateTimePicker({ ticketId, currentDate }: DateTimePickerProps) {
         width="full"
       >
         <LuCalendar />
-        {currentDate ? "Изменить срок" : "Установить срок"}
+        {currentDate ? "Изменить срок выполнения" : "Установить срок выполнения"}
       </Button>
 
       <Dialog.Root

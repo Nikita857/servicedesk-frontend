@@ -1,4 +1,4 @@
-import { Button, Flex, Input, Text } from "@chakra-ui/react";
+import { Button, Flex, Input } from "@chakra-ui/react";
 import { RefObject, useCallback } from "react";
 import { LuPaperclip, LuSend } from "react-icons/lu";
 import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
@@ -14,7 +14,6 @@ interface ChatInputProps {
   fileInputRef: RefObject<HTMLInputElement | null>;
   selectedFile: File | null;
   isChatInactive: boolean;
-  isEditing?: boolean;
   onPasteFile?: (file: File) => void;
 }
 
@@ -27,7 +26,6 @@ export default function ChatInput({
   fileInputRef,
   isSending,
   isChatInactive,
-  isEditing,
   onPasteFile,
 }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -108,7 +106,7 @@ export default function ChatInput({
         color="white"
         _hover={{ bg: "gray.800" }}
       >
-        {isEditing ? <Text fontSize="sm">Сохранить</Text> : <LuSend />}
+        <LuSend />
       </Button>
     </Flex>
   ) : (
@@ -138,7 +136,7 @@ export default function ChatInput({
         color="white"
         _hover={{ bg: "gray.800" }}
       >
-        {isEditing ? <Text fontSize="sm">Сохранить</Text> : <LuSend />}
+        <LuSend />
       </Button>
     </Flex>
   );
