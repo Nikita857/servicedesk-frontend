@@ -21,6 +21,19 @@ export const ticketApi = {
     return response.data.data;
   },
 
+  // List tickets with optional admin filters (status + lineId)
+  listFiltered: async (
+    page = 0,
+    size = 20,
+    status?: TicketStatus,
+    lineId?: number
+  ): Promise<PagedTicketList> => {
+    const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
+      params: { page, size, status, lineId },
+    });
+    return response.data.data;
+  },
+
   /**
    * List all tickets without pagination limit
    * @deprecated Consider using a dedicated counts API endpoint for better performance

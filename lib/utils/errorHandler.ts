@@ -112,15 +112,11 @@ export function handleApiError(
     case 503:
       toast.error(
         "Ошибка сервера",
-        "На сервере произошла ошибка. Сообщите администратору о проблеме"
+        message || "На сервере произошла ошибка. Сообщите администратору о проблеме"
       );
       break;
     default:
-      // Fallback с контекстом
-      if (context) {
-        toast.error("Ошибка", `Не удалось ${context}`);
-      } else {
-        toast.error("Ошибка", message);
-      }
+      // Показываем реальное сообщение от бэкенда; context — только если сообщения нет
+      toast.error("Ошибка", message || (context ? `Не удалось ${context}` : "Неизвестная ошибка"));
   }
 }

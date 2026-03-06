@@ -12,7 +12,7 @@ import {
   LuTags,
   LuPercent,
   LuList,
-  LuActivity,
+  LuActivity, LuChartNoAxesCombined,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 
@@ -95,6 +95,13 @@ const reports: ReportCard[] = [
     icon: LuActivity,
     color: "red",
   },
+  {
+    title: "Графики Kibana",
+    description: "Визуальное представление статистики по специалистам, заявкам, статьям",
+    href: "http://192.168.0.111:5601/app/dashboards#/view/4d0f9f93-4b8b-49b9-aebd-3e2ed43988c5?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now-30d%2Fd,to:now))",
+    icon: LuChartNoAxesCombined,
+    color: "green",
+  }
 ];
 
 export default function ReportsPage() {

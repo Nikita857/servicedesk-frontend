@@ -19,7 +19,7 @@ import { assignmentApi } from "@/lib/api/assignments";
 import { ticketApi } from "@/lib/api/tickets";
 import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 interface AssignmentDecisionDialogProps {
   assignment: AssignmentResponse | null;
@@ -58,8 +58,8 @@ export function AssignmentDecisionDialog({
       invalidateCaches();
       onClose();
       router.push(`/dashboard/tickets/${assignment.ticketId}`);
-    } catch {
-      toast.error("Ошибка", "Не удалось принять назначение");
+    } catch (error) {
+      handleApiError(error);
     } finally {
       setIsAccepting(false);
     }
@@ -74,8 +74,8 @@ export function AssignmentDecisionDialog({
       toast.success("Назначение отклонено");
       invalidateCaches();
       handleClose();
-    } catch {
-      toast.error("Ошибка", "Не удалось отклонить назначение");
+    } catch (error) {
+      handleApiError(error);
     } finally {
       setIsRejecting(false);
     }

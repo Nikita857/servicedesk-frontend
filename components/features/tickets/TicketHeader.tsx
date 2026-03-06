@@ -64,15 +64,6 @@ export default function TicketHeader({
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const statusConf = ticketStatusConfig[ticket.status] || {
-    label: ticket.status,
-    color: "gray",
-  };
-  const priorityConf = ticketPriorityConfig[ticket.priority] || {
-    label: ticket.priority,
-    color: "gray",
-  };
-
   // Can cancel: ticket creator or admin, and ticket is not closed/cancelled
   const isTicketCreator = user?.id === ticket.createdBy?.id;
   const isAdmin = user?.roles?.includes("ADMIN") || false;
@@ -91,10 +82,8 @@ export default function TicketHeader({
       return false;
     }
     // Hide if there's already a pending assignment
-    if (hasPendingAssignment) {
-      return false;
-    }
-    return true;
+    return !hasPendingAssignment;
+
   };
 
   const handleStatusChange = async (newStatus: TicketStatus) => {
@@ -156,15 +145,6 @@ export default function TicketHeader({
           >
             #{ticket.id}: {ticket.title}
           </Heading>
-
-          <HStack gap={2} flexShrink={0}>
-            <Badge colorPalette={statusConf.color} size="sm">
-              {statusConf.label}
-            </Badge>
-            <Badge colorPalette={priorityConf.color} variant="subtle" size="sm">
-              {priorityConf.label}
-            </Badge>
-          </HStack>
         </HStack>
 
         {/* Right side: Action buttons */}
@@ -186,9 +166,6 @@ export default function TicketHeader({
                 }}
               >
                 <LuPlay />
-                <Text display={{ base: "none", md: "inline" }}>
-                  Взять в работу
-                </Text>
               </Button>
             )}
 
@@ -207,9 +184,6 @@ export default function TicketHeader({
                 }
               >
                 <LuForward />
-                <Text display={{ base: "none", md: "inline" }}>
-                  {isOnLastLine ? "На последней линии" : "Переадресовать"}
-                </Text>
               </Button>
             )}
 
@@ -232,9 +206,6 @@ export default function TicketHeader({
                   <Menu.Root>
                     <Menu.Trigger asChild>
                       <Button size="sm" variant="outline">
-                        <Text display={{ base: "none", md: "inline" }}>
-                          Изменить статус
-                        </Text>
                         <LuChevronDown />
                       </Button>
                     </Menu.Trigger>
@@ -275,9 +246,6 @@ export default function TicketHeader({
                 onClick={() => setShowCancelDialog(true)}
                 title="Отменить заявку"
               >
-                <Text display={{ base: "none", md: "inline" }}>
-                  Отменить тикет
-                </Text>
                 <LuX />
               </Button>
             )}

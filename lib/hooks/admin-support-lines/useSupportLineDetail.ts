@@ -84,8 +84,8 @@ export function useSupportLineDetail(lineId: number) {
       // Force re-sync with fresh data from server
       setIsInitialized(false);
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось обновить линию");
+    onError: (error) => {
+      handleApiError(error);
     },
   });
 
@@ -98,8 +98,8 @@ export function useSupportLineDetail(lineId: number) {
       toast.success("Специалист добавлен");
       setSelectedUserId(null);
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось добавить специалиста");
+    onError: (error) => {
+      handleApiError(error);
     },
   });
 
@@ -111,8 +111,8 @@ export function useSupportLineDetail(lineId: number) {
       queryClient.invalidateQueries({ queryKey: ["support-lines"] });
       toast.success("Специалист удален");
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось удалить специалиста");
+    onError: (error) => {
+      handleApiError(error);
     },
   });
 

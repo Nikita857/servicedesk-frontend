@@ -1,6 +1,6 @@
 import { assignmentApi } from "@/lib/api/assignments";
 import type { AssignmentResponse } from "@/types/assignment";
-import { formatDate, toast } from "@/lib/utils";
+import { formatDate, handleApiError, toast } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -84,8 +84,8 @@ export default function AssignmentPanel({
       toast.success("Назначение принято");
       invalidateCaches();
       onDecision?.();
-    } catch {
-      toast.error("Ошибка", "Не удалось принять назначение");
+    } catch (error) {
+      handleApiError(error);
     } finally {
       setIsAccepting(false);
     }
@@ -101,8 +101,8 @@ export default function AssignmentPanel({
       setShowRejectForm(false);
       setRejectReason("");
       onDecision?.();
-    } catch {
-      toast.error("Ошибка", "Не удалось отклонить назначение");
+    } catch (error) {
+      handleApiError(error);
     } finally {
       setIsRejecting(false);
     }

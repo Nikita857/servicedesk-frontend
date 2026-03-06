@@ -15,7 +15,7 @@ import {
 import { useState } from "react";
 import { LuSearch, LuBook, LuTicket, LuRefreshCw } from "react-icons/lu";
 import { searchAdminApi } from "@/lib/api/search";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 export default function SearchAdminPage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -34,8 +34,7 @@ export default function SearchAdminPage() {
         "Переиндексация завершена",
       );
     } catch (error) {
-      toast.error("Ошибка", "Не удалось запустить переиндексацию");
-      console.error(error);
+      handleApiError(error);
     } finally {
       setLoading(null);
     }
