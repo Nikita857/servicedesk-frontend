@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { LuX, LuSend, LuStar } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 interface RatingToastProps {
   ticketId: number;
@@ -48,7 +48,7 @@ export function RatingToast({ ticketId, onClose }: RatingToastProps) {
       );
       onClose();
     } catch (error) {
-      toast.error("Ошибка", "Не удалось отправить оценку");
+      handleApiError(error);
     } finally {
       setIsSubmitting(false);
     }

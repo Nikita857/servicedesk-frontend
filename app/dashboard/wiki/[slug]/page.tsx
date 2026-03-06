@@ -256,8 +256,8 @@ export default function WikiArticlePage({ params }: PageProps) {
                               attachment.id
                             );
                             window.open(downloadUrl, "_blank");
-                          } catch {
-                            toast.error("Ошибка", "Не удалось скачать файл");
+                          } catch (error) {
+                            handleApiError(error);
                           }
                         }}
                       >

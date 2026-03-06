@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ticketApi } from "@/lib/api/tickets";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 
 export function useCoExecutors(ticketId: number) {
   const queryClient = useQueryClient();
@@ -23,8 +23,8 @@ export function useCoExecutors(ticketId: number) {
       toast.success("Соисполнитель добавлен");
       invalidate();
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось добавить соисполнителя");
+    onError: (error) => {
+      handleApiError(error);
     },
   });
 
@@ -34,8 +34,8 @@ export function useCoExecutors(ticketId: number) {
       toast.success("Соисполнитель удалён");
       invalidate();
     },
-    onError: () => {
-      toast.error("Ошибка", "Не удалось удалить соисполнителя");
+    onError: (error) => {
+      handleApiError(error);
     },
   });
 

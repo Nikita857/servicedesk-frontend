@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { wikiApi, type WikiArticle } from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 import { useState } from "react";
 
 interface UseWikiArticleQueryReturn {
@@ -81,7 +81,7 @@ export function useWikiArticleQuery(slug: string): UseWikiArticleQueryReturn {
           context.previousArticle
         );
       }
-      toast.error("Ошибка", "Не удалось обновить лайк");
+      handleApiError(error);
     },
     onSettled: () => {
       setIsLiking(false);

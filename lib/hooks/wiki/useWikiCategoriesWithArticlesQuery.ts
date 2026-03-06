@@ -6,7 +6,7 @@ import {
   type WikiArticleListItem,
 } from "@/lib/api/wiki";
 import { queryKeys } from "@/lib/queryKeys";
-import { toast } from "@/lib/utils";
+import { handleApiError, toast } from "@/lib/utils";
 import { useState, useCallback } from "react";
 
 interface UseWikiCategoriesWithArticlesQueryOptions {
@@ -193,9 +193,7 @@ export function useWikiCategoriesWithArticlesQuery(
           context.previousData,
         );
       }
-      const errorMessage =
-        error instanceof Error ? error.message : "Не удалось обновить лайк";
-      toast.error("Ошибка", errorMessage);
+      handleApiError(error);
     },
     onSettled: () => {
       setLikingArticleId(null);

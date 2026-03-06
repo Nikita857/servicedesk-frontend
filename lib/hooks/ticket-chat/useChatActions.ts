@@ -70,7 +70,7 @@ export const useChatActions = (
       setMessages((prev) => prev.filter((m) => m.id !== msgId));
       toast.success("Сообщение удалено");
     } catch (error) {
-      toast.error("Ошибка", "Не удалось удалить сообщение");
+      handleApiError(error);
     }
   };
 
@@ -139,7 +139,7 @@ export const useChatActions = (
         } else if (axios.isAxiosError(error) && error.response) {
           handleApiError(error, { context: "Отправить файл" });
         } else {
-          toast.error("Ошибка", "Не удалось отправить файл");
+          handleApiError(error);
         }
       } finally {
         setIsUploading(false);

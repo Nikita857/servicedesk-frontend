@@ -101,7 +101,7 @@ export function ClosureConfirmationDialog({
       setShowRejectForm(false);
       setRejectReason("");
     } catch (error) {
-      toast.error("Ошибка", "Не удалось переоткрыть тикет");
+      handleApiError(error);
     } finally {
       setIsRejecting(false);
     }
