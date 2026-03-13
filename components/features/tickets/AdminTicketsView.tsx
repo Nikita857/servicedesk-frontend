@@ -12,20 +12,24 @@ import {
   Button,
   Center,
   NativeSelect,
+  Badge,
+  Icon,
 } from "@chakra-ui/react";
-import { LuPlus } from "react-icons/lu";
+import { LuPlus, LuUserCheck } from "react-icons/lu";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { supportLineApi } from "@/lib/api/supportLines";
 import { queryKeys } from "@/lib/queryKeys";
 import { TicketCard } from "./TicketCard";
+import { TicketCompactCard } from "./TicketCompactCard";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { SDPagination } from "@/components/ui/SDPagination";
-import { usePersistentPage } from "@/lib/hooks";
+import { usePersistentPage, useAuth } from "@/lib/hooks";
 import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
 
 const PAGE_SIZE = 7;
+const ASSIGNED_PAGE_SIZE = 5;
 const STORAGE_KEY_STATUS = "sd_filter_admin_status";
 const STORAGE_KEY_LINE = "sd_filter_admin_line";
 
@@ -35,6 +39,7 @@ function readStorage(key: string): string {
 }
 
 export function AdminTicketsView() {
+  const { user } = useAuth();
   const [page, setPage] = usePersistentPage("admin-tickets");
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
@@ -82,10 +87,83 @@ export function AdminTicketsView() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Tickets assigned to this admin
+  const [assignedPage, setAssignedPage] = useState(0);
+  const { data: assignedData, isLoading: assignedLoading } = useQuery({
+    queryKey: queryKeys.tickets.list({ filter: "assigned", page: assignedPage }),
+    queryFn: () => ticketApi.listAssigned(assignedPage, ASSIGNED_PAGE_SIZE),
+    staleTime: 30 * 1000,
+  });
+
   const tickets = data?.content ?? [];
+  const assignedTickets = assignedData?.content ?? [];
 
   return (
     <Box>
+      {/* Assigned to me block */}
+      <Box
+        mb={6}
+        bg="bg.surface"
+        border="1px solid"
+        borderColor="border.default"
+        borderRadius="xl"
+        overflow="hidden"
+      >
+        <Box
+          bg="orange.50"
+          borderBottomWidth="1px"
+          borderBottomColor="orange.200"
+          px={4}
+          py={3}
+          _dark={{
+            bg: "orange.900/20",
+            borderBottomColor: "orange.800",
+          }}
+        >
+          <HStack gap={2}>
+            <Icon as={LuUserCheck} boxSize={4} color="orange.600" />
+            <Heading size="sm" color="fg.default">
+              Назначено на меня
+            </Heading>
+            <Badge colorPalette="orange" variant="subtle" size="sm">
+              {assignedData?.page.totalElements ?? 0}
+            </Badge>
+          </HStack>
+        </Box>
+
+        <Box px={3} py={2}>
+          {assignedLoading ? (
+            <Flex justify="center" align="center" h="80px">
+              <Spinner size="md" />
+            </Flex>
+          ) : assignedTickets.length === 0 ? (
+            <Flex justify="center" align="center" h="80px">
+              <Text color="fg.muted" fontSize="sm">
+                Назначенных заявок нет
+              </Text>
+            </Flex>
+          ) : (
+            <VStack gap={1.5} align="stretch">
+              {assignedTickets.map((ticket) => (
+                <TicketCompactCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  currentUserName={user?.username}
+                />
+              ))}
+            </VStack>
+          )}
+        </Box>
+
+        {assignedData && assignedData.page.totalPages > 1 && (
+          <SDPagination
+            page={assignedData.page}
+            action={setAssignedPage}
+            size="xs"
+          />
+        )}
+      </Box>
+
       {/* Header */}
       <Flex mb={4} justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
