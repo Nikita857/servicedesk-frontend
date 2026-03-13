@@ -247,7 +247,7 @@ export default function SupportLineDetailPage({ params }: PageProps) {
 
           {/* Add specialist */}
           <VStack gap={3} mb={4} align="stretch">
-            <HStack gap={2}>
+            <Flex gap={2} direction={{ base: "column", md: "row" }} align={{ base: "stretch", md: "flex-end" }}>
               <Box flex={1}>
                 <Text fontSize="sm" fontWeight="medium" mb={1}>
                   Роль
@@ -321,21 +321,20 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                 </Select.Root>
               </Box>
 
-              <Box pt={5}>
-                <Button
-                  colorPalette="blue"
-                  onClick={() =>
-                    selection.selectedUserId &&
-                    addSpecialist(selection.selectedUserId)
-                  }
-                  disabled={!selection.selectedUserId}
-                  loading={isAddingSpecialist}
-                >
-                  <LuPlus />
-                  Добавить
-                </Button>
-              </Box>
-            </HStack>
+              <Button
+                colorPalette="blue"
+                onClick={() =>
+                  selection.selectedUserId &&
+                  addSpecialist(selection.selectedUserId)
+                }
+                disabled={!selection.selectedUserId}
+                loading={isAddingSpecialist}
+                flexShrink={0}
+              >
+                <LuPlus />
+                Добавить
+              </Button>
+            </Flex>
           </VStack>
 
           {/* Specialists list */}
@@ -394,10 +393,11 @@ function SpecialistRow({
       bg="bg.subtle"
       borderRadius="lg"
       justify="space-between"
-      align="center"
+      align="flex-start"
+      gap={2}
     >
-      <HStack gap={3}>
-        <Box>
+      <HStack gap={2} flexWrap="wrap" align="flex-start" flex={1} minW={0}>
+        <Box minW="120px">
           <Text fontWeight="medium">
             {specialist.fio || specialist.username}
           </Text>

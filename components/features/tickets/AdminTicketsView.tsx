@@ -100,53 +100,56 @@ export function AdminTicketsView() {
           </Text>
         </Box>
 
-        <HStack gap={3}>
-          {/* Filters */}
-          <NativeSelect.Root size="sm" w="160px">
-            <NativeSelect.Field
-              value={statusFilter}
-              onChange={(e) => handleStatusChange(e.target.value as TicketStatus | "")}
-            >
-              <option value="">Все статусы</option>
-              {(Object.keys(ticketStatusConfig) as TicketStatus[]).map((s) => (
-                <option key={s} value={s}>
-                  {ticketStatusConfig[s].label}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+        <Flex gap={2} direction={{ base: "column", sm: "row" }} align={{ base: "stretch", sm: "center" }}>
+          <HStack gap={2}>
+            <NativeSelect.Root size="sm" flex={1}>
+              <NativeSelect.Field
+                value={statusFilter}
+                onChange={(e) => handleStatusChange(e.target.value as TicketStatus | "")}
+              >
+                <option value="">Все статусы</option>
+                {(Object.keys(ticketStatusConfig) as TicketStatus[]).map((s) => (
+                  <option key={s} value={s}>
+                    {ticketStatusConfig[s].label}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
 
-          <NativeSelect.Root size="sm" w="160px">
-            <NativeSelect.Field
-              value={lineFilter}
-              onChange={(e) =>
-                handleLineChange(e.target.value === "" ? "" : Number(e.target.value))
-              }
-            >
-              <option value="">Все линии</option>
-              {lines?.map((line) => (
-                <option key={line.id} value={line.id}>
-                  {line.name}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+            <NativeSelect.Root size="sm" flex={1}>
+              <NativeSelect.Field
+                value={lineFilter}
+                onChange={(e) =>
+                  handleLineChange(e.target.value === "" ? "" : Number(e.target.value))
+                }
+              >
+                <option value="">Все линии</option>
+                {lines?.map((line) => (
+                  <option key={line.id} value={line.id}>
+                    {line.name}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </HStack>
 
-          <TicketStatusHelpModal />
-          <Link href="/dashboard/tickets/new">
-            <Button
-              size="sm"
-              bg="gray.900"
-              color="white"
-              _hover={{ bg: "gray.800" }}
-            >
-              <LuPlus />
-              Новая заявка
-            </Button>
-          </Link>
-        </HStack>
+          <HStack gap={2} justify={{ base: "flex-start", sm: "flex-end" }}>
+            <TicketStatusHelpModal />
+            <Link href="/dashboard/tickets/new">
+              <Button
+                size="sm"
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
+              >
+                <LuPlus />
+                Новая заявка
+              </Button>
+            </Link>
+          </HStack>
+        </Flex>
       </Flex>
 
       {/* Content */}

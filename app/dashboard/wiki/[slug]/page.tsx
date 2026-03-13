@@ -278,8 +278,8 @@ export default function WikiArticlePage({ params }: PageProps) {
           borderTopWidth="1px"
           borderColor="border.default"
           justify="space-between"
-          align="center"
-          flexWrap="wrap"
+          align={{ base: "stretch", sm: "center" }}
+          direction={{ base: "column", sm: "row" }}
           gap={2}
         >
           <Button
@@ -296,30 +296,32 @@ export default function WikiArticlePage({ params }: PageProps) {
             {article.likedByCurrentUser ? "В избранном" : "Нравится"} (
             {article.likeCount})
           </Button>
-          <Link href={`${API_BASE_URL}/wiki/${article.slug}/download`}>
-            <Button variant="ghost" aria-label="Скачать PDF версию статьи">
-              <LuDownload />
-            </Button>
-          </Link>
 
-          {canEdit && (
-            <HStack gap={2}>
-              <Link href={`/dashboard/wiki/${article.slug}/edit`}>
-                <Button variant="outline">
-                  <LuPencil />
-                  Редактировать
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                color="red.500"
-                onClick={handleDelete}
-                loading={isDeleting}
-              >
-                <LuTrash />
+          <HStack gap={2} justify={{ base: "flex-start", sm: "flex-end" }}>
+            <Link href={`${API_BASE_URL}/wiki/${article.slug}/download`}>
+              <Button variant="ghost" aria-label="Скачать PDF версию статьи">
+                <LuDownload />
               </Button>
-            </HStack>
-          )}
+            </Link>
+            {canEdit && (
+              <>
+                <Link href={`/dashboard/wiki/${article.slug}/edit`}>
+                  <Button variant="outline">
+                    <LuPencil />
+                    Редактировать
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  color="red.500"
+                  onClick={handleDelete}
+                  loading={isDeleting}
+                >
+                  <LuTrash />
+                </Button>
+              </>
+            )}
+          </HStack>
         </Flex>
 
         {/* Updated info */}

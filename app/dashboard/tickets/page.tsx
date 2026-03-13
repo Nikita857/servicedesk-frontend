@@ -13,10 +13,6 @@ export default function TicketsPage() {
   const isAdmin = userRoles.includes("ADMIN");
   const isUser = userRoles.includes("USER");
 
-  // WebSocket for assignments (real-time pending count updates)
-  useAssignmentsWebSocket();
-
-  
   // Switch views by user role
 
   if (isAdmin) {
