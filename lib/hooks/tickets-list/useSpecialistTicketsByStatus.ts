@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { queryKeys } from "@/lib/queryKeys";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
-import type { TicketStatus, PagedTicketList, Ticket } from "@/types/ticket";
+import type { TicketStatus, PagedTicketList } from "@/types/ticket";
 
 interface StatusTicketsVM {
   data: PagedTicketList | null;
@@ -53,34 +53,17 @@ export function useSpecialistTicketsByStatus(
     });
   }, []);
 
-  // Invalidate cache for a specific status
-  const invalidateByStatus = useCallback(
-    (status: TicketStatus) => {
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return (
-            Array.isArray(key) &&
-            key[0] === "tickets" &&
-            key[1] === "by-status" &&
-            key[2] === status
-          );
-        },
-      });
-    },
-    [queryClient],
-  );
-
-  // Subscribe to new tickets via WebSocket
+  // Subscribe to new tickets via WebSocket — broad invalidation so no event is missed
   useEffect(() => {
     if (!isConnected) return;
 
-    const unsubscribe = subscribeToNewTickets((ticket: Ticket) => {
-      invalidateByStatus(ticket.status as TicketStatus);
+    const unsubscribe = subscribeToNewTickets(() => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     });
 
     return () => unsubscribe();
-  }, [isConnected, subscribeToNewTickets, invalidateByStatus]);
+  }, [isConnected, subscribeToNewTickets, queryClient]);
 
   // Helper to create query for a status
   const useStatusQuery = (status: SpecialistTicketStatus) => {
@@ -114,6 +97,15 @@ export function useSpecialistTicketsByStatus(
     escalatedTickets.actions.refetch();
     closedTickets.actions.refetch();
   }, [newTickets, openTickets, pendingTickets, escalatedTickets, closedTickets]);
+
+  // Refetch everything when WebSocket reconnects to recover missed events
+  const prevConnectedRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (isConnected && prevConnectedRef.current === false) {
+      refetchAll();
+    }
+    prevConnectedRef.current = isConnected;
+  }, [isConnected, refetchAll]);
 
   return {
     NEW: newTickets,

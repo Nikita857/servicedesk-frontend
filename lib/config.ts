@@ -2,7 +2,9 @@
 // Все API маршруты должны использовать эти константы
 
 // Базовый URL сервера (без /api/v1)
-export const API_SERVER_URL = "http://192.168.0.111:8080";
+// В проде задаётся через NEXT_PUBLIC_API_SERVER_URL (передаётся как build arg в Docker)
+// В разработке — создай .env.local с NEXT_PUBLIC_API_SERVER_URL=http://192.168.0.71:8080
+export const API_SERVER_URL = process.env.NEXT_PUBLIC_API_SERVER_URL ?? "http://192.168.0.71:8080";
 
 // Базовый URL API (с /api/v1)
 export const API_BASE_URL = `${API_SERVER_URL}/api/v1`;

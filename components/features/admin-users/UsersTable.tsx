@@ -11,6 +11,8 @@ import {
   IconButton,
   Button,
   Text,
+  Menu,
+  Portal,
 } from "@chakra-ui/react";
 import { memo } from "react";
 import {
@@ -24,6 +26,7 @@ import {
   LuBuilding2,
   LuChevronLeft,
   LuChevronRight,
+  LuChevronDown,
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { userRolesBadges as userRolesConfig } from "@/types/auth";
@@ -181,60 +184,40 @@ const UsersTable = memo(function UsersTable({
                       </HStack>
                     </Table.Cell>
                     <Table.Cell textAlign="right">
-                      <HStack gap={1} justify="flex-end">
-                        <Tooltip content="Редактировать ФИО">
-                          <IconButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditFio(u)}
-                            aria-label="Редактировать ФИО"
-                          >
-                            <LuPencil />
+                      <Menu.Root>
+                        <Menu.Trigger asChild>
+                          <IconButton variant="ghost" size="sm" aria-label="Действия">
+                            <LuChevronDown />
                           </IconButton>
-                        </Tooltip>
-                        <Tooltip content="Организация (отдел/должность)">
-                          <IconButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditOrg(u)}
-                            aria-label="Редактировать организацию"
-                          >
-                            <LuBuilding2 />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip content="Управление ролями">
-                          <IconButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditRoles(u)}
-                            aria-label="Роли"
-                          >
-                            <LuShield />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip content="Сменить пароль">
-                          <IconButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openChangePassword(u)}
-                            aria-label="Сменить пароль"
-                          >
-                            <LuKey />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip content="Удалить">
-                          <IconButton
-                            variant="ghost"
-                            size="sm"
-                            colorPalette="red"
-                            onClick={() => openDelete(u)}
-                            aria-label="Удалить"
-                            disabled={u.id === user?.id}
-                          >
-                            <LuTrash />
-                          </IconButton>
-                        </Tooltip>
-                      </HStack>
+                        </Menu.Trigger>
+                        <Portal>
+                          <Menu.Positioner>
+                            <Menu.Content minW="200px">
+                              <Menu.Item value="edit-fio" onClick={() => openEditFio(u)}>
+                                <LuPencil /> Редактировать ФИО
+                              </Menu.Item>
+                              <Menu.Item value="edit-org" onClick={() => openEditOrg(u)}>
+                                <LuBuilding2 /> Организация
+                              </Menu.Item>
+                              <Menu.Item value="edit-roles" onClick={() => openEditRoles(u)}>
+                                <LuShield /> Управление ролями
+                              </Menu.Item>
+                              <Menu.Item value="change-password" onClick={() => openChangePassword(u)}>
+                                <LuKey /> Сменить пароль
+                              </Menu.Item>
+                              <Menu.Separator />
+                              <Menu.Item
+                                value="delete"
+                                color="red.500"
+                                onClick={() => openDelete(u)}
+                                disabled={u.id === user?.id}
+                              >
+                                <LuTrash /> Удалить
+                              </Menu.Item>
+                            </Menu.Content>
+                          </Menu.Positioner>
+                        </Portal>
+                      </Menu.Root>
                     </Table.Cell>
                   </Table.Row>
                 ))}

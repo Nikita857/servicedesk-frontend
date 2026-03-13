@@ -353,13 +353,14 @@ export default function EditWikiArticlePage({ params }: PageProps) {
                       py={2}
                       borderRadius="md"
                       justify="space-between"
+                      overflow="hidden"
                     >
-                      <HStack gap={2}>
-                        <LuFile size={16} />
-                        <Text fontSize="sm" truncate maxW="300px">
+                      <HStack gap={2} flex={1} minW={0}>
+                        <LuFile size={16} style={{ flexShrink: 0 }} />
+                        <Text fontSize="sm" truncate flex={1}>
                           {attachment.filename}
                         </Text>
-                        <Text fontSize="xs" color="fg.muted">
+                        <Text fontSize="xs" color="fg.muted" flexShrink={0}>
                           ({formatFileSize(attachment.fileSize)})
                         </Text>
                       </HStack>
