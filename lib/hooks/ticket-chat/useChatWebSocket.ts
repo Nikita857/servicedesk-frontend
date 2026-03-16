@@ -1,16 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useAuthStore } from "@/stores";
-import { messageApi } from "@/lib/api/messages";
-import { useWebSocket } from "@/lib/providers";
-import type { Message, MessageAttachment } from "@/types/message";
-import type {
-  ChatMessageWS,
-  TypingIndicator,
-  AttachmentWS,
-  ReadReceiptWS,
-} from "@/types/websocket";
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import {useAuthStore} from "@/stores";
+import {messageApi} from "@/lib/api/messages";
+import {useWebSocket} from "@/lib/providers";
+import type {Message, MessageAttachment} from "@/types/message";
+import type {AttachmentWS, ChatMessageWS, ReadReceiptWS, TypingIndicator,} from "@/types/websocket";
 import {SenderType} from "@/types";
 
 interface TypingUser {
@@ -67,7 +62,9 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     if (isConnected) {
       sendReadReceipt(ticketId);
     } else {
-      messageApi.markAsRead(ticketId);
+      messageApi.markAsRead(ticketId).catch((err) => {
+        console.warn("[Chat] HTTP markAsRead fallback failed:", err);
+      });
     }
   }, [ticketId, isConnected, sendReadReceipt]);
 
@@ -163,21 +160,26 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
         const newAttachments = newMsg.attachments;
         const existingAttachments = existingMsg.attachments;
 
-        // Стратегия:
-        // Если пришедшее сообщение имеет вложения - используем их.
-        // Если нет - оставляем старые (чтобы не затереть оптимистично добавленные).
+        // Сохраняем статус прочтения из существующего сообщения —
+        // WS-дубликат всегда несёт readByUser/readBySpecialist = false,
+        // что может перезатереть обновление от read receipt.
+        const readByUser = existingMsg.readByUser || newMsg.readByUser;
+        const readBySpecialist = existingMsg.readBySpecialist || newMsg.readBySpecialist;
 
         if (newAttachments && newAttachments.length > 0) {
           updated[existingIndex] = {
             ...existingMsg,
             ...newMsg,
+            readByUser,
+            readBySpecialist,
             attachments: newAttachments,
           };
         } else {
-          // Оставляем существующие
           updated[existingIndex] = {
             ...existingMsg,
             ...newMsg,
+            readByUser,
+            readBySpecialist,
             attachments: existingAttachments || [],
           };
         }
@@ -239,128 +241,122 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   useEffect(() => {
     if (!isConnected) return;
 
-    const unsubscribe = subscribeToTyping(
-      ticketId,
-      (indicator: TypingIndicator) => {
-        if (indicator.userId === user?.id) return;
+    return subscribeToTyping(
+        ticketId,
+        (indicator: TypingIndicator) => {
+          if (indicator.userId === user?.id) return;
 
-        if (indicator.typing) {
-          setTypingUser({ fio: indicator.fio, username: indicator.username });
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(
-            () => setTypingUser(null),
-            3000
-          );
-        } else {
-          setTypingUser(null);
+          if (indicator.typing) {
+            setTypingUser({fio: indicator.fio, username: indicator.username});
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(
+                () => setTypingUser(null),
+                3000
+            );
+          } else {
+            setTypingUser(null);
+          }
         }
-      }
     );
-
-    return unsubscribe;
   }, [isConnected, ticketId, subscribeToTyping, user?.id]);
 
   // Подписка на вложения
   useEffect(() => {
     if (!isConnected) return;
 
-    const unsubscribe = subscribeToAttachments(
-      ticketId,
-      (attachment: AttachmentWS) => {
+    return subscribeToAttachments(
+        ticketId,
+        (attachment: AttachmentWS) => {
 
-        // Конвертация AttachmentWS в MessageAttachment
-        const newAttachment: MessageAttachment = {
-          id: attachment.id,
-          filename: attachment.filename,
-          url: attachment.url,
-          fileSize: attachment.fileSize,
-          mimeType: attachment.mimeType,
-          type: attachment.type,
-        };
+          // Конвертация AttachmentWS в MessageAttachment
+          const newAttachment: MessageAttachment = {
+            id: attachment.id,
+            filename: attachment.filename,
+            url: attachment.url,
+            fileSize: attachment.fileSize,
+            mimeType: attachment.mimeType,
+            type: attachment.type,
+          };
 
-        const messageId = attachment.messageId;
-        if (messageId !== null && messageId !== undefined) {
-          setMessages((prev) => {
-            const messageExists = prev.some((m) => m.id === messageId);
+          const messageId = attachment.messageId;
+          if (messageId !== null && messageId !== undefined) {
+            setMessages((prev) => {
+              const messageExists = prev.some((m) => m.id === messageId);
 
-            if (!messageExists) {
-              // Сообщение еще не пришло, буферизируем вложение
-              const existing =
-                pendingAttachmentsRef.current.get(messageId) || [];
-              pendingAttachmentsRef.current.set(messageId, [
-                ...existing,
-                newAttachment,
-              ]);
+              if (!messageExists) {
+                // Сообщение еще не пришло, буферизируем вложение
+                const existing =
+                    pendingAttachmentsRef.current.get(messageId) || [];
+                pendingAttachmentsRef.current.set(messageId, [
+                  ...existing,
+                  newAttachment,
+                ]);
 
-              // Устанавливаем таймаут очистки (60 секунд) чтобы избежать утечек памяти
-              // Если сообщение не придет за 60 сек, удаляем буфер
-              if (!pendingTimeoutsRef.current.has(messageId)) {
-                const timeoutId = setTimeout(() => {
-                  pendingAttachmentsRef.current.delete(messageId);
-                  pendingTimeoutsRef.current.delete(messageId);
-                }, 60000);
-                pendingTimeoutsRef.current.set(messageId, timeoutId);
+                // Устанавливаем таймаут очистки (60 секунд) чтобы избежать утечек памяти
+                // Если сообщение не придет за 60 сек, удаляем буфер
+                if (!pendingTimeoutsRef.current.has(messageId)) {
+                  const timeoutId = setTimeout(() => {
+                    pendingAttachmentsRef.current.delete(messageId);
+                    pendingTimeoutsRef.current.delete(messageId);
+                  }, 60000);
+                  pendingTimeoutsRef.current.set(messageId, timeoutId);
+                }
+
+                return prev;
               }
 
-              return prev;
-            }
+              return prev.map((msg) => {
+                if (msg.id !== messageId) return msg;
 
-            return prev.map((msg) => {
-              if (msg.id !== messageId) return msg;
+                // Проверяем, есть ли уже такое вложение (по id)
+                const existingIds = new Set(
+                    (msg.attachments || []).map((a) => a.id)
+                );
+                if (existingIds.has(newAttachment.id)) {
+                  return msg;
+                }
 
-              // Проверяем, есть ли уже такое вложение (по id)
-              const existingIds = new Set(
-                (msg.attachments || []).map((a) => a.id)
-              );
-              if (existingIds.has(newAttachment.id)) {
-                return msg;
-              }
-
-              return {
-                ...msg,
-                attachments: [...(msg.attachments || []), newAttachment],
-              };
+                return {
+                  ...msg,
+                  attachments: [...(msg.attachments || []), newAttachment],
+                };
+              });
             });
-          });
 
-          // Принудительное обновление сообщений для гарантии консистентности (fail-safe)
-          // Добавляем задержку, чтобы транзакция на бэке успела закоммититься
-          setTimeout(() => {
-            fetchMessages();
-          }, 1000);
+            // Принудительное обновление сообщений для гарантии консистентности (fail-safe)
+            // Добавляем задержку, чтобы транзакция на бэке успела закоммититься
+            setTimeout(() => {
+              fetchMessages();
+            }, 1000);
+          }
         }
-      }
     );
-
-    return unsubscribe;
   }, [isConnected, ticketId, subscribeToAttachments, fetchMessages]);
 
   // Подписка на read receipts — обновляем readByUser/readBySpecialist в стейте
   useEffect(() => {
     if (!isConnected) return;
 
-    const unsubscribe = subscribeToReadReceipts(
-      ticketId,
-      (receipt: ReadReceiptWS) => {
-        // Не обновляем свои собственные receipts
-        if (receipt.userId === user?.id) return;
+    return subscribeToReadReceipts(
+        ticketId,
+        (receipt: ReadReceiptWS) => {
+          // Не обновляем свои собственные receipts
+          if (receipt.userId === user?.id) return;
 
-        setMessages((prev) =>
-          prev.map((msg) => {
-            // Обновляем только чужие сообщения (которые отправил текущий пользователь)
-            // receipt от specialist → обновляем readBySpecialist
-            // receipt от user → обновляем readByUser
-            if (receipt.specialist) {
-              return msg.readBySpecialist ? msg : { ...msg, readBySpecialist: true };
-            } else {
-              return msg.readByUser ? msg : { ...msg, readByUser: true };
-            }
-          })
-        );
-      }
+          setMessages((prev) =>
+              prev.map((msg) => {
+                // Обновляем только чужие сообщения (которые отправил текущий пользователь)
+                // receipt от specialist → обновляем readBySpecialist
+                // receipt от user → обновляем readByUser
+                if (receipt.specialist) {
+                  return msg.readBySpecialist ? msg : {...msg, readBySpecialist: true};
+                } else {
+                  return msg.readByUser ? msg : {...msg, readByUser: true};
+                }
+              })
+          );
+        }
     );
-
-    return unsubscribe;
   }, [isConnected, ticketId, subscribeToReadReceipts, user?.id]);
 
   // Авто-пометка прочитанными при получении чужого сообщения (только если вкладка видна)

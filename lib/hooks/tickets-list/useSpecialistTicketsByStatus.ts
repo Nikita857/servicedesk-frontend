@@ -72,6 +72,7 @@ export function useSpecialistTicketsByStatus(
       queryKey: queryKeys.tickets.byStatus(status, page, pageSize),
       queryFn: () => ticketApi.listByStatus(status, page, pageSize),
       staleTime: 30 * 1000,
+      refetchInterval: 60 * 1000,
     });
 
     return {

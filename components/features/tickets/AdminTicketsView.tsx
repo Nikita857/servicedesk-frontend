@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { LuPlus, LuUserCheck } from "react-icons/lu";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { supportLineApi } from "@/lib/api/supportLines";
 import { queryKeys } from "@/lib/queryKeys";
@@ -27,6 +27,8 @@ import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { SDPagination } from "@/components/ui/SDPagination";
 import { usePersistentPage, useAuth } from "@/lib/hooks";
 import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
+import { useWebSocket } from "@/lib/providers";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 7;
 const ASSIGNED_PAGE_SIZE = 5;
@@ -41,6 +43,9 @@ function readStorage(key: string): string {
 export function AdminTicketsView() {
   const { user } = useAuth();
   const [page, setPage] = usePersistentPage("admin-tickets");
+  const queryClient = useQueryClient();
+  const { isConnected, subscribeToNewTickets } = useWebSocket();
+  const prevConnectedRef = useRef<boolean | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
     () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | ""
@@ -64,6 +69,23 @@ export function AdminTicketsView() {
     setPage(0);
   }, [setPage]);
 
+  // Инвалидируем кеш при появлении нового тикета через WS
+  useEffect(() => {
+    if (!isConnected) return;
+    const unsubscribe = subscribeToNewTickets(() => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    });
+    return unsubscribe;
+  }, [isConnected, subscribeToNewTickets, queryClient]);
+
+  // Перезапрашиваем данные при восстановлении WS-соединения (могли пропустить события)
+  useEffect(() => {
+    if (isConnected && prevConnectedRef.current === false) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    }
+    prevConnectedRef.current = isConnected;
+  }, [isConnected, queryClient]);
+
   const { data, isLoading, isFetching } = useQuery({
     queryKey: queryKeys.tickets.list({
       filter: "all",
@@ -79,6 +101,7 @@ export function AdminTicketsView() {
         lineFilter || undefined
       ),
     staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
   const { data: lines } = useQuery({
@@ -93,6 +116,7 @@ export function AdminTicketsView() {
     queryKey: queryKeys.tickets.list({ filter: "assigned", page: assignedPage }),
     queryFn: () => ticketApi.listAssigned(assignedPage, ASSIGNED_PAGE_SIZE),
     staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
   const tickets = data?.content ?? [];
