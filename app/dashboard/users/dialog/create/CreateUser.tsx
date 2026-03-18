@@ -1,6 +1,7 @@
 import { DataSelect } from "@/components/ui";
 import { Tooltip } from "@/components/ui/tooltip";
 import { adminApi } from "@/lib/api/admin";
+import { fioToUsername } from "@/lib/utils";
 import type { CreateUserRequest } from "@/types/admin";
 import { SenderType, userRolesBadges } from "@/types";
 import {
@@ -45,6 +46,8 @@ export default function CreateUser({
     positionId: null,
   });
 
+  const [usernameManuallyEdited, setUsernameManyallyEdited] = useState(false)
+
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
@@ -59,6 +62,8 @@ export default function CreateUser({
         departmentId: null,
         positionId: null,
       });
+
+      setUsernameManyallyEdited(false)
     }
   }, [isOpen]);
 
@@ -111,6 +116,7 @@ export default function CreateUser({
 
   const handleSubmit = () => {
     if (!newUser.username || !newUser.password) {
+      setNewUser({...newUser, email: null})
       toast.error("Ошибка", "Заполните обязательные поля");
       return;
     }
@@ -128,49 +134,57 @@ export default function CreateUser({
             </Dialog.Header>
             <Dialog.Body>
               <VStack gap={4}>
+
+                <Field.Root>
+                  <Field.Label>ФИО</Field.Label>
+                  <Input
+                    value={newUser.fio || ""}
+                    onChange={(e) => {
+                      const fio = e.target.value;
+                      setNewUser({
+                        ...newUser, fio: fio,
+                        username: usernameManuallyEdited ? newUser.username : fioToUsername(fio),
+                      })
+                      }
+                    }
+                    placeholder="Иванов Иван Иванович"
+                  />
+                </Field.Root>
+
                 <Field.Root>
                   <Field.Label>Username *</Field.Label>
                   <Input
-                    value={newUser.username || ""}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, username: e.target.value })
-                    }
-                    placeholder="username"
+                      value={newUser.username || ""}
+                      onChange={(e) => {
+                        setNewUser({ ...newUser, username: e.target.value })
+                        setUsernameManyallyEdited(true)
+                        }
+                      }
+                      placeholder="username"
                   />
                 </Field.Root>
 
                 <Field.Root>
                   <Field.Label>Пароль *</Field.Label>
                   <Input
-                    type="password"
-                    value={newUser.password || ""}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, password: e.target.value })
-                    }
-                    placeholder="••••••••"
+                      type="password"
+                      value={newUser.password || ""}
+                      onChange={(e) =>
+                          setNewUser({ ...newUser, password: e.target.value })
+                      }
+                      placeholder="••••••••"
                   />
                 </Field.Root>
 
                 <Field.Root>
                   <Field.Label>E-mail</Field.Label>
                   <Input
-                    type="email"
-                    value={newUser.email || ""}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, email: e.target.value })
-                    }
-                    placeholder="E-mail"
-                  />
-                </Field.Root>
-
-                <Field.Root>
-                  <Field.Label>ФИО</Field.Label>
-                  <Input
-                    value={newUser.fio || ""}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, fio: e.target.value })
-                    }
-                    placeholder="Иванов Иван Иванович"
+                      type="email"
+                      value={newUser.email || ""}
+                      onChange={(e) =>
+                          setNewUser({ ...newUser, email: e.target.value })
+                      }
+                      placeholder="E-mail"
                   />
                 </Field.Root>
 

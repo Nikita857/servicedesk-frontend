@@ -11,3 +11,6 @@ export {
 export {
   validateFile,
 } from "./fileValidation";
+export {
+  fioToUsername
+} from "./transliterate"
