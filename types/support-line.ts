@@ -1,4 +1,5 @@
 import type { AssignmentMode } from "./ticket";
+import type { SenderType } from "./auth";
 
 export type ActivityStatus =
   | "AVAILABLE"
@@ -24,18 +25,30 @@ export interface SupportLineListResponse {
   slaMinutes: number;
   specialistCount: number;
   displayOrder: number;
+  role: SenderType | null;
+  specialistIds: number[];
 }
 
 export interface SupportLineDetail extends SupportLineListResponse {
   assignmentMode: AssignmentMode;
-  targetRole: string;
   specialists: Specialist[];
   telegramChatId?: number | null;
 }
 
-export interface UpdateSupportLineRequest {
+export interface CreateSupportLineRequest {
+  name: string;
   description?: string;
   slaMinutes?: number;
   assignmentMode?: AssignmentMode;
+  role: SenderType;
+  displayOrder?: number;
+}
+
+export interface UpdateSupportLineRequest {
+  name?: string;
+  description?: string;
+  slaMinutes?: number;
+  assignmentMode?: AssignmentMode;
+  role?: SenderType;
   displayOrder?: number;
 }

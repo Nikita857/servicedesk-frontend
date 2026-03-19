@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import {
   Box,
   Flex,
@@ -16,6 +16,7 @@ import {
   IconButton,
   Portal,
   createListCollection,
+  Dialog,
 } from "@chakra-ui/react";
 import { Select } from "@chakra-ui/react";
 import { LuSave, LuUsers, LuTrash2, LuPlus, LuCheck } from "react-icons/lu";
@@ -23,6 +24,7 @@ import { BackButton } from "@/components/ui";
 import { Specialist } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
 import { userRolesBadges, activityStatusConfig } from "@/types/auth";
+import type { SenderType } from "@/types/auth";
 import { AssignmentMode, assignmentModeConfig } from "@/types/ticket";
 import { Tooltip } from "@/components/ui/tooltip";
 
@@ -39,6 +41,10 @@ const roleCollection = createListCollection({
   items: availableRoles,
 });
 
+const lineRoleCollection = createListCollection({
+  items: availableRoles,
+});
+
 const assignmentModeCollection = createListCollection({
   items: Object.entries(assignmentModeConfig).map(([value, label]) => ({
     label,
@@ -46,9 +52,19 @@ const assignmentModeCollection = createListCollection({
   })),
 });
 
+function formatSla(minutes: number): string {
+  if (minutes < 60) return `${minutes} мин`;
+  if (minutes % (60 * 24) === 0) return `${minutes / (60 * 24)} д`;
+  if (minutes % 60 === 0) return `${minutes / 60} ч`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h} ч ${m} мин`;
+}
+
 export default function SupportLineDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const lineId = parseInt(id);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const {
     line,
@@ -60,9 +76,11 @@ export default function SupportLineDetailPage({ params }: PageProps) {
     updateLine,
     addSpecialist,
     removeSpecialist,
+    deleteLine,
     isUpdating,
     isAddingSpecialist,
     isRemovingSpecialist,
+    isDeletingLine,
   } = useSupportLineDetail(lineId);
 
   const specialistCollection = createListCollection({
@@ -104,17 +122,64 @@ export default function SupportLineDetailPage({ params }: PageProps) {
           </Text>
         </Box>
 
-        <Button
-          bg="gray.900"
-          color="white"
-          _hover={{ bg: "gray.800" }}
-          onClick={() => updateLine()}
-          loading={isUpdating}
-          disabled={!form.isDirty}
-        >
-          <LuSave />
-          Сохранить
-        </Button>
+        <HStack gap={2}>
+          <Button
+            bg="gray.900"
+            color="white"
+            _hover={{ bg: "gray.800" }}
+            onClick={() => updateLine()}
+            loading={isUpdating}
+            disabled={!form.isDirty}
+          >
+            <LuSave />
+            Сохранить
+          </Button>
+
+          <Dialog.Root
+            open={isDeleteDialogOpen}
+            onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}
+            lazyMount
+            unmountOnExit
+          >
+            <Dialog.Trigger asChild>
+              <Button colorPalette="red" variant="outline">
+                <LuTrash2 />
+                Удалить
+              </Button>
+            </Dialog.Trigger>
+            <Portal>
+              <Dialog.Backdrop />
+              <Dialog.Positioner>
+                <Dialog.Content maxW="400px">
+                  <Dialog.Header>
+                    <Dialog.Title>Удалить линию?</Dialog.Title>
+                  </Dialog.Header>
+                  <Dialog.Body>
+                    <Text>
+                      Линия <Text as="strong">«{line.name}»</Text> будет
+                      деактивирована. Данные сохранятся в базе.
+                    </Text>
+                  </Dialog.Body>
+                  <Dialog.Footer>
+                    <Dialog.ActionTrigger asChild>
+                      <Button variant="outline">Отмена</Button>
+                    </Dialog.ActionTrigger>
+                    <Button
+                      colorPalette="red"
+                      onClick={() => {
+                        deleteLine();
+                        setIsDeleteDialogOpen(false);
+                      }}
+                      loading={isDeletingLine}
+                    >
+                      Удалить
+                    </Button>
+                  </Dialog.Footer>
+                </Dialog.Content>
+              </Dialog.Positioner>
+            </Portal>
+          </Dialog.Root>
+        </HStack>
       </Flex>
 
       <VStack gap={6} align="stretch">
@@ -143,6 +208,35 @@ export default function SupportLineDetailPage({ params }: PageProps) {
               />
             </Box>
 
+            <Box>
+              <Text fontWeight="medium" mb={2}>
+                Роль специалистов
+              </Text>
+              <Select.Root
+                collection={lineRoleCollection}
+                value={form.role ? [form.role] : []}
+                onValueChange={(e) =>
+                  form.setRole((e.value[0] as SenderType) || null)
+                }
+              >
+                <Select.Trigger>
+                  <Select.ValueText placeholder="Не задана" />
+                </Select.Trigger>
+                <Select.Positioner>
+                  <Select.Content>
+                    {lineRoleCollection.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                Определяет, в каких сценариях маршрутизации участвует линия
+              </Text>
+            </Box>
+
             <HStack gap={4}>
               <Box flex={1}>
                 <Text fontWeight="medium" mb={2}>
@@ -156,6 +250,9 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   }
                   min={1}
                 />
+                <Text fontSize="xs" color="fg.muted" mt={1}>
+                  {formatSla(form.slaMinutes)}
+                </Text>
               </Box>
 
               <Box flex={1}>
@@ -369,24 +466,6 @@ function SpecialistRow({
   onRemove: () => void;
   isRemoving: boolean;
 }) {
-  const statusColors: Record<string, string> = {
-    AVAILABLE: "green",
-    BUSY: "yellow",
-    OFFLINE: "gray",
-    ON_BREAK: "orange",
-    UNAVAILABLE: "red",
-    TECHNICAL_ISSUE: "red",
-  };
-
-  const statusLabels: Record<string, string> = {
-    AVAILABLE: "Доступен",
-    BUSY: "Занят",
-    OFFLINE: "Не в сети",
-    ON_BREAK: "Перерыв",
-    UNAVAILABLE: "Недоступен",
-    TECHNICAL_ISSUE: "Тех. проблема",
-  };
-
   return (
     <Flex
       p={3}

@@ -11,7 +11,6 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import {
-  LuBell,
   LuLogOut,
   LuSettings,
   LuUser,
@@ -26,6 +25,7 @@ import { userRolesBadges } from "@/types/auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { ActivityStatusDropdown } from "./ActivityStatusDropdown";
 import { Tooltip } from "@/components/ui/tooltip";
+import { NotificationBell } from "@/components/features/notification/NotificationBell";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -113,16 +113,7 @@ export function Header({
           <ThemeSwitcher />
 
           {/* Notifications */}
-          <IconButton
-            aria-label="Уведомления"
-            variant="ghost"
-            size="sm"
-            color="fg.muted"
-            _hover={{ bg: "bg.subtle", color: "fg.default" }}
-            data-onboarding-id="onboarding-notifications"
-          >
-            <LuBell size={20} />
-          </IconButton>
+          <NotificationBell />
 
           {/* Profile Menu */}
           <Menu.Root>

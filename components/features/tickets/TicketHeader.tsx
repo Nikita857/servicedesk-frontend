@@ -161,11 +161,12 @@ export default function TicketHeader({
                     const updated = await ticketApi.takeTicket(ticket.id);
                     setTicket(updated);
                   } catch (error) {
-                    handleApiError(error, { context: "взять тикет в работу" });
+                    handleApiError(error, { context: "взять заявку в работу" });
                   }
                 }}
               >
                 <LuPlay />
+                Взять в работу
               </Button>
             )}
 

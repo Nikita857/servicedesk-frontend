@@ -93,4 +93,12 @@ export const queryKeys = {
       [...queryKeys.stats.all, "by-line", lineId] as const,
     global: () => [...queryKeys.stats.all, "global"] as const,
   },
+
+  //   Notifications
+  notifications: {
+    all: ["notifications"] as const,
+    list: () => [...queryKeys.notifications.all, "list"] as const,
+    unreadCount: () => [...queryKeys.notifications.all, "unread-count"] as const,
+
+  }
 } as const;

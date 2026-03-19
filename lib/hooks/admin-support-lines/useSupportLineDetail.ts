@@ -1,21 +1,25 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { supportLineApi } from "@/lib/api/supportLines";
 import { adminApi } from "@/lib/api/admin";
 import { handleApiError, toast } from "@/lib/utils";
 import { AssignmentMode } from "@/types/ticket";
+import { SenderType } from "@/types/auth";
 
 /**
  * Hook for managing the detail and editing of a specific support line.
  */
 export function useSupportLineDetail(lineId: number) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   // Form state
   const [description, setDescription] = useState("");
   const [slaMinutes, setSlaMinutes] = useState(60);
   const [assignmentMode, setAssignmentMode] =
     useState<AssignmentMode>("FIRST_AVAILABLE");
+  const [role, setRole] = useState<SenderType | null>(null);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [telegramChatId, setTelegramChatId] = useState<string>("");
   const [isFormDirty, setIsFormDirty] = useState(false);
@@ -46,6 +50,7 @@ export function useSupportLineDetail(lineId: number) {
       setDescription(line.description || "");
       setSlaMinutes(line.slaMinutes);
       setAssignmentMode(line.assignmentMode);
+      setRole(line.role);
       setDisplayOrder(line.displayOrder);
       setTelegramChatId(line.telegramChatId?.toString() || "");
       setIsInitialized(true);
@@ -66,6 +71,7 @@ export function useSupportLineDetail(lineId: number) {
         description,
         slaMinutes,
         assignmentMode,
+        role: role ?? undefined,
         displayOrder,
       }),
     onSuccess: async (data) => {
@@ -127,11 +133,40 @@ export function useSupportLineDetail(lineId: number) {
     },
   });
 
+  const deleteLineMutation = useMutation({
+    mutationFn: () => supportLineApi.deleteLine(lineId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
+      toast.success("Линия удалена");
+      router.push("/dashboard/admin/support-lines");
+    },
+    onError: (error) => {
+      handleApiError(error);
+    },
+  });
+
+  // Query all lines to get specialist IDs across all lines
+  const { data: allLines } = useQuery({
+    queryKey: ["support-lines"],
+    queryFn: () => supportLineApi.getAll(),
+    staleTime: 30 * 1000,
+  });
+
   // --- Derived State ---
+
+  // Collect specialist IDs from OTHER lines
+  const otherLinesSpecialistIds = new Set(
+    (allLines || [])
+      .filter((l) => l.id !== lineId)
+      .flatMap((l) => l.specialistIds || []),
+  );
 
   const availableSpecialists =
     availableUsers?.content.filter(
-      (u) => u.active && !line?.specialists.some((s) => s.id === u.id),
+      (u) =>
+        u.active &&
+        !line?.specialists.some((s) => s.id === u.id) &&
+        !otherLinesSpecialistIds.has(u.id),
     ) || [];
 
   const handleFieldChange = useCallback(
@@ -154,12 +189,14 @@ export function useSupportLineDetail(lineId: number) {
       description,
       slaMinutes,
       assignmentMode,
+      role,
       displayOrder,
       isDirty: isFormDirty,
       setDescription: (val: string) => handleFieldChange(setDescription, val),
       setSlaMinutes: (val: number) => handleFieldChange(setSlaMinutes, val),
       setAssignmentMode: (val: AssignmentMode) =>
         handleFieldChange(setAssignmentMode, val),
+      setRole: (val: SenderType | null) => handleFieldChange(setRole, val),
       setDisplayOrder: (val: number) => handleFieldChange(setDisplayOrder, val),
       telegramChatId,
       setTelegramChatId: (val: string) =>
@@ -182,12 +219,14 @@ export function useSupportLineDetail(lineId: number) {
     addSpecialist: (userId: number) => addSpecialistMutation.mutate(userId),
     removeSpecialist: (userId: number) =>
       removeSpecialistMutation.mutate(userId),
+    deleteLine: () => deleteLineMutation.mutate(),
 
     // Loading States
     isUpdating: updateMutation.isPending,
     isAddingSpecialist: addSpecialistMutation.isPending,
     isRemovingSpecialist: removeSpecialistMutation.isPending,
     isLinkingTelegram: linkTelegramMutation.isPending,
+    isDeletingLine: deleteLineMutation.isPending,
     linkTelegram: (chatId: number) => linkTelegramMutation.mutate(chatId),
   };
 }

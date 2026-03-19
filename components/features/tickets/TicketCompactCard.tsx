@@ -2,7 +2,7 @@
 
 import { Box, Flex, Text, Badge, HStack } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import type { TicketListResponse } from "@/types/ticket";
+import {TicketListResponse, ticketStatusConfig} from "@/types/ticket";
 import { ticketPriorityConfig } from "@/types/ticket";
 import { LuCheck, LuX } from "react-icons/lu";
 import { Tooltip } from "@/components/ui";
@@ -18,6 +18,7 @@ export function TicketCompactCard({
 }: TicketCompactCardProps) {
   const router = useRouter();
   const priorityConf = ticketPriorityConfig[ticket.priority];
+  const statusConf = ticketStatusConfig[ticket.status];
 
   return (
     <Box
@@ -72,6 +73,9 @@ export function TicketCompactCard({
         {/* Right: Priority Badge */}
         <Badge colorPalette={priorityConf.color} variant="subtle" size="xs">
           {priorityConf.label}
+        </Badge>
+        <Badge colorPalette={statusConf.color} variant="subtle" size="xs">
+          {statusConf.label}
         </Badge>
       </Flex>
     </Box>

@@ -31,7 +31,7 @@ export function useStatusWebSocket() {
     useEffect(() => {
         if (!isConnected || !user) return;
 
-        const unsubscribe = subscribeToUserStatus(
+        return subscribeToUserStatus(
             user.id,
             (payload: UserStatusWS) => {
 
@@ -48,7 +48,5 @@ export function useStatusWebSocket() {
                 });
             },
         );
-
-        return unsubscribe;
     }, [isConnected, user, subscribeToUserStatus, queryClient]);
 }

@@ -13,6 +13,8 @@ import {
   LuNetwork,
   LuSearch,
   LuClipboardList,
+  LuRoute,
+  LuTag,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -49,6 +51,16 @@ const adminItems: NavItem[] = [
     label: "Линии поддержки",
     href: "/dashboard/admin/support-lines",
     icon: LuNetwork,
+  },
+  {
+    label: "Маршрутизация",
+    href: "/dashboard/admin/forwarding-rules",
+    icon: LuRoute,
+  },
+  {
+    label: "Категории заявок",
+    href: "/dashboard/admin/categories",
+    icon: LuTag,
   },
   {
     label: "Категории статей",
