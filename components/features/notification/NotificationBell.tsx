@@ -27,6 +27,9 @@ import {
   LuUsers,
   LuUserMinus,
   LuTrash2,
+  LuTicketPlus,
+  LuShield,
+  LuShieldOff,
 } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/lib/hooks/notification/useNotifications";
@@ -43,6 +46,10 @@ const typeConfig: Record<NotificationType, { icon: React.ElementType; color: str
   ASSIGNMENT_REJECTED: { icon: LuUserX, color: "red.500" },
   CO_EXECUTOR_ADDED: { icon: LuUsers, color: "green.500" },
   CO_EXECUTOR_REMOVED: { icon: LuUserMinus, color: "red.500" },
+  TICKET_TAKEN: { icon: LuUserCheck, color: "green.500" },
+  TICKET_CREATED: { icon: LuTicketPlus, color: "green.500" },
+  SPECIALIST_ADDED_TO_LINE: { icon: LuShield, color: "green.500" },
+  SPECIALIST_REMOVED_FROM_LINE: { icon: LuShieldOff, color: "red.500" },
 };
 
 function formatTimeAgo(dateStr: string): string {
@@ -59,6 +66,7 @@ function formatTimeAgo(dateStr: string): string {
 
 export function NotificationBell() {
   const [page, setPage] = useState(0);
+  const [open, setOpen] = useState(false);
   const {
     listQuery,
     unreadCount,
@@ -74,11 +82,14 @@ export function NotificationBell() {
 
   const handleClick = (n: NotificationResponse) => {
     if (!n.read) markAsReadMutation.mutate(n.id);
-    router.push(`/dashboard/tickets/${n.ticketId}`);
+    setOpen(false);
+    if (n.ticketId) {
+      router.push(`/dashboard/tickets/${n.ticketId}`);
+    }
   };
 
   return (
-    <Popover.Root positioning={{ placement: "bottom-end" }}>
+    <Popover.Root positioning={{ placement: "bottom-end" }} open={open} onOpenChange={(e) => setOpen(e.open)}>
       <Popover.Trigger asChild>
         <Box position="relative" display="inline-flex">
           <IconButton

@@ -9,12 +9,16 @@ export type NotificationType =
     'ASSIGNMENT_REJECTED'|
     'ASSIGNMENT_ACCEPTED'|
     'CO_EXECUTOR_ADDED' |
-    'CO_EXECUTOR_REMOVED';
+    'CO_EXECUTOR_REMOVED' |
+    'TICKET_TAKEN' |
+    'TICKET_CREATED' |
+    'SPECIALIST_ADDED_TO_LINE' |
+    'SPECIALIST_REMOVED_FROM_LINE';
 
 export interface Notification {
   type: NotificationType;
-  ticketId: number;
-  ticketTitle: string;
+  ticketId: number | null;
+  ticketTitle: string | null;
   title: string;
   body: string;
   senderId: number | null;
@@ -25,8 +29,8 @@ export interface Notification {
 export interface NotificationResponse {
   id: number;
   type: NotificationType;
-  ticketId: number;
-  ticketTitle: string;
+  ticketId: number | null;
+  ticketTitle: string | null;
   title: string | null;
   body: string | null;
   senderId: number | null;
