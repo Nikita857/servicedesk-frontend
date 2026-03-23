@@ -183,6 +183,20 @@ export const specialistStatusTransitions: Record<TicketStatus, TicketStatus[]> =
     REJECTED: [],
     CANCELLED: [],
   };
+// User (ticket creator) transitions — only actions meaningful for the author
+export const userStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
+  NEW: [],
+  OPEN: [],
+  PENDING: [],
+  ESCALATED: [],
+  RESOLVED: ["REOPENED"],
+  PENDING_CLOSURE: ["CLOSED", "REOPENED"],
+  CLOSED: ["REOPENED"],
+  REOPENED: [],
+  REJECTED: [],
+  CANCELLED: [],
+};
+
 // Status history entry
 export interface TicketStatusHistory {
   id: number;

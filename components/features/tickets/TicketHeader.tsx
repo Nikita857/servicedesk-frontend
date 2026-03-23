@@ -7,6 +7,7 @@ import { suppressTicketToast } from "@/lib/hooks";
 import {
   statusTransitions,
   specialistStatusTransitions,
+  userStatusTransitions,
   Ticket,
   TicketStatus,
   ticketStatusConfig,
@@ -190,10 +191,12 @@ export default function TicketHeader({
             {/* Status change menu - только если пользователь управляет тикетом */}
             {canManageStatus &&
               (() => {
-                // Admin can use all transitions, specialists use restricted list (no CANCELLED)
+                // Admin → full transitions, specialist → restricted, regular user → minimal
                 let availableTransitions = isAdmin
                   ? statusTransitions[ticket.status]
-                  : specialistStatusTransitions[ticket.status];
+                  : isSpecialist
+                    ? specialistStatusTransitions[ticket.status]
+                    : userStatusTransitions[ticket.status];
 
                 // OPEN требует назначенного исполнителя — скрываем если тикет никем не взят
                 if (!ticket.assignedTo) {
