@@ -8,7 +8,6 @@ import {
   statusTransitions,
   specialistStatusTransitions,
   Ticket,
-  ticketPriorityConfig,
   TicketStatus,
   ticketStatusConfig,
 } from "@/types";
@@ -123,15 +122,15 @@ export default function TicketHeader({
     <>
       <Flex
         mb={3}
+        direction={{ base: "column-reverse", md: "row" }}
         justify="space-between"
-        align="center"
-        wrap="wrap"
+        align={{ base: "stretch", md: "center" }}
         gap={2}
       >
-        {/* Left side: Back button, Title, Badges */}
-        <HStack flex={1} minW="0" gap={3} wrap="wrap">
+        {/* Left side: Back button, Title */}
+        <HStack flex={1} minW="0" gap={3}>
           <Link href="/dashboard/tickets">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" flexShrink={0}>
               <LuArrowLeft />
             </Button>
           </Link>
@@ -148,7 +147,7 @@ export default function TicketHeader({
         </HStack>
 
         {/* Right side: Action buttons */}
-        <HStack gap={2} wrap="wrap" justify="flex-end" flexShrink={0}>
+        <HStack gap={2} wrap="wrap" justify={{ base: "flex-end", md: "flex-end" }} flexShrink={0}>
             {/* Take Ticket button - for specialists when ticket is unassigned */}
             {isSpecialist && !ticket.assignedTo &&
               (ticket.status === "NEW" || ticket.status === "ESCALATED") &&

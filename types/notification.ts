@@ -40,3 +40,19 @@ export interface NotificationResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface NotificationSettingResponse {
+  type: NotificationType;
+  inAppEnabled: boolean;
+  telegramEnabled: boolean;
+}
+
+export interface NotificationSettingUpdateRequest {
+  type: NotificationType;
+  inAppEnabled: boolean;
+  telegramEnabled: boolean;
+}
+
+export interface NotificationSettingsBulkUpdate {
+  settings: NotificationSettingUpdateRequest[];
+}

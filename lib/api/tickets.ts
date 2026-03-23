@@ -11,6 +11,8 @@ import type {
   RateTicketRequest,
 } from "@/types/ticket";
 import type { CoExecutorResponse } from "@/types/assignment";
+import {TicketHistory} from "@/types";
+import {id} from "zod/locales";
 
 export const ticketApi = {
   // List all tickets (paginated)
@@ -264,4 +266,15 @@ export const ticketApi = {
   removeCoExecutor: async (ticketId: number, userId: number): Promise<void> => {
     await api.delete(`/tickets/${ticketId}/co-executors/${userId}`);
   },
+
+  //Set ticket category by support line opinion (for stats)
+  setSupportCategory: async (ticketId: number, categoryId: number): Promise<Ticket> => {
+    const response = await api.patch(
+        `/tickets/${ticketId}/category-support`,
+        null,
+        { params: { categoryId } },
+    );
+    return response.data.data;
+  },
+
 };
