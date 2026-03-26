@@ -22,10 +22,7 @@ export function AuthRefresh() {
       } catch (error) {
         console.error("[AuthRefresh] Background refresh failed:", error);
       }
-    }, 45000);
-
-    // Also check immediately on mount/auth change
-    checkAndRefreshToken();
+    }, 25 * 60 * 1000);
 
     return () => clearInterval(intervalId);
   }, [isAuthenticated, isHydrated]);
