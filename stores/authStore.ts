@@ -5,6 +5,7 @@ import type { User } from "@/types/auth";
 interface AuthState {
   user: User | null;
   expiresIn: number | null;
+  tokenExpiresAt: number | null; // абсолютный timestamp когда истекает токен (ms)
   isAuthenticated: boolean;
   isHydrated: boolean;
 
@@ -20,6 +21,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       expiresIn: null,
+      tokenExpiresAt: null,
       isAuthenticated: false,
       isHydrated: false,
 
@@ -27,6 +29,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           expiresIn,
+          tokenExpiresAt: Date.now() + expiresIn,
           isAuthenticated: true,
         });
       },
@@ -34,6 +37,8 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () => {
         set({
           user: null,
+          expiresIn: null,
+          tokenExpiresAt: null,
           isAuthenticated: false,
         });
       },
@@ -54,6 +59,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        tokenExpiresAt: state.tokenExpiresAt,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

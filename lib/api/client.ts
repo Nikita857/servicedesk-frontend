@@ -5,7 +5,7 @@ import {toast} from "@/lib/utils";
 
 interface AuthError {
   success: boolean;
-  errorCode: "TOKEN_EXPIRED" | "TOKEN_INVALID" | "USER_NOT_FOUND" | "AUTH_FAILED";
+  errorCode: "TOKEN_EXPIRED" | "TOKEN_INVALID" | "USER_NOT_FOUND" | "AUTH_FAILED" | "CSRF_ERROR" | "ACCESS_DENIED";
   message: string;
 }
 
@@ -21,15 +21,20 @@ const api = axios.create({
 // ==================== Token Refresh Logic ====================
 
 let isRefreshing = false;
-let refreshSubscribers: (() => void)[] = [];
+let lastRefreshTimestamp = 0; // timestamp последнего успешного рефреша
+let refreshSubscribers: Array<(success: boolean) => void> = [];
 
-function subscribeToTokenRefresh(callback: () => void) {
+function subscribeToTokenRefresh(callback: (success: boolean) => void) {
   refreshSubscribers.push(callback);
 }
 
-
 function onTokenRefreshed() {
-  refreshSubscribers.forEach((callback) => callback());
+  refreshSubscribers.forEach((cb) => cb(true));
+  refreshSubscribers = [];
+}
+
+function onRefreshFailed() {
+  refreshSubscribers.forEach((cb) => cb(false));
   refreshSubscribers = [];
 }
 
@@ -75,18 +80,17 @@ export async function refreshAccessToken(): Promise<boolean> {
     const { userAuthResponse, expiresIn } = response.data.data;
 
     try {
-      useAuthStore.getState().setAuth(userAuthResponse, expiresIn)
+      useAuthStore.getState().setAuth(userAuthResponse, expiresIn);
     } catch (e) {
       console.error("[Auth] failed to sync store after refresh ", e);
     }
+    lastRefreshTimestamp = Date.now();
     return true;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      try {
-        useAuthStore.getState().clearAuth();
-        toast.warning("Ваша сессия истекла, войдите снова.")
-      } catch (e) { console.error(e); }
-    }
+    try {
+      useAuthStore.getState().clearAuth();
+      toast.warning("Ваша сессия истекла, войдите снова.");
+    } catch (e) { console.error(e); }
     return false;
   }
 }
@@ -100,25 +104,32 @@ export async function checkAndRefreshToken(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   if (!useAuthStore.getState().isAuthenticated) return false;
 
-  const expiresIn  = useAuthStore.getState().expiresIn;
-  if(expiresIn) {
-    if (isRefreshing) {
-      return new Promise((resolve) => subscribeToTokenRefresh(() => resolve(true)));
-    }
+  const tokenExpiresAt = useAuthStore.getState().tokenExpiresAt;
 
-    isRefreshing = true;
-    try {
-      const success = await refreshAccessToken();
-      isRefreshing = false;
-      if (success) onTokenRefreshed();
-      return success;
-    } catch (error) {
-      isRefreshing = false;
-      console.error("[Auth] Background check refresh failed:", error);
-      return false;
-    }
+  // Рефрешим только если токен истекает через 30 секунд или уже истёк
+  const shouldRefresh = !tokenExpiresAt || tokenExpiresAt - 30_000 <= Date.now();
+  if (!shouldRefresh) return true;
+
+  if (isRefreshing) {
+    return new Promise((resolve) => subscribeToTokenRefresh((success) => resolve(success)));
   }
-  return isRefreshing;
+
+  isRefreshing = true;
+  try {
+    const success = await refreshAccessToken();
+    isRefreshing = false;
+    if (success) {
+      onTokenRefreshed();
+    } else {
+      onRefreshFailed();
+    }
+    return success;
+  } catch (error) {
+    isRefreshing = false;
+    onRefreshFailed();
+    console.error("[Auth] Background check refresh failed:", error);
+    return false;
+  }
 }
 
 
@@ -138,13 +149,66 @@ api.interceptors.response.use(
       const status = error.response.status;
       const isAuthEndpoint = originalRequest?.url?.includes("/auth/");
 
+      if (status === 403 && errorCode === "CSRF_ERROR" && !originalRequest?._retry) {
+        originalRequest._retry = true;
+
+        if (Date.now() - lastRefreshTimestamp < 5000) {
+          return api(originalRequest);
+        }
+
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            subscribeToTokenRefresh((success) => {
+              if (success) resolve(api(originalRequest));
+              else reject(error);
+            });
+          });
+        }
+
+        isRefreshing = true;
+        try {
+          const success = await refreshAccessToken();
+          isRefreshing = false;
+          if (success) {
+            onTokenRefreshed();
+            return api(originalRequest);
+          } else {
+            onRefreshFailed();
+          }
+        } catch (refreshError) {
+          isRefreshing = false;
+          onRefreshFailed();
+        }
+
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+          try { useAuthStore.getState().clearAuth(); } catch (e) { /* ignore */ }
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+
       if (status === 401 && !isAuthEndpoint) {
         if (errorCode === "TOKEN_EXPIRED" && !originalRequest?._retry) {
           originalRequest._retry = true;
 
+          // Если рефреш уже прошёл < 5 секунд назад — токен свежий, просто ретраим запрос
+          if (Date.now() - lastRefreshTimestamp < 5000) {
+            return api(originalRequest);
+          }
+
           if (isRefreshing) {
-            return new Promise((resolve) => {
-              subscribeToTokenRefresh(() => resolve(api(originalRequest)));
+            return new Promise((resolve, reject) => {
+              subscribeToTokenRefresh((success) => {
+                if (success) {
+                  resolve(api(originalRequest));
+                } else {
+                  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+                    useAuthStore.getState().clearAuth();
+                    window.location.href = "/login";
+                  }
+                  reject(error);
+                }
+              });
             });
           }
 
@@ -155,9 +219,12 @@ api.interceptors.response.use(
             if (success) {
               onTokenRefreshed();
               return api(originalRequest);  // retry — cookie обновлена
+            } else {
+              onRefreshFailed();
             }
           } catch (refreshError) {
             isRefreshing = false;
+            onRefreshFailed();
           }
         }
 
