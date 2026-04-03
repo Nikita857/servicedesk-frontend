@@ -3,7 +3,9 @@ import type {
   ChangePasswordRequest,
   ProfileResponse,
   UpdateProfileRequest,
-  UpdateTelegramRequest
+  UpdateTelegramRequest,
+  UpdateVkRequest,
+  UpdateMaxRequest,
 } from "@/types/profile";
 
 // ==================== API ====================
@@ -42,6 +44,20 @@ export const profileApi = {
    */
   updateTelegram: async (data: UpdateTelegramRequest): Promise<void> => {
     await api.put("/profile/telegram", data);
+  },
+
+  /**
+   * Привязать ВКонтакте
+   */
+  updateVk: async (data: UpdateVkRequest): Promise<void> => {
+    await api.put("/profile/vk", data);
+  },
+
+  /**
+   * Привязать MAX
+   */
+  updateMax: async (data: UpdateMaxRequest): Promise<void> => {
+    await api.put("/profile/max", data);
   },
 
   /**

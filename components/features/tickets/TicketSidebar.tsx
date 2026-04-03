@@ -1,11 +1,11 @@
 import {Ticket} from "@/types";
 import {formatDate, formatDuration} from "@/lib/utils";
 import {Box, createListCollection, HStack, Text, VStack,} from "@chakra-ui/react";
-import {LuCircleX, LuClock, LuMessageSquare, LuPaperclip, LuUser,} from "react-icons/lu";
+import {LuCircleX, LuClock, LuMessageSquare, LuPaperclip,} from "react-icons/lu";
 import {DateTimePicker} from "@/components/features/layout/DateTimePicker";
 import CoExecutorPanel from "./CoExecutorPanel";
 import {useMemo} from "react";
-import {useAuth, useCategoriesQuery} from "@/lib/hooks";
+import {useCategoriesQuery} from "@/lib/hooks";
 import {DataSelect} from "@/components/ui";
 import {useTicketCategoryBySupportLine} from "@/lib/hooks/ticket-detail/useTicketCategoryBySupportLine";
 
@@ -38,7 +38,6 @@ export default function TicketSidebar({ticket, isSpecialist}: TicketSidebarProps
 
   const {data: categories = []} = useCategoriesQuery();
   const {setTicketCategory} = useTicketCategoryBySupportLine(ticket.id)
-  const {user} = useAuth();
 
   const categoryCollection = useMemo(
       () =>
@@ -92,7 +91,6 @@ export default function TicketSidebar({ticket, isSpecialist}: TicketSidebarProps
           <VStack gap={3} align="stretch">
             <InfoRow label="Автор">
               <HStack gap={1.5}>
-                <LuUser size={13}/>
                 <Text fontSize="sm" color="fg.default">
                   {ticket.createdBy?.fio || ticket.createdBy?.username || "—"}
                 </Text>

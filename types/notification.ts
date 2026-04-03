@@ -45,12 +45,16 @@ export interface NotificationSettingResponse {
   type: NotificationType;
   inAppEnabled: boolean;
   telegramEnabled: boolean;
+  vkEnabled: boolean;
+  maxEnabled: boolean;
 }
 
 export interface NotificationSettingUpdateRequest {
   type: NotificationType;
   inAppEnabled: boolean;
   telegramEnabled: boolean;
+  vkEnabled: boolean;
+  maxEnabled: boolean;
 }
 
 export interface NotificationSettingsBulkUpdate {

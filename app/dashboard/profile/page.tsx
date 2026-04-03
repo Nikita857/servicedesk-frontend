@@ -23,6 +23,8 @@ import { ProfileSidebar } from "./components/ProfileSidebar";
 import { PersonalInfoCard } from "./components/PersonalInfoCard";
 import { OrganizationCard } from "./components/OrganizationCard";
 import { TelegramCard } from "./components/TelegramCard";
+import { VkCard } from "./components/VkCard";
+import { MaxCard } from "./components/MaxCard";
 import { PasswordCard } from "./components/PasswordCard";
 
 export default function ProfilePage() {
@@ -34,6 +36,8 @@ export default function ProfilePage() {
   const [fio, setFio] = useState("");
   const [email, setEmail] = useState("");
   const [telegramId, setTelegramId] = useState("");
+  const [vkId, setVkId] = useState("");
+  const [maxId, setMaxId] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -107,7 +111,9 @@ export default function ProfilePage() {
   if (!formInitialized && profile) {
     setFio(profile.fio || "");
     setEmail(profile.email || "");
-    setTelegramId(profile.telegramId?.toString() || "");
+    setTelegramId(profile.socialNetwork.telegramId?.toString() || "");
+    setVkId(profile.socialNetwork.vkId?.toString() || "");
+    setMaxId(profile.socialNetwork.maxId?.toString() || "");
     setFormInitialized(true);
   }
 
@@ -138,6 +144,24 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Telegram привязан");
+    },
+    onError: (error) => handleApiError(error),
+  });
+
+  const updateVkMutation = useMutation({
+    mutationFn: profileApi.updateVk,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("ВКонтакте привязан");
+    },
+    onError: (error) => handleApiError(error),
+  });
+
+  const updateMaxMutation = useMutation({
+    mutationFn: profileApi.updateMax,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("MAX привязан");
     },
     onError: (error) => handleApiError(error),
   });
@@ -206,6 +230,24 @@ export default function ProfilePage() {
       return;
     }
     updateTelegramMutation.mutate({ telegramId: id });
+  };
+
+  const handleUpdateVk = () => {
+    const id = parseInt(vkId, 10);
+    if (isNaN(id)) {
+      toast.error("Введите корректный VK ID");
+      return;
+    }
+    updateVkMutation.mutate({ vkId: id });
+  };
+
+  const handleUpdateMax = () => {
+    const id = parseInt(maxId, 10);
+    if (isNaN(id)) {
+      toast.error("Введите корректный MAX ID");
+      return;
+    }
+    updateMaxMutation.mutate({ maxId: id });
   };
 
   const handleAvatarClick = () => {
@@ -294,6 +336,22 @@ export default function ProfilePage() {
               setTelegramId={setTelegramId}
               onUpdate={handleUpdateTelegram}
               isPending={updateTelegramMutation.isPending}
+            />
+
+            <VkCard
+              profile={profile}
+              vkId={vkId}
+              setVkId={setVkId}
+              onUpdate={handleUpdateVk}
+              isPending={updateVkMutation.isPending}
+            />
+
+            <MaxCard
+              profile={profile}
+              maxId={maxId}
+              setMaxId={setMaxId}
+              onUpdate={handleUpdateMax}
+              isPending={updateMaxMutation.isPending}
             />
 
             <PasswordCard

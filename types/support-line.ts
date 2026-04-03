@@ -32,7 +32,7 @@ export interface SupportLineListResponse {
 export interface SupportLineDetail extends SupportLineListResponse {
   assignmentMode: AssignmentMode;
   specialists: Specialist[];
-  telegramChatId?: number | null;
+  supportLineChatsResponse: SupportLineChatsResponse
 }
 
 export interface CreateSupportLineRequest {
@@ -51,4 +51,16 @@ export interface UpdateSupportLineRequest {
   assignmentMode?: AssignmentMode;
   role?: SenderType;
   displayOrder?: number;
+}
+
+export interface UpdateSupportLineChatId {
+  telegramChatId: number | null;
+  vkChatId: number | null;
+  maxChatId: number | null;
+}
+
+export interface SupportLineChatsResponse {
+  telegramChatId: number | null;
+  vkChatId: number | null;
+  maxChatId: number | null;
 }

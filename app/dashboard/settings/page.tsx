@@ -33,6 +33,8 @@ export default function SettingsPage() {
                 type: s.type,
                 inAppEnabled: s.inAppEnabled,
                 telegramEnabled: s.telegramEnabled,
+                vkEnabled: s.vkEnabled,
+                maxEnabled: s.maxEnabled
             })),
         });
     };
