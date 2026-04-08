@@ -14,7 +14,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import {
-  LuArrowRight,
+  LuArrowRight, LuBan,
   LuCheck,
   LuChevronDown,
   LuChevronUp,
@@ -46,6 +46,7 @@ const STATUS_ICON = {
   ACCEPTED: { icon: LuCheck, color: "green.500" },
   REJECTED: { icon: LuX, color: "red.500" },
   PENDING: { icon: LuClock, color: "yellow.500" },
+  CANCELLED: { icon: LuBan, color: "gray.500" },
 } as const;
 
 /**

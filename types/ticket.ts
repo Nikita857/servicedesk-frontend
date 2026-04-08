@@ -122,12 +122,13 @@ export const ticketStatusConfig: Record<TicketStatus, StatusConfig> = {
 };
 
 // Assignment Status configuration
-export type AssignmentStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+export type AssignmentStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED";
 
 export const assignmentStatusConfig: Record<AssignmentStatus, StatusConfig> = {
   PENDING: { label: "Ожидает", color: "yellow" },
   ACCEPTED: { label: "Принято", color: "green" },
   REJECTED: { label: "Отклонено", color: "red" },
+  CANCELLED: {label: "Аннулировано", color: "gray" },
 };
 
 // Assignment Mode configuration

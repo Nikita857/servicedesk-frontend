@@ -3,7 +3,7 @@
  * Используются в WebSocketProvider и всех WebSocket хуках
  */
 
-import type { UserShortResponse } from "./ticket";
+import type {AssignmentMode, AssignmentStatus, UserShortResponse} from "./ticket";
 
 // ==================== Chat Types ====================
 
@@ -91,8 +91,8 @@ export interface AssignmentWS {
     username: string;
     fio: string | null;
   } | null;
-  mode: "DIRECT" | "LINE";
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  mode: AssignmentMode;
+  status: AssignmentStatus;
   note: string | null;
   createdAt: string;
 }

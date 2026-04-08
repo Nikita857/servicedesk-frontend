@@ -7,7 +7,8 @@ import Link from "@tiptap/extension-link";
 import Youtube from "@tiptap/extension-youtube";
 import { Video } from "./VideoExtension";
 import { useState, useEffect, useCallback } from "react";
-import { Box, Dialog, Portal, CloseButton } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
+import { ImageLightbox } from "@/components/ui";
 import "./wiki-editor.css";
 
 interface WikiContentProps {
@@ -107,55 +108,10 @@ export default function WikiContent({ content }: WikiContentProps) {
         <EditorContent editor={editor} />
       </Box>
 
-      {/* Image Lightbox */}
-      <Dialog.Root
-        open={!!lightboxImage}
-        onOpenChange={(details) => !details.open && setLightboxImage(null)}
-        size="cover"
-      >
-        <Portal>
-          <Dialog.Backdrop
-            bg="blackAlpha.800"
-            onClick={() => setLightboxImage(null)}
-          />
-          <Dialog.Positioner>
-            <Dialog.Content
-              bg="transparent"
-              shadow="none"
-              maxW="95vw"
-              maxH="95vh"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              onClick={() => setLightboxImage(null)}
-            >
-              <CloseButton
-                position="absolute"
-                top={4}
-                right={4}
-                color="white"
-                size="lg"
-                onClick={() => setLightboxImage(null)}
-                zIndex={10}
-                _hover={{ bg: "whiteAlpha.200" }}
-              />
-              {lightboxImage && (
-                <img
-                  src={lightboxImage}
-                  alt="Enlarged view"
-                  style={{
-                    maxWidth: "90vw",
-                    maxHeight: "90vh",
-                    objectFit: "contain",
-                    borderRadius: "8px",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
+      <ImageLightbox
+        src={lightboxImage}
+        onClose={() => setLightboxImage(null)}
+      />
     </>
   );
 }
