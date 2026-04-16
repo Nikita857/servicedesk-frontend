@@ -3,16 +3,13 @@
 import { Box, Heading, Text, SimpleGrid, VStack, Icon } from "@chakra-ui/react";
 import Link from "next/link";
 import {
-  LuUsers,
-  LuLayers,
   LuHistory,
   LuArrowRightLeft,
-  LuClock,
   LuTag,
   LuTags,
   LuPercent,
   LuList,
-  LuActivity, LuChartNoAxesCombined,
+  LuChartNoAxesCombined,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 
@@ -26,20 +23,6 @@ interface ReportCard {
 
 const reports: ReportCard[] = [
   {
-    title: "Время по специалистам",
-    description: "Затраченное время на заявки по каждому специалисту за период",
-    href: "/dashboard/reports/time-by-specialist",
-    icon: LuUsers,
-    color: "blue",
-  },
-  {
-    title: "Время по линиям",
-    description: "Затраченное время на заявки по линиям поддержки за период",
-    href: "/dashboard/reports/time-by-line",
-    icon: LuLayers,
-    color: "purple",
-  },
-  {
     title: "История заявки",
     description: "Полная история статусов и временная статистика по заявке",
     href: "/dashboard/reports/ticket-history",
@@ -52,13 +35,6 @@ const reports: ReportCard[] = [
     href: "/dashboard/reports/ticket-assignments",
     icon: LuArrowRightLeft,
     color: "teal",
-  },
-  {
-    title: "Время решения",
-    description: "Среднее, минимальное и максимальное время решения заявок",
-    href: "/dashboard/reports/resolution-time",
-    icon: LuClock,
-    color: "green",
   },
   {
     title: "По категориям пользователя",
@@ -89,19 +65,13 @@ const reports: ReportCard[] = [
     color: "gray",
   },
   {
-    title: "Загрузка специалистов",
-    description: "Текущая загрузка: активные заявки, решённые сегодня, время",
-    href: "/dashboard/reports/specialist-workload",
-    icon: LuActivity,
-    color: "red",
-  },
-  {
     title: "Графики Kibana",
-    description: "Визуальное представление статистики по специалистам, заявкам, статьям",
+    description:
+      "Визуальное представление статистики по специалистам, заявкам, статьям",
     href: "http://192.168.0.111:5601/app/dashboards#/view/4d0f9f93-4b8b-49b9-aebd-3e2ed43988c5?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now-90d%2Fd,to:now))",
     icon: LuChartNoAxesCombined,
     color: "green",
-  }
+  },
 ];
 
 export default function ReportsPage() {
