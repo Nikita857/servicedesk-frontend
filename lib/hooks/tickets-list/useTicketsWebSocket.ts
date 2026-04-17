@@ -9,15 +9,30 @@ import type { TicketListResponse } from "@/types/ticket";
 interface UseTicketsWebSocketOptions {
   onNewTicket?: (ticket: TicketListResponse) => void;
   enabled?: boolean;
+  /**
+   * Идентификаторы тикетов, отображаемых в списке в данный момент.
+   * Для них будет оформлена подписка на обновления (status/assignee/...)
+   * и удаления через per-ticket STOMP-топики. Без этого списки не
+   * реагируют на изменения существующих тикетов — бэкенд публикует такие
+   * события в /topic/ticket/{id}, а не в /topic/ticket/new.
+   */
+  ticketIds?: number[];
 }
 
 /**
- * Hook для подписки на новые тикеты через WebSocket
- * Показывает toast при создании нового тикета
+ * Hook для подписки на события тикетов через WebSocket.
+ * - Новые тикеты (/topic/ticket/new) — toast + invalidate списков/статистик.
+ * - Обновления и удаления видимых тикетов (/topic/ticket/{id}[/deleted]) —
+ *   чтобы списочные вьюхи перерисовывались мгновенно, а не раз в минуту.
  */
 export function useTicketsWebSocket(options: UseTicketsWebSocketOptions = {}) {
-  const { onNewTicket, enabled = true } = options;
-  const { isConnected, subscribeToNewTickets } = useWebSocket();
+  const { onNewTicket, enabled = true, ticketIds } = options;
+  const {
+    isConnected,
+    subscribeToNewTickets,
+    subscribeToTicketUpdates,
+    subscribeToTicketDeleted,
+  } = useWebSocket();
   const queryClient = useQueryClient();
   const callbackRef = useRef(onNewTicket);
 
@@ -55,7 +70,41 @@ export function useTicketsWebSocket(options: UseTicketsWebSocketOptions = {}) {
     });
 
     return unsubscribe;
-  }, [enabled, isConnected, subscribeToNewTickets]);
+  }, [enabled, isConnected, subscribeToNewTickets, queryClient]);
+
+  // Подписка на per-ticket обновления/удаления для текущего набора видимых
+  // тикетов. Стабилизируем зависимость по join(',') — эффект пересобирается
+  // только когда меняется состав идентификаторов.
+  const ticketIdsKey = (ticketIds ?? []).join(",");
+  useEffect(() => {
+    if (!enabled || !isConnected || !ticketIds || ticketIds.length === 0) return;
+    const unsubs: Array<() => void> = [];
+    for (const id of ticketIds) {
+      unsubs.push(
+        subscribeToTicketUpdates(id, (updated) => {
+          queryClient.setQueryData(queryKeys.tickets.detail(id), updated);
+          queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() });
+          queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        }),
+      );
+      unsubs.push(
+        subscribeToTicketDeleted(id, () => {
+          queryClient.removeQueries({ queryKey: queryKeys.tickets.detail(id) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() });
+          queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        }),
+      );
+    }
+    return () => unsubs.forEach((u) => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    enabled,
+    isConnected,
+    ticketIdsKey,
+    subscribeToTicketUpdates,
+    subscribeToTicketDeleted,
+    queryClient,
+  ]);
 
   return { isConnected };
 }

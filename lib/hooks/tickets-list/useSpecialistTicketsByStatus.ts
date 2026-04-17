@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { queryKeys } from "@/lib/queryKeys";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
@@ -30,7 +30,12 @@ export function useSpecialistTicketsByStatus(
   pageSize: number = 5,
 ): SpecialistTicketsVM {
   const queryClient = useQueryClient();
-  const { subscribeToNewTickets, isConnected } = useWebSocket();
+  const {
+    subscribeToNewTickets,
+    subscribeToTicketUpdates,
+    subscribeToTicketDeleted,
+    isConnected,
+  } = useWebSocket();
 
   type SpecialistTicketStatus = "NEW" | "OPEN" | "PENDING" | "ESCALATED" | "CLOSED" | "REOPENED";
   const STORAGE_KEY = "sd_page_specialist-tickets";
@@ -91,6 +96,62 @@ export function useSpecialistTicketsByStatus(
   const pendingTickets = useStatusQuery("PENDING");
   const escalatedTickets = useStatusQuery("ESCALATED");
   const closedTickets = useStatusQuery("CLOSED");
+
+  // Собираем идентификаторы всех видимых тикетов по всем статусам и
+  // подписываемся на их per-ticket обновления/удаления. Без этой подписки
+  // колонки не пересортируются при смене статуса или назначения — бэкенд
+  // шлёт такие события в /topic/ticket/{id}, а не в /topic/ticket/new.
+  const visibleTicketIds = useMemo(() => {
+    const ids = new Set<number>();
+    const push = (list: PagedTicketList | null | undefined) => {
+      if (!list) return;
+      for (const t of list.content ?? []) ids.add(t.id);
+    };
+    push(newTickets.data);
+    push(openTickets.data);
+    push(reopenedTickets.data);
+    push(pendingTickets.data);
+    push(escalatedTickets.data);
+    push(closedTickets.data);
+    return Array.from(ids);
+  }, [
+    newTickets.data,
+    openTickets.data,
+    reopenedTickets.data,
+    pendingTickets.data,
+    escalatedTickets.data,
+    closedTickets.data,
+  ]);
+  const visibleTicketIdsKey = visibleTicketIds.join(",");
+
+  useEffect(() => {
+    if (!isConnected || visibleTicketIds.length === 0) return;
+    const unsubs: Array<() => void> = [];
+    for (const id of visibleTicketIds) {
+      unsubs.push(
+        subscribeToTicketUpdates(id, (updated) => {
+          queryClient.setQueryData(queryKeys.tickets.detail(id), updated);
+          queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        }),
+      );
+      unsubs.push(
+        subscribeToTicketDeleted(id, () => {
+          queryClient.removeQueries({ queryKey: queryKeys.tickets.detail(id) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        }),
+      );
+    }
+    return () => unsubs.forEach((u) => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isConnected,
+    visibleTicketIdsKey,
+    subscribeToTicketUpdates,
+    subscribeToTicketDeleted,
+    queryClient,
+  ]);
 
   // Объединяем OPEN + REOPENED в одну плитку "В работе"
   const mergedOpenTickets: StatusTicketsVM = {

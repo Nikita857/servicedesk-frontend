@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { LuPlus, LuUserCheck } from "react-icons/lu";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { supportLineApi } from "@/lib/api/supportLines";
 import { queryKeys } from "@/lib/queryKeys";
@@ -44,30 +44,42 @@ export function AdminTicketsView() {
   const { user } = useAuth();
   const [page, setPage] = usePersistentPage("admin-tickets");
   const queryClient = useQueryClient();
-  const { isConnected, subscribeToNewTickets } = useWebSocket();
+  const {
+    isConnected,
+    subscribeToNewTickets,
+    subscribeToTicketUpdates,
+    subscribeToTicketDeleted,
+  } = useWebSocket();
   const prevConnectedRef = useRef<boolean | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
-    () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | ""
+    () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | "",
   );
-  const [lineFilter, setLineFilter] = useState<number | "">(
-    () => {
-      const v = readStorage(STORAGE_KEY_LINE);
-      return v ? Number(v) : "";
-    }
+  const [lineFilter, setLineFilter] = useState<number | "">(() => {
+    const v = readStorage(STORAGE_KEY_LINE);
+    return v ? Number(v) : "";
+  });
+
+  const handleStatusChange = useCallback(
+    (value: TicketStatus | "") => {
+      setStatusFilter(value);
+      sessionStorage.setItem(STORAGE_KEY_STATUS, value);
+      setPage(0);
+    },
+    [setPage],
   );
 
-  const handleStatusChange = useCallback((value: TicketStatus | "") => {
-    setStatusFilter(value);
-    sessionStorage.setItem(STORAGE_KEY_STATUS, value);
-    setPage(0);
-  }, [setPage]);
-
-  const handleLineChange = useCallback((value: number | "") => {
-    setLineFilter(value);
-    sessionStorage.setItem(STORAGE_KEY_LINE, value === "" ? "" : String(value));
-    setPage(0);
-  }, [setPage]);
+  const handleLineChange = useCallback(
+    (value: number | "") => {
+      setLineFilter(value);
+      sessionStorage.setItem(
+        STORAGE_KEY_LINE,
+        value === "" ? "" : String(value),
+      );
+      setPage(0);
+    },
+    [setPage],
+  );
 
   // Инвалидируем кеш при появлении нового тикета через WS
   useEffect(() => {
@@ -98,7 +110,7 @@ export function AdminTicketsView() {
         page,
         PAGE_SIZE,
         statusFilter || undefined,
-        lineFilter || undefined
+        lineFilter || undefined,
       ),
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
@@ -113,7 +125,10 @@ export function AdminTicketsView() {
   // Tickets assigned to this admin
   const [assignedPage, setAssignedPage] = useState(0);
   const { data: assignedData, isLoading: assignedLoading } = useQuery({
-    queryKey: queryKeys.tickets.list({ filter: "assigned", page: assignedPage }),
+    queryKey: queryKeys.tickets.list({
+      filter: "assigned",
+      page: assignedPage,
+    }),
     queryFn: () => ticketApi.listAssigned(assignedPage, ASSIGNED_PAGE_SIZE),
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
@@ -121,6 +136,56 @@ export function AdminTicketsView() {
 
   const tickets = data?.content ?? [];
   const assignedTickets = assignedData?.content ?? [];
+
+  // Идентификаторы всех тикетов, отображаемых на экране (оба блока).
+  // Используется для подписки на per-ticket обновления/удаления через WS.
+  // Строковый ключ стабилизирует useEffect: эффект перезапустится только
+  // когда реально поменялся состав видимых тикетов, а не на каждый рендер.
+  const visibleTicketIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const t of tickets) ids.add(t.id);
+    for (const t of assignedTickets) ids.add(t.id);
+    return Array.from(ids);
+  }, [tickets, assignedTickets]);
+  const visibleTicketIdsKey = visibleTicketIds.join(",");
+
+  // Подписываемся на обновления и удаления каждого видимого тикета.
+  // Бэкенд публикует UPDATED/STATUS_CHANGED/ASSIGNED/RATED/ESTIMATED_DATE_SET
+  // на /topic/ticket/{id}, а DELETED — на /topic/ticket/{id}/deleted.
+  // Без этих подписок список «молчит» до следующего polling-рефетча.
+  useEffect(() => {
+    if (!isConnected || visibleTicketIds.length === 0) return;
+    const unsubs: Array<() => void> = [];
+    for (const id of visibleTicketIds) {
+      unsubs.push(
+        subscribeToTicketUpdates(id, (updated) => {
+          // Обновляем детальный кеш из payload'а — чтобы карточка/страница
+          // детали получили свежие данные без лишнего REST-запроса.
+          queryClient.setQueryData(queryKeys.tickets.detail(id), updated);
+          // И инвалидируем списки (все варианты пагинации/фильтров).
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.tickets.lists(),
+          });
+        }),
+      );
+      unsubs.push(
+        subscribeToTicketDeleted(id, () => {
+          queryClient.removeQueries({ queryKey: queryKeys.tickets.detail(id) });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.tickets.lists(),
+          });
+        }),
+      );
+    }
+    return () => unsubs.forEach((u) => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isConnected,
+    visibleTicketIdsKey,
+    subscribeToTicketUpdates,
+    subscribeToTicketDeleted,
+    queryClient,
+  ]);
 
   return (
     <Box>
@@ -202,19 +267,27 @@ export function AdminTicketsView() {
           </Text>
         </Box>
 
-        <Flex gap={2} direction={{ base: "column", sm: "row" }} align={{ base: "stretch", sm: "center" }}>
+        <Flex
+          gap={2}
+          direction={{ base: "column", sm: "row" }}
+          align={{ base: "stretch", sm: "center" }}
+        >
           <HStack gap={2}>
             <NativeSelect.Root size="sm" flex={1}>
               <NativeSelect.Field
                 value={statusFilter}
-                onChange={(e) => handleStatusChange(e.target.value as TicketStatus | "")}
+                onChange={(e) =>
+                  handleStatusChange(e.target.value as TicketStatus | "")
+                }
               >
                 <option value="">Все статусы</option>
-                {(Object.keys(ticketStatusConfig) as TicketStatus[]).map((s) => (
-                  <option key={s} value={s}>
-                    {ticketStatusConfig[s].label}
-                  </option>
-                ))}
+                {(Object.keys(ticketStatusConfig) as TicketStatus[]).map(
+                  (s) => (
+                    <option key={s} value={s}>
+                      {ticketStatusConfig[s].label}
+                    </option>
+                  ),
+                )}
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
@@ -223,7 +296,9 @@ export function AdminTicketsView() {
               <NativeSelect.Field
                 value={lineFilter}
                 onChange={(e) =>
-                  handleLineChange(e.target.value === "" ? "" : Number(e.target.value))
+                  handleLineChange(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
                 }
               >
                 <option value="">Все линии</option>
@@ -280,11 +355,7 @@ export function AdminTicketsView() {
 
           {data && data.page.totalPages > 1 && (
             <Center>
-              <SDPagination
-                page={data.page}
-                action={setPage}
-                size="sm"
-              />
+              <SDPagination page={data.page} action={setPage} size="sm" />
             </Center>
           )}
         </VStack>
