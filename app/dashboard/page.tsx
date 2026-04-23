@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import {
   Box,
   Heading,
@@ -13,7 +12,6 @@ import {
 import { LuArrowRight } from "react-icons/lu";
 import Link from "next/link";
 import { useAuthStore } from "@/stores";
-import type { TicketListResponse } from "@/types/ticket";
 import { TicketCard } from "@/components/features/tickets";
 import {
   useTicketsWebSocket,
@@ -33,21 +31,10 @@ export default function DashboardPage() {
   const isSpecialist = user?.specialist || false;
 
   // Use TanStack Query for recent tickets (keeping for "unassigned tickets" section)
-  const { recentTickets, isLoading, refetch } = useDashboardQuery();
+  const { recentTickets, isLoading } = useDashboardQuery();
 
-  // Handle new ticket from WebSocket - refetch to update stats
-  const handleNewTicket = useCallback(
-    (_ticket: TicketListResponse) => {
-      refetch();
-    },
-    [refetch],
-  );
-
-  // WebSocket for real-time new tickets
-  useTicketsWebSocket({
-    onNewTicket: handleNewTicket,
-    enabled: true,
-  });
+  // WebSocket: обновления списков тикетов через агрегированный /topic/tickets
+  useTicketsWebSocket();
 
   // WebSocket for assignments (stats update)
   useAssignmentsWebSocket();

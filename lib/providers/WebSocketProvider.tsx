@@ -13,14 +13,21 @@ import type {
     AttachmentWS,
     ChatMessageWS,
     ReadReceiptWS,
+    TicketListEventWS,
     TypingIndicator,
     UserStatusWS,
 } from "@/types/websocket";
 
 interface WebSocketContextValue {
     isConnected: boolean;
-    // Ticket subscriptions
-    subscribeToNewTickets: (callback: (ticket: Ticket) => void) => () => void;
+    /**
+     * Агрегированный поток событий тикетов (/topic/tickets).
+     * Несёт компактный payload — подходит для списочных вьюх,
+     * фронт фильтрует события локально без N подписок на каждый тикет.
+     */
+    subscribeToTickets: (
+        callback: (event: TicketListEventWS) => void,
+    ) => () => void;
     subscribeToTicketUpdates: (
         ticketId: number,
         callback: (ticket: Ticket) => void,
@@ -29,7 +36,6 @@ interface WebSocketContextValue {
         ticketId: number,
         callback: (data: { id: number }) => void,
     ) => () => void;
-    subscribeToSlaBreach: (callback: (ticket: Ticket) => void) => () => void;
     // Chat (for tickets)
     sendMessage: (
         ticketId: number,
@@ -247,14 +253,14 @@ export function WebSocketProvider({children}: { children: React.ReactNode }) {
 
     // ==================== Ticket Subscriptions ====================
 
-    const subscribeToNewTickets = useCallback(
-        (callback: (ticket: Ticket) => void) => {
-            return subscribe("/topic/ticket/new", (message) => {
+    const subscribeToTickets = useCallback(
+        (callback: (event: TicketListEventWS) => void) => {
+            return subscribe("/topic/tickets", (message) => {
                 try {
-                    const ticket: Ticket = JSON.parse(message.body);
-                    callback(ticket);
+                    const event: TicketListEventWS = JSON.parse(message.body);
+                    callback(event);
                 } catch (e) {
-                    console.error("[WS] Ошибка подписки на новые тикеты: ", e);
+                    console.error("[WS] Ошибка подписки на агрегированный поток тикетов: ", e);
                 }
             });
         },
@@ -283,20 +289,6 @@ export function WebSocketProvider({children}: { children: React.ReactNode }) {
                     callback(data);
                 } catch (e) {
                     console.error("[WS] Ошибка подписки на событие удаления тикета: ", e);
-                }
-            });
-        },
-        [subscribe],
-    );
-
-    const subscribeToSlaBreach = useCallback(
-        (callback: (ticket: Ticket) => void) => {
-            return subscribe("/topic/sla/breach", (message) => {
-                try {
-                    const ticket: Ticket = JSON.parse(message.body);
-                    callback(ticket);
-                } catch (e) {
-                    console.error("[WS] Ошибка подписки на SLA breach: ", e);
                 }
             });
         },
@@ -499,10 +491,9 @@ export function WebSocketProvider({children}: { children: React.ReactNode }) {
 
     const value: WebSocketContextValue = {
         isConnected,
-        subscribeToNewTickets,
+        subscribeToTickets,
         subscribeToTicketUpdates,
         subscribeToTicketDeleted,
-        subscribeToSlaBreach,
         subscribeToUserNotifications,
         subscribeToAssignments,
         subscribeToAssignmentRejected,

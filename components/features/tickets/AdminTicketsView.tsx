@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { LuPlus, LuUserCheck } from "react-icons/lu";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
 import { supportLineApi } from "@/lib/api/supportLines";
 import { queryKeys } from "@/lib/queryKeys";
@@ -25,10 +25,18 @@ import { TicketCard } from "./TicketCard";
 import { TicketCompactCard } from "./TicketCompactCard";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { SDPagination } from "@/components/ui/SDPagination";
-import { usePersistentPage, useAuth } from "@/lib/hooks";
+import {
+  usePersistentPage,
+  useAuth,
+  useTicketListSubscription,
+} from "@/lib/hooks";
 import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
 import { useWebSocket } from "@/lib/providers";
 import { useQueryClient } from "@tanstack/react-query";
+
+interface AdminTicketsViewProps {
+  enabled?: boolean;
+}
 
 const PAGE_SIZE = 7;
 const ASSIGNED_PAGE_SIZE = 5;
@@ -40,17 +48,13 @@ function readStorage(key: string): string {
   return sessionStorage.getItem(key) ?? "";
 }
 
-export function AdminTicketsView() {
+export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
   const { user } = useAuth();
   const [page, setPage] = usePersistentPage("admin-tickets");
   const queryClient = useQueryClient();
-  const {
-    isConnected,
-    subscribeToNewTickets,
-    subscribeToTicketUpdates,
-    subscribeToTicketDeleted,
-  } = useWebSocket();
+  const { isConnected } = useWebSocket();
   const prevConnectedRef = useRef<boolean | null>(null);
+  const { enabled = true } = options;
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
     () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | "",
@@ -81,14 +85,10 @@ export function AdminTicketsView() {
     [setPage],
   );
 
-  // Инвалидируем кеш при появлении нового тикета через WS
-  useEffect(() => {
-    if (!isConnected) return;
-    const unsubscribe = subscribeToNewTickets(() => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
-    });
-    return unsubscribe;
-  }, [isConnected, subscribeToNewTickets, queryClient]);
+  useTicketListSubscription({
+    queryKey: queryKeys.tickets.lists(),
+    enabled,
+  });
 
   // Перезапрашиваем данные при восстановлении WS-соединения (могли пропустить события)
   useEffect(() => {
@@ -112,8 +112,8 @@ export function AdminTicketsView() {
         statusFilter || undefined,
         lineFilter || undefined,
       ),
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 300 * 1000,
+    refetchInterval: 300 * 1000,
   });
 
   const { data: lines } = useQuery({
@@ -130,62 +130,12 @@ export function AdminTicketsView() {
       page: assignedPage,
     }),
     queryFn: () => ticketApi.listAssigned(assignedPage, ASSIGNED_PAGE_SIZE),
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 300 * 1000,
+    refetchInterval: 300 * 1000,
   });
 
   const tickets = data?.content ?? [];
   const assignedTickets = assignedData?.content ?? [];
-
-  // Идентификаторы всех тикетов, отображаемых на экране (оба блока).
-  // Используется для подписки на per-ticket обновления/удаления через WS.
-  // Строковый ключ стабилизирует useEffect: эффект перезапустится только
-  // когда реально поменялся состав видимых тикетов, а не на каждый рендер.
-  const visibleTicketIds = useMemo(() => {
-    const ids = new Set<number>();
-    for (const t of tickets) ids.add(t.id);
-    for (const t of assignedTickets) ids.add(t.id);
-    return Array.from(ids);
-  }, [tickets, assignedTickets]);
-  const visibleTicketIdsKey = visibleTicketIds.join(",");
-
-  // Подписываемся на обновления и удаления каждого видимого тикета.
-  // Бэкенд публикует UPDATED/STATUS_CHANGED/ASSIGNED/RATED/ESTIMATED_DATE_SET
-  // на /topic/ticket/{id}, а DELETED — на /topic/ticket/{id}/deleted.
-  // Без этих подписок список «молчит» до следующего polling-рефетча.
-  useEffect(() => {
-    if (!isConnected || visibleTicketIds.length === 0) return;
-    const unsubs: Array<() => void> = [];
-    for (const id of visibleTicketIds) {
-      unsubs.push(
-        subscribeToTicketUpdates(id, (updated) => {
-          // Обновляем детальный кеш из payload'а — чтобы карточка/страница
-          // детали получили свежие данные без лишнего REST-запроса.
-          queryClient.setQueryData(queryKeys.tickets.detail(id), updated);
-          // И инвалидируем списки (все варианты пагинации/фильтров).
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.tickets.lists(),
-          });
-        }),
-      );
-      unsubs.push(
-        subscribeToTicketDeleted(id, () => {
-          queryClient.removeQueries({ queryKey: queryKeys.tickets.detail(id) });
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.tickets.lists(),
-          });
-        }),
-      );
-    }
-    return () => unsubs.forEach((u) => u());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isConnected,
-    visibleTicketIdsKey,
-    subscribeToTicketUpdates,
-    subscribeToTicketDeleted,
-    queryClient,
-  ]);
 
   return (
     <Box>

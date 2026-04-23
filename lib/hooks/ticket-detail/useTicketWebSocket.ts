@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers";
@@ -25,7 +25,10 @@ const suppressedToastsMap = new Map<number, number>();
  * Подавить следующий toast для указанного тикета на указанное время (мс)
  * Вызывается из UI перед выполнением действия
  */
-export function suppressTicketToast(ticketId: number, durationMs: number = 2000) {
+export function suppressTicketToast(
+  ticketId: number,
+  durationMs: number = 2000,
+) {
   suppressedToastsMap.set(ticketId, Date.now() + durationMs);
 }
 
@@ -78,53 +81,6 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     currentUserRef.current = user;
   }, [onTicketUpdate, onTicketDeleted, currentTicket, user]);
 
-  // Generate toast message based on what changed
-  const generateChangeMessage = useCallback(
-    (oldTicket: Ticket | null, newTicket: Ticket): string | null => {
-      if (!oldTicket) return null;
-
-      // Check assignedTo first
-      if (
-        oldTicket.assignedTo?.id !== newTicket.assignedTo?.id &&
-        newTicket.assignedTo
-      ) {
-        const name = newTicket.assignedTo.fio || newTicket.assignedTo.username;
-        return `Заявку принял специалист: ${name}`;
-      }
-
-      // Status changed
-      if (oldTicket.status !== newTicket.status) {
-        return `Статус изменён: ${getStatusLabel(
-          oldTicket.status
-        )} → ${getStatusLabel(newTicket.status)}`;
-      }
-
-      // Support line changed
-      if (
-        oldTicket.supportLine?.id !== newTicket.supportLine?.id &&
-        newTicket.supportLine
-      ) {
-        return `Заявка переадресована: ${newTicket.supportLine.name}`;
-      }
-
-      // Priority changed
-      if (oldTicket.priority !== newTicket.priority) {
-        return `Приоритет изменён: ${newTicket.priority}`;
-      }
-
-      // Title/Description changed
-      if (oldTicket.title !== newTicket.title) {
-        return "Заголовок заявки обновлён";
-      }
-      if (oldTicket.description !== newTicket.description) {
-        return "Описание заявки обновлено";
-      }
-
-      return null;
-    },
-    []
-  );
-
   // Subscribe to ticket updates
   useEffect(() => {
     if (!enabled || !isConnected || !ticketId) return;
@@ -138,8 +94,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         // Check if current user is a specialist (not admin, not just user)
         const isSpecialist = currentUser?.specialist || false;
         const isAdmin = currentUser?.roles?.includes("ADMIN") || false;
-        const isTicketCreator =
-          currentUser?.id === updatedTicket.createdBy?.id;
+        const isTicketCreator = currentUser?.id === updatedTicket.createdBy?.id;
 
         // If specialist and assignee changed to someone else — kick them out
         // unless they are a co-executor (they still have access)
@@ -150,39 +105,36 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
           const assigneeChanged =
             oldTicket?.assignedTo?.id !== updatedTicket.assignedTo?.id;
           const isCoExecutor = updatedTicket.coExecutors?.some(
-            (ce) => ce.userId === currentUser?.id
+            (ce) => ce.userId === currentUser?.id,
           );
 
-          if (assigneeChanged && !nowAssignedToMe && !isCoExecutor && updatedTicket.assignedTo) {
+          if (
+            assigneeChanged &&
+            !nowAssignedToMe &&
+            !isCoExecutor &&
+            updatedTicket.assignedTo
+          ) {
             const newAssigneeName =
               updatedTicket.assignedTo.fio || updatedTicket.assignedTo.username;
 
             toast.warning(
               wasAssignedToMe
                 ? `Заявка передана специалисту ${newAssigneeName}. Вы больше не имеете доступа.`
-                : `Заявку принял специалист ${newAssigneeName}. Вы больше не имеете доступа.`
+                : `Заявку принял специалист ${newAssigneeName}. Вы больше не имеете доступа.`,
             );
 
             router.push("/dashboard/tickets");
             return; // Don't update state — we're leaving
           }
         }
-
-        // Show toast for changes (if we're staying on the page)
-        // Проверяем, нужно ли подавить toast (пользователь только что сам сделал это действие)
-        const message = generateChangeMessage(oldTicket, updatedTicket);
-        if (message && showToasts && !shouldSuppressToast(ticketId)) {
-          toast.ticketUpdated(ticketId, message);
-        }
-
         // Invalidate caches
-        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tickets.detail(ticketId),
+        });
 
         // Update ticket state
         updateCallbackRef.current?.(updatedTicket);
-      }
+      },
     );
 
     const unsubscribeDeleted = subscribeToTicketDeleted(ticketId, () => {
@@ -208,28 +160,10 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
     ticketId,
     subscribeToTicketUpdates,
     subscribeToTicketDeleted,
-    generateChangeMessage,
     showToasts,
     router,
     queryClient,
   ]);
 
   return { isConnected };
-}
-
-// Helper function for status labels
-function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    NEW: "Новый",
-    OPEN: "Открыт",
-    PENDING: "В ожидании",
-    ESCALATED: "Эскалирован",
-    RESOLVED: "Решён",
-    PENDING_CLOSURE: "Ожидает закрытия",
-    CLOSED: "Закрыт",
-    REOPENED: "Переоткрыт",
-    REJECTED: "Отклонён",
-    CANCELLED: "Отменён",
-  };
-  return labels[status] || status;
 }

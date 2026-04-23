@@ -31,17 +31,12 @@ export const UserTicketsView = ({
   pageSize,
   initialFilter,
 }: UserTicketsViewProps) => {
-  const { data, meta, optimistic, actions } = useTicketsQuery({
+  const { data, meta, actions } = useTicketsQuery({
     pageSize,
     initialFilter,
   });
 
-  useTicketsWebSocket({
-    onNewTicket: (ticket) => {
-      optimistic.addTicket(ticket);
-    },
-    enabled: true,
-  });
+  useTicketsWebSocket();
 
   const content = data?.content ?? [];
   const tickets = status ? content.filter((t) => t.status === status) : content;

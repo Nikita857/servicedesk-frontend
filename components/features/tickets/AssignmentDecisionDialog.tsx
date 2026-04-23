@@ -54,7 +54,6 @@ export function AssignmentDecisionDialog({
     setIsAccepting(true);
     try {
       await assignmentApi.accept(assignment.id);
-      toast.success("Назначение принято");
       invalidateCaches();
       onClose();
       router.push(`/dashboard/tickets/${assignment.ticketId}`);
@@ -71,7 +70,6 @@ export function AssignmentDecisionDialog({
     setIsRejecting(true);
     try {
       await assignmentApi.reject(assignment.id, rejectReason.trim());
-      toast.success("Назначение отклонено");
       invalidateCaches();
       handleClose();
     } catch (error) {
@@ -106,11 +104,7 @@ export function AssignmentDecisionDialog({
               <VStack align="stretch" gap={4}>
                 {assignment && (
                   <>
-                    <Box
-                      bg="bg.muted"
-                      borderRadius="lg"
-                      p={4}
-                    >
+                    <Box bg="bg.muted" borderRadius="lg" p={4}>
                       <Text fontSize="xs" color="fg.muted" mb={1}>
                         Заявка #{assignment.ticketId}
                       </Text>
@@ -129,7 +123,11 @@ export function AssignmentDecisionDialog({
                           maxH="120px"
                           overflowY="auto"
                         >
-                          <Text fontSize="sm" color="fg.muted" whiteSpace="pre-wrap">
+                          <Text
+                            fontSize="sm"
+                            color="fg.muted"
+                            whiteSpace="pre-wrap"
+                          >
                             {ticket.description}
                           </Text>
                         </Box>
@@ -138,23 +136,24 @@ export function AssignmentDecisionDialog({
                       {assignment.fromLineName && (
                         <HStack gap={1} fontSize="sm" color="fg.muted">
                           <LuArrowRight size={14} />
-                          <Text>
-                            С линии: {assignment.fromLineName}
-                          </Text>
+                          <Text>С линии: {assignment.fromLineName}</Text>
                         </HStack>
                       )}
 
                       {assignment.fromFio && (
                         <HStack gap={1} fontSize="sm" color="fg.muted" mt={1}>
                           <LuUser size={14} />
-                          <Text>
-                            От: {assignment.fromFio}
-                          </Text>
+                          <Text>От: {assignment.fromFio}</Text>
                         </HStack>
                       )}
 
                       {assignment.note && (
-                        <Box mt={3} pt={3} borderTopWidth="1px" borderColor="border.default">
+                        <Box
+                          mt={3}
+                          pt={3}
+                          borderTopWidth="1px"
+                          borderColor="border.default"
+                        >
                           <Text fontSize="sm" color="fg.muted" mb={1}>
                             Комментарий:
                           </Text>

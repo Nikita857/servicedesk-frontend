@@ -3,7 +3,36 @@
  * Используются в WebSocketProvider и всех WebSocket хуках
  */
 
-import type {AssignmentMode, AssignmentStatus, UserShortResponse} from "./ticket";
+import type {
+  AssignmentMode,
+  AssignmentStatus,
+  TicketStatus,
+  UserShortResponse,
+} from "./ticket";
+
+export type TicketEventType =
+  | "CREATED"
+  | "UPDATED"
+  | "STATUS_CHANGED"
+  | "ASSIGNED"
+  | "ASSIGNMENT_CREATED"
+  | "ASSIGNMENT_REJECTED"
+  | "MESSAGE_SENT"
+  | "MESSAGE_UPDATED"
+  | "RATED"
+  | "DELETED"
+  | "ATTACHMENT_ADDED"
+  | "INTERNAL_COMMENT"
+  | "ESTIMATED_DATE_SET";
+
+export interface TicketListEventWS {
+  id: number;
+  eventType: TicketEventType;
+  status: TicketStatus | null; // null для DELETED
+  assigneeId: number | null;
+  supportLineId: number | null;
+  timestamp: string; // ISO
+}
 
 // ==================== Chat Types ====================
 

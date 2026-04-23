@@ -1,19 +1,19 @@
-// Notification types for WebSocket
-
+// Notification types — должны совпадать с ru.bormash.servicedesk.feature.notification.model.NotificationType
 export type NotificationType =
-    'MESSAGE' |
-    'STATUS_CHANGE' |
-    'ASSIGNMENT' |
-    'ESTIMATED_DATE' |
-    'RATING' |
-    'ASSIGNMENT_REJECTED'|
-    'ASSIGNMENT_ACCEPTED'|
-    'CO_EXECUTOR_ADDED' |
-    'CO_EXECUTOR_REMOVED' |
-    'TICKET_TAKEN' |
-    'TICKET_CREATED' |
-    'SPECIALIST_ADDED_TO_LINE' |
-    'SPECIALIST_REMOVED_FROM_LINE';
+  | "MESSAGE"
+  | "STATUS_CHANGE"
+  | "ASSIGNMENT"
+  | "ASSIGNMENT_ACCEPTED"
+  | "ASSIGNMENT_REJECTED"
+  | "ASSIGNMENT_CANCELLED"
+  | "CO_EXECUTOR_ADDED"
+  | "CO_EXECUTOR_REMOVED"
+  | "ESTIMATED_DATE"
+  | "RATING"
+  | "TICKET_CREATED"
+  | "TICKET_TAKEN"
+  | "SPECIALIST_ADDED_TO_LINE"
+  | "SPECIALIST_REMOVED_FROM_LINE";
 
 export interface Notification {
   type: NotificationType;

@@ -44,6 +44,7 @@ const typeConfig: Record<NotificationType, { icon: React.ElementType; color: str
   ESTIMATED_DATE: { icon: LuCalendar, color: "purple.500" },
   ASSIGNMENT_ACCEPTED: { icon: LuUserCheck, color: "green.500" },
   ASSIGNMENT_REJECTED: { icon: LuUserX, color: "red.500" },
+  ASSIGNMENT_CANCELLED: { icon: LuUserX, color: "gray.500" },
   CO_EXECUTOR_ADDED: { icon: LuUsers, color: "green.500" },
   CO_EXECUTOR_REMOVED: { icon: LuUserMinus, color: "red.500" },
   TICKET_TAKEN: { icon: LuUserCheck, color: "green.500" },
