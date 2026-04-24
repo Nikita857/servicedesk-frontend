@@ -22,7 +22,7 @@ export const TicketStatusCollection: Record<string, TicketStatus[]> = {
   open: ["OPEN", "PENDING", "REOPENED", "RESOLVED", "ESCALATED"],
   closed: ["CLOSED", "PENDING_CLOSURE"],
   rejected: ["REJECTED"],
-}
+};
 
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -40,8 +40,8 @@ export interface TicketListResponse {
   title: string;
   status: TicketStatus;
   priority: TicketPriority;
-  createdByUsername: string;
-  assignedToUsername: string | null;
+  createdBy: UserShortResponse;
+  assignedTo: UserShortResponse | null;
   supportLineName: string | null;
   createdAt: string;
   slaDeadline: string | null;
@@ -99,7 +99,7 @@ export interface ChangeStatusRequest {
 // Paginated response
 export interface PagedTicketList {
   content: TicketListResponse[];
-  page: Page
+  page: Page;
 }
 
 // Status labels and colors
@@ -122,13 +122,17 @@ export const ticketStatusConfig: Record<TicketStatus, StatusConfig> = {
 };
 
 // Assignment Status configuration
-export type AssignmentStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED";
+export type AssignmentStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "CANCELLED";
 
 export const assignmentStatusConfig: Record<AssignmentStatus, StatusConfig> = {
   PENDING: { label: "Ожидает", color: "yellow" },
   ACCEPTED: { label: "Принято", color: "green" },
   REJECTED: { label: "Отклонено", color: "red" },
-  CANCELLED: {label: "Аннулировано", color: "gray" },
+  CANCELLED: { label: "Аннулировано", color: "gray" },
 };
 
 // Assignment Mode configuration

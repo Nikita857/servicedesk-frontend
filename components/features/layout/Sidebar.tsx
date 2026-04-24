@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, VStack, Text, Flex, Icon } from "@chakra-ui/react";
+import { Box, VStack, Text, Flex, Icon, Separator } from "@chakra-ui/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ import {
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
 import { useAuthStore } from "@/stores";
+import { ProfileMenu } from "./ProfileMenu";
 
 interface NavItem {
   label: string;
@@ -33,7 +34,11 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   { label: "Дашборд", href: "/dashboard", icon: LuLayoutDashboard },
   { label: "Заявки", href: "/dashboard/tickets", icon: LuTicket },
-  { label: "Мои обращения", href: "/dashboard/my-tickets", icon: LuClipboardList },
+  {
+    label: "Мои обращения",
+    href: "/dashboard/my-tickets",
+    icon: LuClipboardList,
+  },
   //{ label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
   { label: "Статьи", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
@@ -124,93 +129,103 @@ export function Sidebar({ onClose }: SidebarProps) {
           </Text>
         </Box>
         <Text fontWeight="semibold" fontSize="lg" color="fg.default">
-          ServiceDesk
+          Service Desk
         </Text>
       </Flex>
 
       {/* Main Navigation */}
-      <VStack gap={1} px={3} align="stretch" flex={1}>
-        <Text
-          px={2}
-          py={2}
-          fontSize="xs"
-          fontWeight="medium"
-          color="fg.muted"
-          textTransform="uppercase"
-        >
-          Меню
-        </Text>
+      <Box flex={1} overflowY="auto">
+        <VStack gap={1} px={3} align="stretch">
+          <Text
+            px={2}
+            py={2}
+            fontSize="xs"
+            fontWeight="medium"
+            color="fg.muted"
+            textTransform="uppercase"
+          >
+            Меню
+          </Text>
 
-        {filteredNavItems.map((item) => (
-          <Link key={item.href} href={item.href} onClick={handleLinkClick}>
-            <Flex
-              px={3}
-              py={2.5}
-              borderRadius="lg"
-              align="center"
-              gap={3}
-              bg={isActive(item.href) ? "bg.subtle" : "transparent"}
-              color={
-                isActive(item.href)
-                  ? colorMode === "dark"
-                    ? "accent.100"
-                    : "accent.900"
-                  : "fg.muted"
-              }
-              fontWeight={isActive(item.href) ? "medium" : "normal"}
-              transition="all 0.2s"
-              _hover={{
-                bg: "bg.subtle",
-                color: "fg.default",
-              }}
-              data-onboarding-id={onboardingIds[item.href]}
-            >
-              <Icon as={item.icon} boxSize={5} />
-              <Text fontSize="sm">{item.label}</Text>
-            </Flex>
-          </Link>
-        ))}
+          {filteredNavItems.map((item) => (
+            <Link key={item.href} href={item.href} onClick={handleLinkClick}>
+              <Flex
+                px={3}
+                py={2.5}
+                borderRadius="lg"
+                align="center"
+                gap={3}
+                bg={isActive(item.href) ? "bg.subtle" : "transparent"}
+                color={
+                  isActive(item.href)
+                    ? colorMode === "dark"
+                      ? "accent.100"
+                      : "accent.900"
+                    : "fg.muted"
+                }
+                fontWeight={isActive(item.href) ? "medium" : "normal"}
+                transition="all 0.2s"
+                _hover={{
+                  bg: "bg.subtle",
+                  color: "fg.default",
+                }}
+                data-onboarding-id={onboardingIds[item.href]}
+              >
+                <Icon as={item.icon} boxSize={5} />
+                <Text fontSize="sm">{item.label}</Text>
+              </Flex>
+            </Link>
+          ))}
 
-        {/* Admin Section - only for admins */}
-        {isAdmin && (
-          <>
-            <Text
-              px={2}
-              py={2}
-              mt={4}
-              fontSize="xs"
-              fontWeight="medium"
-              color="fg.muted"
-              textTransform="uppercase"
-            >
-              Управление
-            </Text>
+          {/* Admin Section - only for admins */}
+          {isAdmin && (
+            <>
+              <Text
+                px={2}
+                py={2}
+                mt={4}
+                fontSize="xs"
+                fontWeight="medium"
+                color="fg.muted"
+                textTransform="uppercase"
+              >
+                Управление
+              </Text>
 
-            {adminItems.map((item) => (
-              <Link key={item.href} href={item.href} onClick={handleLinkClick}>
-                <Flex
-                  px={3}
-                  py={2.5}
-                  borderRadius="lg"
-                  align="center"
-                  gap={3}
-                  bg={isActive(item.href) ? "bg.subtle" : "transparent"}
-                  color={isActive(item.href) ? "accent.600" : "fg.muted"}
-                  fontWeight={isActive(item.href) ? "medium" : "normal"}
-                  transition="all 0.2s"
-                  _hover={{
-                    bg: "bg.subtle",
-                    color: "fg.default",
-                  }}
+              {adminItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={handleLinkClick}
                 >
-                  <Icon as={item.icon} boxSize={5} />
-                  <Text fontSize="sm">{item.label}</Text>
-                </Flex>
-              </Link>
-            ))}
-          </>
-        )}
-      </VStack>
+                  <Flex
+                    px={3}
+                    py={2.5}
+                    borderRadius="lg"
+                    align="center"
+                    gap={3}
+                    bg={isActive(item.href) ? "bg.subtle" : "transparent"}
+                    color={isActive(item.href) ? "accent.600" : "fg.muted"}
+                    fontWeight={isActive(item.href) ? "medium" : "normal"}
+                    transition="all 0.2s"
+                    _hover={{
+                      bg: "bg.subtle",
+                      color: "fg.default",
+                    }}
+                  >
+                    <Icon as={item.icon} boxSize={5} />
+                    <Text fontSize="sm">{item.label}</Text>
+                  </Flex>
+                </Link>
+              ))}
+            </>
+          )}
+        </VStack>
+      </Box>
+      <Box px={3} pt={4}>
+        <Separator mb={4} />
+        <ProfileMenu user={user} />
+      </Box>
     </Box>
   );
 }

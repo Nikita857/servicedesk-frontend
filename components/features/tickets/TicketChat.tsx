@@ -5,21 +5,22 @@ import {
   Button,
   VStack,
   HStack,
+  Avatar,
+  Badge,
 } from "@chakra-ui/react";
-import {
-  LuWifi,
-  LuWifiOff,
-  LuPaperclip,
-  LuX,
-} from "react-icons/lu";
+import { LuPaperclip, LuX } from "react-icons/lu";
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
-import type { TicketStatus } from "@/types";
+import { userRolesBadges, type TicketStatus } from "@/types";
 import { useChatWebSocket } from "@/lib/hooks/ticket-chat/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
 import ChatInput from "../ticket-chat/ChatInput";
-import { useChatActions } from "@/lib/hooks";
-import { formatFileSize } from "@/lib/utils";
+import { useChatActions, useTicketQuery } from "@/lib/hooks";
+import {
+  formatFileSize,
+  getFullNameInitials,
+  getShortInitials,
+} from "@/lib/utils";
 import { ImageLightbox } from "@/components/ui";
 
 interface TicketChatProps {
@@ -36,6 +37,10 @@ export function TicketChat({
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  //fetch ticket info
+
+  const { ticket, currentAssignment } = useTicketQuery(ticketId);
 
   // Use custom hook for WebSocket and messages
   const {
@@ -111,35 +116,81 @@ export function TicketChat({
           align="center"
           bg="bg.subtle"
         >
-          <Text fontWeight="medium" color="fg.default">
-            Сообщения ({messages.length})
-          </Text>
-          <HStack gap={2}>
-            {isConnected ? (
-              <HStack color="green.500" fontSize="xs">
-                <LuWifi size={14} />
-                <Text>Live</Text>
-              </HStack>
-            ) : (
-              <HStack color="fg.muted" fontSize="xs">
-                <LuWifiOff size={14} />
-                <Text>Offline</Text>
-              </HStack>
-            )}
+          <HStack gap={3}>
+            {/* Аватар собеседника */}
+            <Avatar.Root size="sm" flexShrink={0}>
+              <Avatar.Fallback>
+                {ticket?.createdBy.id === user?.id
+                  ? ticket?.assignedTo
+                    ? getShortInitials(ticket.assignedTo.fio)
+                    : `#${ticketId}`
+                  : ticket?.createdBy
+                    ? getShortInitials(ticket.createdBy.fio)
+                    : `#${ticketId}`}
+              </Avatar.Fallback>
+
+              <Avatar.Image
+                src={
+                  ticket?.createdBy.id === user?.id
+                    ? (ticket?.assignedTo?.avatarUrl ?? undefined)
+                    : (ticket?.createdBy?.avatarUrl ?? undefined)
+                }
+              />
+            </Avatar.Root>
+
+            <Box>
+              <Text fontWeight="semibold" fontSize="sm" color="fg.default">
+                {ticket?.createdBy.id === user?.id
+                  ? ticket?.assignedTo
+                    ? getFullNameInitials(ticket.assignedTo.fio)
+                    : `Чат заявки #${ticketId}`
+                  : ticket?.createdBy
+                    ? getFullNameInitials(ticket.createdBy.fio)
+                    : `Чат заявки #${ticketId}`}
+              </Text>
+
+              {isConnected && ticket?.assignedTo ? (
+                <HStack gap={1.5}>
+                  <Box w={1.5} h={1.5} borderRadius="full" bg="green.500" />
+                  <Text fontSize="xs" color="green.500" fontWeight="medium">
+                    онлайн
+                  </Text>
+                </HStack>
+              ) : (
+                <HStack gap={1.5}>
+                  <Box w={1.5} h={1.5} borderRadius="full" bg="fg.muted" />
+                  <Text fontSize="xs" color="fg.muted">
+                    офлайн
+                  </Text>
+                </HStack>
+              )}
+            </Box>
           </HStack>
+
+          <Text fontSize="xs" color="fg.muted">
+            {messages.length} сообщений
+          </Text>
         </Flex>
 
         {/* Messages */}
-        <Box flex={1} overflowY="auto" p={4}>
-          <ChatMessageList
-            messages={messages}
-            currentUserId={user?.id}
-            isSpecialist={isSpecialist}
-            isLoading={isLoading}
-            onDeleteMessage={handleDeleteMessage}
-            onImageClick={setLightboxImage}
-          />
-        </Box>
+        <Flex
+          overflowY="auto"
+          p={4}
+          w="100%"
+          justifyContent="center"
+          alignItems="center"
+        >
+          <Box w="90%" maxW="900px">
+            <ChatMessageList
+              messages={messages}
+              currentUserId={user?.id}
+              isSpecialist={isSpecialist}
+              isLoading={isLoading}
+              onDeleteMessage={handleDeleteMessage}
+              onImageClick={setLightboxImage}
+            />
+          </Box>
+        </Flex>
 
         {/* Input Section */}
         <Box
@@ -173,33 +224,42 @@ export function TicketChat({
 
           {/* Typing Indicator */}
           {typingUser && (
-            <Flex px={3} py={1} align="center" gap={2}>
-              <Box className="typing-dots" display="flex" gap={1}>
-                <Box
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="blue.500"
-                  animation="pulse 1.4s infinite"
-                />
-                <Box
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="blue.500"
-                  animation="pulse 1.4s infinite 0.2s"
-                />
-                <Box
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="blue.500"
-                  animation="pulse 1.4s infinite 0.4s"
-                />
-              </Box>
-              <Text fontSize="xs" color="fg.muted" fontStyle="italic">
-                {typingUser.fio || typingUser.username} печатает...
+            <Flex px={4} py={2} align="center" gap={2}>
+              <Text fontSize="xs" color="fg.subtle">
+                {typingUser.fio || typingUser.username} печатает
               </Text>
+
+              {/* Бабл с точками */}
+              <Flex
+                align="center"
+                gap="5px"
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderColor="border.default"
+                borderRadius="12px 12px 12px 3px"
+                px={3}
+                py={2}
+              >
+                <style>{`
+        @keyframes typingBlink {
+          0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+        .typing-dot { animation: typingBlink 1.4s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+      `}</style>
+                {[0, 1, 2].map((i) => (
+                  <Box
+                    key={i}
+                    className="typing-dot"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="fg.muted"
+                  />
+                ))}
+              </Flex>
             </Flex>
           )}
 

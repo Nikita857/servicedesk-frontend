@@ -21,6 +21,7 @@ import {
 } from "react-icons/lu";
 import { ProfileResponse } from "@/lib/api/profile";
 import { userRolesBadges } from "@/types/auth";
+import { getShortInitials } from "@/lib/utils";
 
 interface ProfileSidebarProps {
   profile: ProfileResponse;
@@ -58,7 +59,11 @@ export function ProfileSidebar({
             cursor="pointer"
             onClick={onAvatarClick}
           >
-            <Avatar.Fallback name={profile.fio || profile.username} />
+            <Avatar.Fallback name={profile.fio || profile.username}>
+              <Text fontWeight="semibold" fontSize="2xl">
+                {getShortInitials(profile.fio)}
+              </Text>
+            </Avatar.Fallback>
             {profile.avatarUrl && <Avatar.Image src={profile.avatarUrl} />}
           </Avatar.Root>
           <Box

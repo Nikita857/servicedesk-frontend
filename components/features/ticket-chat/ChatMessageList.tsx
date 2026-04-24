@@ -1,17 +1,7 @@
 "use client";
 
 import { useRef, useEffect, ReactNode, useState } from "react";
-import {
-  Box,
-  Flex,
-  Text,
-  VStack,
-  HStack,
-  Spinner,
-  Avatar,
-  Badge,
-  Portal,
-} from "@chakra-ui/react";
+import { Box, Flex, Text, VStack, Badge, Portal } from "@chakra-ui/react";
 import { LuTrash2, LuCheck, LuCheckCheck } from "react-icons/lu";
 import { getSenderConfig, type Message } from "@/types/message";
 import { AttachmentItem } from "./AttachmentItem";
@@ -25,7 +15,8 @@ interface ChatMessageListProps {
   onImageClick?: (url: string) => void;
 }
 
-// Helper functions
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const formatTime = (dateStr: string) =>
   new Date(dateStr).toLocaleTimeString("ru-RU", {
     hour: "2-digit",
@@ -38,29 +29,10 @@ const formatDate = (dateStr: string) =>
     month: "short",
   });
 
-const getInitials = (
-  name: string | null | undefined,
-  username: string | undefined,
-) => {
-  if (name)
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-  if (username) return username.slice(0, 2).toUpperCase();
-  return "??";
-};
-
-// URL regex pattern for detecting links
 const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/gi;
 
-// Parse text and convert URLs to clickable links
-const linkifyText = (text: string, isOwn: boolean): ReactNode[] => {
-  const parts = text.split(URL_REGEX);
-
-  return parts.map((part, index) => {
+const linkifyText = (text: string, isOwn: boolean): ReactNode[] =>
+  text.split(URL_REGEX).map((part, index) => {
     if (URL_REGEX.test(part)) {
       URL_REGEX.lastIndex = 0;
       return (
@@ -82,12 +54,16 @@ const linkifyText = (text: string, isOwn: boolean): ReactNode[] => {
     URL_REGEX.lastIndex = 0;
     return part;
   });
-};
+
+// ─── MessageBubble ────────────────────────────────────────────────────────────
 
 interface MessageBubbleProps {
   msg: Message;
   isOwn: boolean;
   isSpecialist: boolean;
+  isGroupStart: boolean;
+  /** True when this is the last message in a consecutive group from same sender */
+  isGroupEnd: boolean;
   onDeleteMessage?: (messageId: number) => void;
   onImageClick?: (url: string) => void;
 }
@@ -96,74 +72,96 @@ function MessageBubble({
   msg,
   isOwn,
   isSpecialist,
+  isGroupStart,
+  isGroupEnd,
   onDeleteMessage,
   onImageClick,
 }: MessageBubbleProps) {
   const senderConf = getSenderConfig(msg.senderType);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Есть ли что показать в контекст-меню
   const canDelete = isOwn && isSpecialist && !!onDeleteMessage;
-  const hasContextActions = canDelete;
 
   const handleContextMenu = (e: React.MouseEvent) => {
-    // Если есть выделенный текст — не показываем кастомное меню, даём браузерное
     const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) return;
-
-    if (!hasContextActions) return;
-
+    if (selection?.toString().trim()) return;
+    if (!canDelete) return;
     e.preventDefault();
     setMenuPos({ x: e.clientX, y: e.clientY });
   };
 
-  const closeMenu = () => setMenuPos(null);
+  const isRead = isSpecialist ? msg.readByUser : msg.readBySpecialist;
 
   return (
     <>
       <Box
-        maxW={{ base: "85%", md: "70%" }}
-        bg={isOwn ? "gray.900" : "bg.subtle"}
+        maxW={{ base: "65%", md: "60%" }}
+        // Telegram-style: flat bottom corner on the "tail" side
+        borderRadius="14px"
+        borderBottomRightRadius={isOwn ? (isGroupEnd ? "3px" : "14px") : "14px"}
+        borderBottomLeftRadius={isOwn ? "14px" : isGroupEnd ? "3px" : "14px"}
+        bg={isOwn ? "accent.800" : "bg.subtle"}
         color={isOwn ? "white" : "fg.default"}
-        px={{ base: 2.5, md: 3 }}
+        px={3}
         py={2}
-        borderRadius="lg"
-        borderTopRightRadius={isOwn ? "sm" : "lg"}
-        borderTopLeftRadius={isOwn ? "lg" : "sm"}
+        mb={2}
         userSelect="text"
         onContextMenu={handleContextMenu}
       >
-        {!isOwn && (
-          <HStack mb={1} gap={1.5}>
-            <Text fontSize="xs" fontWeight="semibold" color={isOwn ? "white" : `${senderConf.color}.600`}>
-              {msg.sender.fio || msg.sender.username}
-            </Text>
-            {msg.senderType !== "USER" && (
-              <Text fontSize="xs" color={isOwn ? "whiteAlpha.600" : "fg.subtle"}>
-                {senderConf.label}
-              </Text>
-            )}
-          </HStack>
-        )}
-        {msg.internal && (
-          <Badge
-            size="sm"
-            colorPalette="orange"
-            variant="subtle"
-            mb={1}
+        {/* Sender name — only on group start for received messages */}
+        {!isOwn && isGroupStart && (
+          <Text
+            fontSize="xs"
+            fontWeight="semibold"
+            color={`${senderConf.color}.600`}
+            mb={0.5}
           >
+            {msg.sender.fio || msg.sender.username}
+          </Text>
+        )}
+
+        {/* Internal badge */}
+        {msg.internal && (
+          <Badge colorPalette="orange" variant="subtle" size="sm" mb={1}>
             Внутреннее
           </Badge>
         )}
-        <Text
-          fontSize="sm"
-          whiteSpace="pre-wrap"
-          wordBreak="break-word"
-          userSelect="text"
-          cursor="text"
-        >
-          {linkifyText(msg.content, isOwn)}
-        </Text>
+
+        {/* Message content + inline time stitched together */}
+        <Flex align="flex-end" gap={2} wrap="wrap">
+          <Text
+            fontSize="sm"
+            whiteSpace="pre-wrap"
+            wordBreak="break-word"
+            userSelect="text"
+            cursor="text"
+            flex="1"
+            minW="0"
+          >
+            {linkifyText(msg.content, isOwn)}
+          </Text>
+
+          {/* Time + status — inline, bottom-right, never wraps alone */}
+          <Flex
+            align="center"
+            gap="3px"
+            flexShrink={0}
+            opacity={0.65}
+            mb="-1px" // optical alignment with text baseline
+          >
+            {msg.edited && <Text fontSize="10px">изм.</Text>}
+            <Text fontSize="10px" whiteSpace="nowrap">
+              {formatTime(msg.createdAt)}
+            </Text>
+            {isOwn &&
+              (isRead ? (
+                <LuCheckCheck size={13} style={{ color: "#93c5fd" }} />
+              ) : (
+                <LuCheck size={13} />
+              ))}
+          </Flex>
+        </Flex>
+
         {/* Attachments */}
         {msg.attachments && msg.attachments.length > 0 && (
           <VStack gap={2} mt={2} align="stretch">
@@ -177,36 +175,20 @@ function MessageBubble({
             ))}
           </VStack>
         )}
-        <HStack justify="flex-end" gap={1} mt={1}>
-          {msg.edited && (
-            <Text fontSize="xs" opacity={0.5}>
-              изм.
-            </Text>
-          )}
-          <Text fontSize="xs" opacity={0.7}>
-            {formatTime(msg.createdAt)}
-          </Text>
-          {isOwn && (() => {
-            const isRead = isSpecialist ? msg.readByUser : msg.readBySpecialist;
-            return isRead ? (
-              <LuCheckCheck size={14} style={{ opacity: 0.9, color: "#60a5fa" }} />
-            ) : (
-              <LuCheck size={14} style={{ opacity: 0.5 }} />
-            );
-          })()}
-        </HStack>
       </Box>
 
-      {/* Context menu — только для специалистов, позиционируется по координатам клика */}
-      {menuPos && hasContextActions && (
+      {/* Context menu */}
+      {menuPos && canDelete && (
         <Portal>
-          {/* Overlay для закрытия */}
           <Box
             position="fixed"
             inset={0}
             zIndex={1000}
-            onClick={closeMenu}
-            onContextMenu={(e) => { e.preventDefault(); closeMenu(); }}
+            onClick={() => setMenuPos(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenuPos(null);
+            }}
           />
           <Box
             position="fixed"
@@ -221,28 +203,31 @@ function MessageBubble({
             py={1}
             minW="150px"
           >
-            {canDelete && (
-              <Flex
-                px={3}
-                py={2}
-                gap={2}
-                align="center"
-                cursor="pointer"
-                _hover={{ bg: "bg.subtle" }}
-                fontSize="sm"
-                color="fg.error"
-                onClick={() => { onDeleteMessage(msg.id); closeMenu(); }}
-              >
-                <LuTrash2 size={14} />
-                Удалить
-              </Flex>
-            )}
+            <Flex
+              px={3}
+              py={2}
+              gap={2}
+              align="center"
+              cursor="pointer"
+              _hover={{ bg: "bg.subtle" }}
+              fontSize="sm"
+              color="fg.error"
+              onClick={() => {
+                onDeleteMessage!(msg.id);
+                setMenuPos(null);
+              }}
+            >
+              <LuTrash2 size={14} />
+              Удалить
+            </Flex>
           </Box>
         </Portal>
       )}
     </>
   );
 }
+
+// ─── ChatMessageList ──────────────────────────────────────────────────────────
 
 export function ChatMessageList({
   messages,
@@ -254,7 +239,6 @@ export function ChatMessageList({
 }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -262,7 +246,7 @@ export function ChatMessageList({
   if (isLoading) {
     return (
       <Flex justify="center" align="center" h="100%">
-        <Spinner />
+        <Box w={6} h={6} borderRadius="full" bg="accent.600" opacity={0.3} />
       </Flex>
     );
   }
@@ -278,18 +262,30 @@ export function ChatMessageList({
   }
 
   return (
-    <VStack gap={2} align="stretch">
+    <VStack gap={0} align="stretch">
       {messages.map((msg, index) => {
         const isOwn = msg.sender.id === currentUserId;
+        const prevMsg = messages[index - 1];
+        const nextMsg = messages[index + 1];
+
         const showDateLabel =
           index === 0 ||
-          formatDate(messages[index - 1].createdAt) !==
-            formatDate(msg.createdAt);
+          formatDate(prevMsg.createdAt) !== formatDate(msg.createdAt);
+
+        // Group logic: same sender = same group
+        const isGroupStart =
+          index === 0 || prevMsg.sender.id !== msg.sender.id || showDateLabel;
+
+        const isGroupEnd =
+          index === messages.length - 1 ||
+          nextMsg.sender.id !== msg.sender.id ||
+          formatDate(nextMsg.createdAt) !== formatDate(msg.createdAt);
 
         return (
-          <Box key={msg.id}>
+          <Box key={msg.id} mt={isGroupStart ? 2 : "2px"}>
+            {/* Date separator */}
             {showDateLabel && (
-              <Flex justify="center" mb={2} mt={index > 0 ? 2 : 0}>
+              <Flex justify="center" my={3}>
                 <Text
                   fontSize="xs"
                   color="fg.muted"
@@ -297,30 +293,19 @@ export function ChatMessageList({
                   px={3}
                   py={0.5}
                   borderRadius="full"
+                  fontWeight="medium"
                 >
                   {formatDate(msg.createdAt)}
                 </Text>
               </Flex>
             )}
-            <Flex
-              justify={isOwn ? "flex-end" : "flex-start"}
-              gap={2}
-              align="flex-end"
-            >
-              {!isOwn && (
-                <Avatar.Root size="sm" flexShrink={0}>
-                  <Avatar.Fallback>
-                    {getInitials(msg.sender.fio, msg.sender.username)}
-                  </Avatar.Fallback>
-                  {msg.sender.avatarUrl && (
-                    <Avatar.Image src={msg.sender.avatarUrl} />
-                  )}
-                </Avatar.Root>
-              )}
+            <Flex justify={isOwn ? "flex-end" : "flex-start"}>
               <MessageBubble
                 msg={msg}
                 isOwn={isOwn}
                 isSpecialist={isSpecialist}
+                isGroupStart={isGroupStart}
+                isGroupEnd={isGroupEnd}
                 onDeleteMessage={onDeleteMessage}
                 onImageClick={onImageClick}
               />

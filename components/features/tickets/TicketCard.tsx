@@ -1,17 +1,19 @@
 "use client";
 
 import { Box, Flex, Text, Badge, HStack } from "@chakra-ui/react";
-import { LuClock } from "react-icons/lu";
+import { LuClock, LuUser } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import type { TicketListResponse } from "@/types/ticket";
 import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
 import { formatDate } from "@/lib/utils";
+import PriorityBadge from "@/components/ui/ticket/PriorityBadge";
 
 interface TicketCardProps {
   ticket: TicketListResponse;
+  unreadCount?: number;
 }
 
-export function TicketCard({ ticket }: TicketCardProps) {
+export function TicketCard({ ticket, unreadCount = 0 }: TicketCardProps) {
   const router = useRouter();
   const statusConf = ticketStatusConfig[ticket.status];
   const priorityConf = ticketPriorityConfig[ticket.priority];
@@ -22,63 +24,95 @@ export function TicketCard({ ticket }: TicketCardProps) {
       borderRadius="xl"
       borderWidth="1px"
       borderColor="border.default"
-      p={4}
+      px={4}
+      py={3}
       cursor="pointer"
-      transition="all 0.2s"
+      transition="all 0.15s"
       _hover={{
-        borderColor: "gray.400",
+        borderColor: "accent.200",
         shadow: "sm",
+        bg: "bg.subtle",
       }}
       onClick={() => router.push(`/dashboard/tickets/${ticket.id}`)}
     >
-      <Flex align="center" justify="space-between" gap={4}>
-        {/* Left: ID + Title */}
-        <Flex align="center" gap={4} flex={1} minW={0}>
-          <Text
-            fontSize="sm"
-            color="fg.muted"
-            fontWeight="medium"
-            flexShrink={0}
-          >
-            #{ticket.id}
-          </Text>
-          <Text fontWeight="medium" color="fg.default" truncate flex={1}>
-            {ticket.title}
-          </Text>
-        </Flex>
-
-        {/* Center: Author/Assignee */}
+      {/* Row 1: ID + Title + Status + Unread */}
+      <Flex align="center" gap={2.5} mb={2}>
         <Text
-          fontSize="sm"
-          color="fg.muted"
-          display={{ base: "none", md: "block" }}
+          fontSize="xs"
+          color="fg.subtle"
+          fontWeight="semibold"
           flexShrink={0}
-          w="150px"
         >
-          {ticket.assignedToUsername || ticket.createdByUsername}
+          #{ticket.id}
         </Text>
 
-        {/* Right: Badges + Date */}
-        <HStack gap={3} flexShrink={0}>
-          <Badge
-            colorPalette={priorityConf.color}
-            variant="subtle"
-            size="sm"
-            display={{ base: "none", sm: "flex" }}
-          >
-            {priorityConf.label}
-          </Badge>
-          <Badge colorPalette={statusConf.color} size="sm">
-            {statusConf.label}
-          </Badge>
-          <HStack
+        <Text
+          fontWeight="semibold"
+          color="fg.default"
+          fontSize="sm"
+          flex={1}
+          truncate
+        >
+          {ticket.title}
+        </Text>
+
+        {/* Status dot + label */}
+        <HStack
+          gap={1.5}
+          bg={`${statusConf.color}.subtle`}
+          borderRadius="full"
+          px={2.5}
+          py={0.5}
+          flexShrink={0}
+        >
+          <Box
+            w="5px"
+            h="5px"
+            borderRadius="full"
+            bg={`${statusConf.color}.500`}
+          />
+          <Text
             fontSize="xs"
-            color="fg.muted"
-            display={{ base: "none", lg: "flex" }}
+            fontWeight="medium"
+            color={`${statusConf.color}.600`}
           >
-            <LuClock size={12} />
-            <Text>{formatDate(ticket.createdAt)}</Text>
-          </HStack>
+            {statusConf.label}
+          </Text>
+        </HStack>
+
+        {/* Unread badge */}
+        {unreadCount > 0 && (
+          <Flex
+            w="18px"
+            h="18px"
+            borderRadius="full"
+            bg="accent.600"
+            align="center"
+            justify="center"
+            flexShrink={0}
+          >
+            <Text fontSize="10px" fontWeight="bold" color="white">
+              {unreadCount}
+            </Text>
+          </Flex>
+        )}
+      </Flex>
+
+      {/* Row 2: Priority + Assignee + Date */}
+      <Flex align="center" gap={3}>
+        {/* Priority badge */}
+        <PriorityBadge color={priorityConf.color} label={priorityConf.label} />
+
+        {/* Assignee / Author */}
+        <HStack gap={1} color="fg.muted" fontSize="xs">
+          <LuUser size={11} />
+          <Text>{ticket.createdBy.fio}</Text>
+        </HStack>
+
+        {/* Date — pushed to the right */}
+        <HStack gap={1} color="fg.subtle" fontSize="xs" ml="auto">
+          <LuClock size={11} />
+          <Text>{formatDate(ticket.createdAt)}</Text>
         </HStack>
       </Flex>
     </Box>

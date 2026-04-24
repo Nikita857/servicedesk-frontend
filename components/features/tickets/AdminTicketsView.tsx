@@ -13,9 +13,8 @@ import {
   Center,
   NativeSelect,
   Badge,
-  Icon,
 } from "@chakra-ui/react";
-import { LuPlus, LuUserCheck } from "react-icons/lu";
+import { LuPlus } from "react-icons/lu";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
@@ -42,6 +41,7 @@ const PAGE_SIZE = 7;
 const ASSIGNED_PAGE_SIZE = 5;
 const STORAGE_KEY_STATUS = "sd_filter_admin_status";
 const STORAGE_KEY_LINE = "sd_filter_admin_line";
+const STORAGE_KEY_TAB = "sd_admin_tab";
 
 function readStorage(key: string): string {
   if (typeof window === "undefined") return "";
@@ -56,6 +56,10 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
   const prevConnectedRef = useRef<boolean | null>(null);
   const { enabled = true } = options;
 
+  const [tab, setTab] = useState<"all" | "assigned">(
+    () => (readStorage(STORAGE_KEY_TAB) as "all" | "assigned") || "all",
+  );
+
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
     () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | "",
   );
@@ -63,6 +67,15 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     const v = readStorage(STORAGE_KEY_LINE);
     return v ? Number(v) : "";
   });
+
+  const handleTabChange = useCallback(
+    (value: "all" | "assigned") => {
+      setTab(value);
+      sessionStorage.setItem(STORAGE_KEY_TAB, value);
+      setPage(0);
+    },
+    [setPage],
+  );
 
   const handleStatusChange = useCallback(
     (value: TicketStatus | "") => {
@@ -90,7 +103,6 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     enabled,
   });
 
-  // Перезапрашиваем данные при восстановлении WS-соединения (могли пропустить события)
   useEffect(() => {
     if (isConnected && prevConnectedRef.current === false) {
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
@@ -122,7 +134,6 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Tickets assigned to this admin
   const [assignedPage, setAssignedPage] = useState(0);
   const { data: assignedData, isLoading: assignedLoading } = useQuery({
     queryKey: queryKeys.tickets.list({
@@ -136,155 +147,159 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
 
   const tickets = data?.content ?? [];
   const assignedTickets = assignedData?.content ?? [];
+  const assignedTotal = assignedData?.page.totalElements ?? 0;
 
   return (
     <Box>
-      {/* Assigned to me block */}
-      <Box
-        mb={6}
-        bg="bg.surface"
-        border="1px solid"
-        borderColor="border.default"
-        borderRadius="xl"
-        overflow="hidden"
-      >
-        <Box
-          bg="orange.50"
-          borderBottomWidth="1px"
-          borderBottomColor="orange.200"
-          px={4}
-          py={3}
-          _dark={{
-            bg: "orange.900/20",
-            borderBottomColor: "orange.800",
-          }}
-        >
-          <HStack gap={2}>
-            <Icon as={LuUserCheck} boxSize={4} color="orange.600" />
-            <Heading size="sm" color="fg.default">
-              Назначено на меня
-            </Heading>
-            <Badge colorPalette="orange" variant="subtle" size="sm">
-              {assignedData?.page.totalElements ?? 0}
-            </Badge>
-          </HStack>
-        </Box>
-
-        <Box px={3} py={2}>
-          {assignedLoading ? (
-            <Flex justify="center" align="center" h="80px">
-              <Spinner size="md" />
-            </Flex>
-          ) : assignedTickets.length === 0 ? (
-            <Flex justify="center" align="center" h="80px">
-              <Text color="fg.muted" fontSize="sm">
-                Назначенных заявок нет
-              </Text>
-            </Flex>
-          ) : (
-            <VStack gap={1.5} align="stretch">
-              {assignedTickets.map((ticket) => (
-                <TicketCompactCard
-                  key={ticket.id}
-                  ticket={ticket}
-                  currentUserName={user?.username}
-                />
-              ))}
-            </VStack>
-          )}
-        </Box>
-
-        {assignedData && assignedData.page.totalPages > 1 && (
-          <SDPagination
-            page={assignedData.page}
-            action={setAssignedPage}
-            size="xs"
-          />
-        )}
-      </Box>
-
       {/* Header */}
       <Flex mb={4} justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
-          <Heading size="lg" color="fg.default" mb={1}>
-            Все заявки
+          <Heading size="lg" color="fg.default" mb={0.5}>
+            Заявки
             {isFetching && !isLoading && (
-              <Spinner size="sm" ml={2} color="gray.400" />
+              <Spinner size="sm" ml={2} color="fg.subtle" />
             )}
           </Heading>
           <Text color="fg.muted" fontSize="sm">
-            Просмотр всех заявок системы
+            Управление обращениями
           </Text>
         </Box>
 
-        <Flex
-          gap={2}
-          direction={{ base: "column", sm: "row" }}
-          align={{ base: "stretch", sm: "center" }}
-        >
-          <HStack gap={2}>
-            <NativeSelect.Root size="sm" flex={1}>
-              <NativeSelect.Field
-                value={statusFilter}
-                onChange={(e) =>
-                  handleStatusChange(e.target.value as TicketStatus | "")
-                }
-              >
-                <option value="">Все статусы</option>
-                {(Object.keys(ticketStatusConfig) as TicketStatus[]).map(
-                  (s) => (
-                    <option key={s} value={s}>
-                      {ticketStatusConfig[s].label}
-                    </option>
-                  ),
-                )}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-
-            <NativeSelect.Root size="sm" flex={1}>
-              <NativeSelect.Field
-                value={lineFilter}
-                onChange={(e) =>
-                  handleLineChange(
-                    e.target.value === "" ? "" : Number(e.target.value),
-                  )
-                }
-              >
-                <option value="">Все линии</option>
-                {lines?.map((line) => (
-                  <option key={line.id} value={line.id}>
-                    {line.name}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-          </HStack>
-
-          <HStack gap={2} justify={{ base: "flex-start", sm: "flex-end" }}>
-            <TicketStatusHelpModal />
-            <Link href="/dashboard/tickets/new">
-              <Button
-                size="sm"
-                bg="gray.900"
-                color="white"
-                _hover={{ bg: "gray.800" }}
-              >
-                <LuPlus />
-                Новая заявка
-              </Button>
-            </Link>
-          </HStack>
-        </Flex>
+        <HStack gap={2}>
+          <TicketStatusHelpModal />
+          <Link href="/dashboard/tickets/new">
+            <Button
+              size="sm"
+              bg="accent.800"
+              color="white"
+              _hover={{ bg: "accent.700" }}
+            >
+              <LuPlus />
+              Новая заявка
+            </Button>
+          </Link>
+        </HStack>
       </Flex>
 
+      {/* Tabs */}
+      <Box bg="bg.subtle" borderRadius="xl" p={1} mb={4} display="flex" gap={1}>
+        {(["all", "assigned"] as const).map((key) => (
+          <Box
+            key={key}
+            flex={1}
+            as="button"
+            borderRadius="lg"
+            py={2}
+            px={4}
+            fontSize="sm"
+            fontWeight="medium"
+            cursor="pointer"
+            border="none"
+            transition="all 0.15s"
+            bg={tab === key ? "bg.surface" : "transparent"}
+            color={tab === key ? "fg.default" : "fg.muted"}
+            boxShadow={tab === key ? "sm" : "none"}
+            onClick={() => handleTabChange(key)}
+          >
+            {key === "all" ? (
+              "Все заявки"
+            ) : (
+              <HStack gap={2} justify="center">
+                <Text>Назначено на меня</Text>
+                {assignedTotal > 0 && (
+                  <Badge
+                    colorPalette="accent"
+                    variant="solid"
+                    size="sm"
+                    borderRadius="full"
+                  >
+                    {assignedTotal}
+                  </Badge>
+                )}
+              </HStack>
+            )}
+          </Box>
+        ))}
+      </Box>
+
+      {/* Filters — only on "all" tab */}
+      {tab === "all" && (
+        <Flex gap={2} mb={4} wrap="wrap">
+          <NativeSelect.Root size="sm">
+            <NativeSelect.Field
+              value={statusFilter}
+              onChange={(e) =>
+                handleStatusChange(e.target.value as TicketStatus | "")
+              }
+            >
+              <option value="">Все статусы</option>
+              {(Object.keys(ticketStatusConfig) as TicketStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {ticketStatusConfig[s].label}
+                </option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+
+          <NativeSelect.Root size="sm">
+            <NativeSelect.Field
+              value={lineFilter}
+              onChange={(e) =>
+                handleLineChange(
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
+              }
+            >
+              <option value="">Все линии</option>
+              {lines?.map((line) => (
+                <option key={line.id} value={line.id}>
+                  {line.name}
+                </option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+        </Flex>
+      )}
+
       {/* Content */}
-      {isLoading ? (
+      {tab === "all" ? (
+        isLoading ? (
+          <Flex justify="center" align="center" h="200px">
+            <Spinner size="lg" />
+          </Flex>
+        ) : tickets.length === 0 ? (
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            h="200px"
+            bg="bg.surface"
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="border.default"
+          >
+            <Text color="fg.muted">Заявки не найдены</Text>
+          </Flex>
+        ) : (
+          <VStack gap={3} align="stretch">
+            {tickets.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} />
+            ))}
+            {data && data.page.totalPages > 1 && (
+              <Center>
+                <SDPagination page={data.page} action={setPage} size="sm" />
+              </Center>
+            )}
+          </VStack>
+        )
+      ) : /* Assigned tab */
+      assignedLoading ? (
         <Flex justify="center" align="center" h="200px">
           <Spinner size="lg" />
         </Flex>
-      ) : tickets.length === 0 ? (
+      ) : assignedTickets.length === 0 ? (
         <Flex
           direction="column"
           align="center"
@@ -295,18 +310,23 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
           borderWidth="1px"
           borderColor="border.default"
         >
-          <Text color="fg.muted">Заявки не найдены</Text>
+          <Text color="fg.muted">Назначенных заявок нет</Text>
         </Flex>
       ) : (
-        <VStack gap={3} align="stretch">
-          {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} />
+        <VStack gap={2} align="stretch">
+          {assignedTickets.map((ticket) => (
+            <TicketCompactCard
+              key={ticket.id}
+              ticket={ticket}
+              currentUserName={user?.username}
+            />
           ))}
-
-          {data && data.page.totalPages > 1 && (
-            <Center>
-              <SDPagination page={data.page} action={setPage} size="sm" />
-            </Center>
+          {assignedData && assignedData.page.totalPages > 1 && (
+            <SDPagination
+              page={assignedData.page}
+              action={setAssignedPage}
+              size="sm"
+            />
           )}
         </VStack>
       )}

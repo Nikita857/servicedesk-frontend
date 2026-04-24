@@ -17,7 +17,10 @@ import { Header } from "@/components/features/layout/Header";
 import { WebSocketProvider } from "@/lib/providers";
 import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
 import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
-import { OnboardingOverlay, USER_ONBOARDING_STEPS } from "@/components/features/onboarding";
+import {
+  OnboardingOverlay,
+  USER_ONBOARDING_STEPS,
+} from "@/components/features/onboarding";
 import { useOnboarding } from "@/lib/hooks/shared/useOnboarding";
 import { useHeartbeat } from "@/lib/hooks";
 import { useTabTitle } from "@/lib/hooks/shared/useTabTitle";
@@ -41,8 +44,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const onboarding = useOnboarding(isOnlyUser);
   useHeartbeat();
   useTabTitle({
-    isAdmin: !!(user?.roles?.includes("ADMIN")),
-    isSpecialist: !!(user?.specialist),
+    isAdmin: !!user?.roles?.includes("ADMIN"),
+    isSpecialist: !!user?.specialist,
   });
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!isHydrated) {
     return (
-      <Center h="100vh" bg="bg.canvas">
+      <Center h="100vh" bg="bg.canvas" suppressHydrationWarning>
         <Spinner size="xl" color="accent.500" />
       </Center>
     );
@@ -74,7 +77,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Онбординг — рендерится поверх всего интерфейса */}
       <OnboardingOverlay steps={USER_ONBOARDING_STEPS} controls={onboarding} />
 
-      <Flex h="100vh" bg="bg.canvas">
+      <Flex h="100vh" bg="bg.canvas" suppressHydrationWarning>
         {/* Desktop Sidebar - hidden on mobile */}
         <Box display={{ base: "none", lg: "block" }}>
           <Sidebar />

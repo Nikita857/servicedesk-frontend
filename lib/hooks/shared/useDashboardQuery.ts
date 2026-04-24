@@ -11,7 +11,10 @@ interface UseDashboardQueryReturn {
 
 export function useDashboardQuery(): UseDashboardQueryReturn {
   const ticketsQuery = useQuery({
-    queryKey: queryKeys.tickets.list({ statuses: ["NEW", "ESCALATED"], unassigned: true }),
+    queryKey: queryKeys.tickets.list({
+      statuses: ["NEW", "ESCALATED"],
+      unassigned: true,
+    }),
     queryFn: async () => {
       const [newPage, escalatedPage] = await Promise.all([
         ticketApi.listByStatus("NEW", 0, 20),
@@ -19,7 +22,7 @@ export function useDashboardQuery(): UseDashboardQueryReturn {
       ]);
 
       return [...newPage.content, ...escalatedPage.content]
-        .filter((t) => !t.assignedToUsername)
+        .filter((t) => !t.assignedTo?.username)
         .sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
