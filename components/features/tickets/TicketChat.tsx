@@ -2,25 +2,19 @@ import {
   Box,
   Flex,
   Text,
-  Button,
   VStack,
   HStack,
   Avatar,
-  Badge,
 } from "@chakra-ui/react";
-import { LuPaperclip, LuX } from "react-icons/lu";
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
-import { userRolesBadges, type TicketStatus } from "@/types";
+import { type TicketStatus } from "@/types";
 import { useChatWebSocket } from "@/lib/hooks/ticket-chat/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
 import ChatInput from "../ticket-chat/ChatInput";
 import { useChatActions, useTicketQuery } from "@/lib/hooks";
-import {
-  formatFileSize,
-  getFullNameInitials,
-  getShortInitials,
-} from "@/lib/utils";
+import { useInterlocutorStatus } from "@/lib/hooks/ticket-chat/useInterlocutorStatus";
+import { getFullNameInitials, getShortInitials } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ui";
 
 interface TicketChatProps {
@@ -38,9 +32,14 @@ export function TicketChat({
   const isSpecialist = user?.specialist || false;
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  //fetch ticket info
-
   const { ticket, currentAssignment } = useTicketQuery(ticketId);
+
+  const interlocutorId =
+    ticket?.createdBy.id === user?.id
+      ? ticket?.assignedTo?.id
+      : ticket?.createdBy?.id;
+
+  const { isOnline } = useInterlocutorStatus(interlocutorId);
 
   // Use custom hook for WebSocket and messages
   const {
@@ -149,7 +148,7 @@ export function TicketChat({
                     : `Чат заявки #${ticketId}`}
               </Text>
 
-              {isConnected && ticket?.assignedTo ? (
+              {isOnline && !!ticket?.assignedTo ? (
                 <HStack gap={1.5}>
                   <Box w={1.5} h={1.5} borderRadius="full" bg="green.500" />
                   <Text fontSize="xs" color="green.500" fontWeight="medium">
@@ -174,13 +173,12 @@ export function TicketChat({
 
         {/* Messages */}
         <Flex
+          flex={1}
           overflowY="auto"
           p={4}
           w="100%"
-          justifyContent="center"
-          alignItems="center"
         >
-          <Box w="90%" maxW="900px">
+          <Box w="90%" maxW="900px" mx="auto">
             <ChatMessageList
               messages={messages}
               currentUserId={user?.id}
@@ -199,29 +197,6 @@ export function TicketChat({
           borderColor="border.default"
           bg="bg.subtle"
         >
-          {/* Selected File Preview */}
-          {selectedFile && (
-            <Flex
-              mb={2}
-              p={2}
-              bg="bg.muted"
-              borderRadius="md"
-              align="center"
-              gap={2}
-            >
-              <LuPaperclip size={14} />
-              <Text fontSize="sm" flex={1} truncate>
-                {selectedFile.name}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {formatFileSize(selectedFile.size)}
-              </Text>
-              <Button size="xs" variant="ghost" onClick={handleRemoveFile}>
-                <LuX size={14} />
-              </Button>
-            </Flex>
-          )}
-
           {/* Typing Indicator */}
           {typingUser && (
             <Flex px={4} py={2} align="center" gap={2}>
@@ -276,6 +251,7 @@ export function TicketChat({
               selectedFile={selectedFile}
               isChatInactive={false}
               onPasteFile={handlePasteFile}
+              onClearFile={handleRemoveFile}
             />
           ) : (
             <ChatInput
