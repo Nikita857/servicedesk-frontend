@@ -37,8 +37,8 @@ interface AdminTicketsViewProps {
   enabled?: boolean;
 }
 
-const PAGE_SIZE = 7;
-const ASSIGNED_PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
+const ASSIGNED_PAGE_SIZE = 6;
 const STORAGE_KEY_STATUS = "sd_filter_admin_status";
 const STORAGE_KEY_LINE = "sd_filter_admin_line";
 const STORAGE_KEY_TAB = "sd_admin_tab";

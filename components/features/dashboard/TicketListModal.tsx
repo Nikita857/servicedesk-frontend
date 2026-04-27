@@ -22,7 +22,7 @@ import { ticketPriorityConfig, ticketStatusConfig } from "@/types/ticket";
 import { useState } from "react";
 import { SDPagination } from "@/components/ui/SDPagination";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
 
 interface TicketListModalProps {
   isOpen: boolean;

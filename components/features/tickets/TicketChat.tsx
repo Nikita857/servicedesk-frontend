@@ -1,11 +1,4 @@
-import {
-  Box,
-  Flex,
-  Text,
-  VStack,
-  HStack,
-  Avatar,
-} from "@chakra-ui/react";
+import { Box, Flex, Text, VStack, HStack, Avatar } from "@chakra-ui/react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
 import { type TicketStatus } from "@/types";
@@ -32,7 +25,7 @@ export function TicketChat({
   const isSpecialist = user?.specialist || false;
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  const { ticket, currentAssignment } = useTicketQuery(ticketId);
+  const { ticket } = useTicketQuery(ticketId);
 
   const interlocutorId =
     ticket?.createdBy.id === user?.id
@@ -172,12 +165,7 @@ export function TicketChat({
         </Flex>
 
         {/* Messages */}
-        <Flex
-          flex={1}
-          overflowY="auto"
-          p={4}
-          w="100%"
-        >
+        <Flex flex={1} overflowY="auto" p={4} w="100%">
           <Box w="90%" maxW="900px" mx="auto">
             <ChatMessageList
               messages={messages}
