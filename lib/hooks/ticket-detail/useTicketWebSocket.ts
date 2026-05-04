@@ -131,6 +131,9 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.tickets.detail(ticketId),
         });
+        queryClient.invalidateQueries({
+          queryKey: [...queryKeys.scheduledTasks.all, "calendar"],
+        });
 
         // Update ticket state
         updateCallbackRef.current?.(updatedTicket);

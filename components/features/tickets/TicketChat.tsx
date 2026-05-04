@@ -32,7 +32,7 @@ export function TicketChat({
       ? ticket?.assignedTo?.id
       : ticket?.createdBy?.id;
 
-  const { isOnline } = useInterlocutorStatus(interlocutorId);
+  const { statusConf } = useInterlocutorStatus(interlocutorId);
 
   // Use custom hook for WebSocket and messages
   const {
@@ -96,7 +96,7 @@ export function TicketChat({
         overflow="hidden"
         display="flex"
         flexDirection="column"
-        h="500px"
+        h="650px"
       >
         {/* Header */}
         <Flex
@@ -141,18 +141,20 @@ export function TicketChat({
                     : `Чат заявки #${ticketId}`}
               </Text>
 
-              {isOnline && !!ticket?.assignedTo ? (
+              {!!ticket?.assignedTo && (
                 <HStack gap={1.5}>
-                  <Box w={1.5} h={1.5} borderRadius="full" bg="green.500" />
-                  <Text fontSize="xs" color="green.500" fontWeight="medium">
-                    онлайн
-                  </Text>
-                </HStack>
-              ) : (
-                <HStack gap={1.5}>
-                  <Box w={1.5} h={1.5} borderRadius="full" bg="fg.muted" />
-                  <Text fontSize="xs" color="fg.muted">
-                    офлайн
+                  <Box
+                    w={1.5}
+                    h={1.5}
+                    borderRadius="full"
+                    bg={statusConf.color}
+                  />
+                  <Text
+                    fontSize="xs"
+                    color={statusConf.color}
+                    fontWeight="medium"
+                  >
+                    {statusConf.label}
                   </Text>
                 </HStack>
               )}

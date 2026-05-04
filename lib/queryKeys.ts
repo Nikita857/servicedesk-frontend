@@ -3,6 +3,8 @@
  * Используются для кэширования и инвалидации запросов
  */
 
+import { DateWindow } from "@/types/scheduler";
+
 export const queryKeys = {
   // Tickets
   tickets: {
@@ -98,7 +100,26 @@ export const queryKeys = {
   notifications: {
     all: ["notifications"] as const,
     list: () => [...queryKeys.notifications.all, "list"] as const,
-    unreadCount: () => [...queryKeys.notifications.all, "unread-count"] as const,
+    unreadCount: () =>
+      [...queryKeys.notifications.all, "unread-count"] as const,
     settings: () => [...queryKeys.notifications.all, "settings"] as const,
+  },
+
+  // Scheduled Tasks
+  scheduledTasks: {
+    all: ["scheduledTasks"] as const,
+    lists: () => [...queryKeys.scheduledTasks.all, "list"] as const,
+    list: (filter: Record<string, unknown>) =>
+      [...queryKeys.scheduledTasks.lists(), filter] as const,
+    details: () => [...queryKeys.scheduledTasks.all, "detail"] as const,
+    detail: (id: number) =>
+      [...queryKeys.scheduledTasks.details(), id] as const,
+    executions: (id: number) =>
+      [...queryKeys.scheduledTasks.all, "executions", id] as const,
+    calendar: (window: DateWindow) => [
+      ...queryKeys.scheduledTasks.all,
+      "calendar",
+      window,
+    ],
   },
 } as const;

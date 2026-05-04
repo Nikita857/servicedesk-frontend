@@ -15,6 +15,7 @@ import {
   LuClipboardList,
   LuRoute,
   LuTag,
+  LuCalendarClock,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -61,6 +62,11 @@ const adminItems: NavItem[] = [
     label: "Маршрутизация",
     href: "/dashboard/admin/forwarding-rules",
     icon: LuRoute,
+  },
+  {
+    label: "Планировщик задач",
+    href: "/dashboard/admin/scheduled-tasks",
+    icon: LuCalendarClock,
   },
   {
     label: "Категории заявок",

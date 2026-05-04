@@ -1,10 +1,14 @@
-import { SenderType } from "@/types";
 import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListResponse } from "@/types/ticket";
 import { handleApiError } from "../utils";
 import type { WikiCategoryTree } from "@/types/wiki";
-import type { AdminUserResponse, CreateUserRequest, DepartmentResponse, PositionResponse } from "@/types/admin";
+import type {
+  AdminUserResponse,
+  CreateUserRequest,
+  DepartmentResponse,
+  PositionResponse,
+} from "@/types/admin";
 
 // ==================== API ====================
 
@@ -52,29 +56,28 @@ export const adminApi = {
 
   // Create new user
   createUser: async (params: CreateUserRequest): Promise<AdminUserResponse> => {
+    const payload: Partial<CreateUserRequest> = {
+      username: params.username,
+      password: params.password,
+      fio: params.fio,
+      email: params.email ?? null,
+      roles: params.roles ?? [],
+      active: params.active,
+      departmentId: params.departmentId ?? null,
+      positionId: params.positionId ?? null,
+    };
 
-  const payload: Partial<CreateUserRequest> = {
-    username: params.username,
-    password: params.password,
-    fio: params.fio,
-    email: params.email ?? null,
-    roles: params.roles ?? [],
-    active: params.active,
-    departmentId: params.departmentId ?? null,
-    positionId: params.positionId ?? null,
-  };
-
-  try {
-    const response = await api.post<ApiResponse<AdminUserResponse>>(
-      "/admin/users",           // без query-параметров
-      payload                   // ← JSON в теле
-    );
-    return response.data.data;
-  } catch (error) {
-    handleApiError(error, {context: "создать пользователя"})
-    throw error;
-  }
-},
+    try {
+      const response = await api.post<ApiResponse<AdminUserResponse>>(
+        "/admin/users", // без query-параметров
+        payload, // ← JSON в теле
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error, { context: "создать пользователя" });
+      throw error;
+    }
+  },
 
   // Delete user
   deleteUser: async (id: number): Promise<void> => {
@@ -91,7 +94,10 @@ export const adminApi = {
   },
 
   // Update user roles
-  updateRoles: async (id: number, roles: string[]): Promise<AdminUserResponse> => {
+  updateRoles: async (
+    id: number,
+    roles: string[],
+  ): Promise<AdminUserResponse> => {
     const queryParams = new URLSearchParams();
     roles.forEach((role) => queryParams.append("roles", role));
 
@@ -110,7 +116,10 @@ export const adminApi = {
   },
 
   // Toggle user active status
-  toggleActive: async (id: number, active: boolean): Promise<AdminUserResponse> => {
+  toggleActive: async (
+    id: number,
+    active: boolean,
+  ): Promise<AdminUserResponse> => {
     const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/active?active=${active}`,
     );
@@ -193,8 +202,8 @@ export const adminApi = {
 
   getCategoriesTree: async (): Promise<WikiCategoryTree[]> => {
     const response = await api.get<ApiResponse<WikiCategoryTree[]>>(
-      `/wiki/categories/tree`
+      `/wiki/categories/tree`,
     );
     return response.data.data;
-  }
+  },
 };

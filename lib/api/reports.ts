@@ -8,7 +8,6 @@ import type {
   ResolutionTimeStats,
   TicketStatsByCategory,
   TicketStatsByStatus,
-  TicketReportItem,
   PagedTicketReport,
   SpecialistWorkload,
 } from "@/types/stats";
@@ -26,11 +25,11 @@ export const reportsApi = {
    */
   getTimeBySpecialist: async (
     from: string,
-    to: string
+    to: string,
   ): Promise<TimeReportBySpecialist[]> => {
     const response = await api.get<ApiResponse<TimeReportBySpecialist[]>>(
       "/reports/time/by-specialist",
-      { params: { from, to } }
+      { params: { from, to } },
     );
     return response.data.data;
   },
@@ -40,11 +39,11 @@ export const reportsApi = {
    */
   getTimeByLine: async (
     from: string,
-    to: string
+    to: string,
   ): Promise<TimeReportByLine[]> => {
     const response = await api.get<ApiResponse<TimeReportByLine[]>>(
       "/reports/time/by-line",
-      { params: { from, to } }
+      { params: { from, to } },
     );
     return response.data.data;
   },
@@ -54,7 +53,7 @@ export const reportsApi = {
    */
   getTicketHistory: async (ticketId: number): Promise<TicketHistory> => {
     const response = await api.get<ApiResponse<TicketHistory>>(
-      `/reports/tickets/${ticketId}/history`
+      `/reports/tickets/${ticketId}/history`,
     );
     return response.data.data;
   },
@@ -63,10 +62,10 @@ export const reportsApi = {
    * История переназначений тикета
    */
   getReassignmentHistory: async (
-    ticketId: number
+    ticketId: number,
   ): Promise<ReassignmentHistory[]> => {
     const response = await api.get<ApiResponse<ReassignmentHistory[]>>(
-      `/reports/tickets/${ticketId}/assignments`
+      `/reports/tickets/${ticketId}/assignments`,
     );
     return response.data.data;
   },
@@ -76,7 +75,7 @@ export const reportsApi = {
    */
   getResolutionTimeStats: async (): Promise<ResolutionTimeStats> => {
     const response = await api.get<ApiResponse<ResolutionTimeStats>>(
-      "/reports/tickets/resolution-time"
+      "/reports/tickets/resolution-time",
     );
     return response.data.data;
   },
@@ -86,7 +85,7 @@ export const reportsApi = {
    */
   getStatsByUserCategory: async (): Promise<TicketStatsByCategory[]> => {
     const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      "/reports/tickets/by-user-category"
+      "/reports/tickets/by-user-category",
     );
     return response.data.data;
   },
@@ -96,7 +95,7 @@ export const reportsApi = {
    */
   getStatsBySupportCategory: async (): Promise<TicketStatsByCategory[]> => {
     const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      "/reports/tickets/by-support-category"
+      "/reports/tickets/by-support-category",
     );
     return response.data.data;
   },
@@ -106,7 +105,7 @@ export const reportsApi = {
    */
   getStatsByStatus: async (): Promise<TicketStatsByStatus[]> => {
     const response = await api.get<ApiResponse<TicketStatsByStatus[]>>(
-      "/reports/tickets/by-status"
+      "/reports/tickets/by-status",
     );
     return response.data.data;
   },
@@ -117,7 +116,7 @@ export const reportsApi = {
   getAllTickets: async (page = 0, size = 20): Promise<PagedTicketReport> => {
     const response = await api.get<ApiResponse<PagedTicketReport>>(
       "/reports/tickets/all",
-      { params: { page, size } }
+      { params: { page, size } },
     );
     return response.data.data;
   },
@@ -127,7 +126,7 @@ export const reportsApi = {
    */
   getSpecialistWorkload: async (): Promise<SpecialistWorkload[]> => {
     const response = await api.get<ApiResponse<SpecialistWorkload[]>>(
-      "/reports/specialists/workload"
+      "/reports/specialists/workload",
     );
     return response.data.data;
   },

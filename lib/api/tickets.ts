@@ -11,8 +11,6 @@ import type {
   RateTicketRequest,
 } from "@/types/ticket";
 import type { CoExecutorResponse } from "@/types/assignment";
-import {TicketHistory} from "@/types";
-import {id} from "zod/locales";
 
 export const ticketApi = {
   // List all tickets (paginated)
@@ -28,7 +26,7 @@ export const ticketApi = {
     page = 0,
     size = 20,
     status?: TicketStatus,
-    lineId?: number
+    lineId?: number,
   ): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
       params: { page, size, status, lineId },
@@ -51,13 +49,13 @@ export const ticketApi = {
   listByStatus: async (
     status: TicketStatus,
     page = 0,
-    size = 20
+    size = 20,
   ): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>(
       `/tickets/status/${status}`,
       {
         params: { page, size },
-      }
+      },
     );
     return response.data.data;
   },
@@ -68,7 +66,7 @@ export const ticketApi = {
       "/tickets/my",
       {
         params: { page, size },
-      }
+      },
     );
     return response.data.data;
   },
@@ -79,7 +77,7 @@ export const ticketApi = {
       "/tickets/assigned",
       {
         params: { page, size },
-      }
+      },
     );
     return response.data.data;
   },
@@ -88,13 +86,13 @@ export const ticketApi = {
   listByLine: async (
     lineId: number,
     page = 0,
-    size = 20
+    size = 20,
   ): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>(
       `/tickets/line/${lineId}`,
       {
         params: { page, size },
-      }
+      },
     );
     return response.data.data;
   },
@@ -120,11 +118,11 @@ export const ticketApi = {
   // Change status
   changeStatus: async (
     id: number,
-    data: ChangeStatusRequest
+    data: ChangeStatusRequest,
   ): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(
       `/tickets/${id}/status`,
-      data
+      data,
     );
     return response.data.data;
   },
@@ -132,29 +130,26 @@ export const ticketApi = {
   // Assign to specialist
   assignToSpecialist: async (
     id: number,
-    specialistId: number
+    specialistId: number,
   ): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(
       `/tickets/${id}/assign-specialist`,
       null,
       {
         params: { specialistId },
-      }
+      },
     );
     return response.data.data;
   },
 
   // Assign to support line
-  assignToLine: async (
-    id: number,
-    lineId: number
-  ): Promise<Ticket> => {
+  assignToLine: async (id: number, lineId: number): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(
       `/tickets/${id}/assign-line`,
       null,
       {
         params: { lineId },
-      }
+      },
     );
     return response.data.data;
   },
@@ -178,7 +173,7 @@ export const ticketApi = {
    */
   confirmClosure: async (id: number): Promise<Ticket> => {
     const response = await api.post<ApiResponse<Ticket>>(
-      `/tickets/${id}/confirm-closure`
+      `/tickets/${id}/confirm-closure`,
     );
     return response.data.data;
   },
@@ -193,7 +188,7 @@ export const ticketApi = {
       null,
       {
         params: reason ? { reason } : undefined,
-      }
+      },
     );
     return response.data.data;
   },
@@ -203,7 +198,7 @@ export const ticketApi = {
    */
   getStatusHistory: async (id: number): Promise<TicketStatusHistory[]> => {
     const response = await api.get<ApiResponse<TicketStatusHistory[]>>(
-      `/tickets/${id}/status-history`
+      `/tickets/${id}/status-history`,
     );
     return response.data.data;
   },
@@ -213,11 +208,11 @@ export const ticketApi = {
    */
   rateTicket: async (
     id: number,
-    request: RateTicketRequest
+    request: RateTicketRequest,
   ): Promise<Ticket> => {
     const response = await api.post<ApiResponse<Ticket>>(
       `/tickets/${id}/rate`,
-      request
+      request,
     );
     return response.data.data;
   },
@@ -232,12 +227,15 @@ export const ticketApi = {
       null,
       {
         params: reason ? { reason } : undefined,
-      }
+      },
     );
     return response.data.data;
   },
 
-  setEstimatedDate: async (id: number, estimatedCompletionDate: string): Promise<Ticket> => {
+  setEstimatedDate: async (
+    id: number,
+    estimatedCompletionDate: string,
+  ): Promise<Ticket> => {
     const response = await api.patch<ApiResponse<Ticket>>(
       `/tickets/${id}/estimated-date`,
       { estimatedCompletionDate },
@@ -249,16 +247,19 @@ export const ticketApi = {
 
   getCoExecutors: async (ticketId: number): Promise<CoExecutorResponse[]> => {
     const response = await api.get<ApiResponse<CoExecutorResponse[]>>(
-      `/tickets/${ticketId}/co-executors`
+      `/tickets/${ticketId}/co-executors`,
     );
     return response.data.data;
   },
 
-  addCoExecutor: async (ticketId: number, specialistId: number): Promise<CoExecutorResponse> => {
+  addCoExecutor: async (
+    ticketId: number,
+    specialistId: number,
+  ): Promise<CoExecutorResponse> => {
     const response = await api.post<ApiResponse<CoExecutorResponse>>(
       `/tickets/${ticketId}/co-executors`,
       null,
-      { params: { specialistId } }
+      { params: { specialistId } },
     );
     return response.data.data;
   },
@@ -268,13 +269,15 @@ export const ticketApi = {
   },
 
   //Set ticket category by support line opinion (for stats)
-  setSupportCategory: async (ticketId: number, categoryId: number): Promise<Ticket> => {
+  setSupportCategory: async (
+    ticketId: number,
+    categoryId: number,
+  ): Promise<Ticket> => {
     const response = await api.patch(
-        `/tickets/${ticketId}/category-support`,
-        null,
-        { params: { categoryId } },
+      `/tickets/${ticketId}/category-support`,
+      null,
+      { params: { categoryId } },
     );
     return response.data.data;
   },
-
 };

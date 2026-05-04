@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useCallback, useRef, useState } from "react";
+import { RefObject, useCallback, useLayoutEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -32,59 +32,6 @@ interface ChatInputProps {
 const MIN_HEIGHT = 40;
 const MAX_HEIGHT = 300;
 
-// ─── Resize handle ────────────────────────────────────────────────────────────
-function ResizeHandle({ onResize }: { onResize: (dy: number) => void }) {
-  const startY = useRef<number | null>(null);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    startY.current = e.clientY;
-
-    const onMove = (ev: MouseEvent) => {
-      if (startY.current === null) return;
-      const dy = startY.current - ev.clientY; // drag up = increase height
-      startY.current = ev.clientY;
-      onResize(dy);
-    };
-
-    const onUp = () => {
-      startY.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  };
-
-  return (
-    <Box
-      position="absolute"
-      bottom={0}
-      right={0}
-      w="20px"
-      h="20px"
-      cursor="ns-resize"
-      onMouseDown={handleMouseDown}
-      display="flex"
-      alignItems="flex-end"
-      justifyContent="flex-end"
-      pb="3px"
-      pr="3px"
-      zIndex={1}
-      opacity={0.35}
-      _hover={{ opacity: 0.7 }}
-      transition="opacity 0.15s"
-    >
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-        <circle cx="8" cy="8" r="1.2" />
-        <circle cx="4.5" cy="8" r="1.2" />
-        <circle cx="8" cy="4.5" r="1.2" />
-      </svg>
-    </Box>
-  );
-}
-
 export default function ChatInput({
   handleFileSelect,
   isUploading,
@@ -98,11 +45,23 @@ export default function ChatInput({
   isChatInactive,
   onPasteFile,
 }: ChatInputProps) {
-  const [inputHeight, setInputHeight] = useState(MIN_HEIGHT);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleResize = (dy: number) => {
-    setInputHeight((h) => Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, h + dy)));
-  };
+  const adjustHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const newHeight = Math.max(
+      MIN_HEIGHT,
+      Math.min(el.scrollHeight, MAX_HEIGHT),
+    );
+    el.style.height = `${newHeight}px`;
+  }, []);
+
+  // Пересчитываем высоту при каждом изменении сообщения (в т.ч. при очистке после отправки)
+  useLayoutEffect(() => {
+    adjustHeight();
+  }, [newMessage, adjustHeight]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -169,8 +128,8 @@ export default function ChatInput({
   // ─── Active state ────────────────────────────────────────────────────────────
   return (
     <Box borderTopWidth="1px" bg="bg.surface" borderRadius="2xl">
-      {/* Toolbar — прижата к полю ввода */}
-      <Flex align="center" gap={1} px={2} pt={1.5}>
+      {/* Toolbar */}
+      <Flex align="center" gap={1} px={2}>
         <>
           <input
             ref={fileInputRef}
@@ -196,7 +155,7 @@ export default function ChatInput({
         <VoiceInputButton
           value={newMessage}
           onChange={setNewMessage}
-          disabled={false}
+          disabled={true}
         />
 
         {/* File chip */}
@@ -233,28 +192,25 @@ export default function ChatInput({
 
       {/* Textarea + send */}
       <Flex align="flex-end" gap={2} px={2} pb={2} pt={1}>
-        <Box position="relative" flex={1}>
-          <Textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder="Написать сообщение..."
-            bg="bg.subtle"
-            borderColor="border.default"
-            borderRadius="10px"
-            resize="none"
-            h={`${inputHeight}px`}
-            minH={`${MIN_HEIGHT}px`}
-            maxH={`${MAX_HEIGHT}px`}
-            fontSize="sm"
-            w="100%"
-            overflow="auto"
-            _focus={{ borderColor: "accent.600", boxShadow: "none" }}
-            _placeholder={{ color: "fg.subtle" }}
-          />
-          <ResizeHandle onResize={handleResize} />
-        </Box>
+        <Textarea
+          ref={textareaRef}
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          placeholder="Написать сообщение..."
+          bg="bg.subtle"
+          borderColor="border.default"
+          borderRadius="10px"
+          resize="none"
+          minH={`${MIN_HEIGHT}px`}
+          maxH={`${MAX_HEIGHT}px`}
+          rows={1} // ← ключевое: базовая высота = 1 строка
+          fontSize="sm"
+          overflow="auto"
+          _focus={{ borderColor: "accent.600", boxShadow: "none" }}
+          _placeholder={{ color: "fg.subtle" }}
+        />
 
         <Button
           aria-label="Отправить"

@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { QueryClient, QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { queryKeys } from "@/lib/queryKeys";
-import { TicketListEventWS } from "@/types";
 import type { PagedTicketList } from "@/types/ticket";
+import { TicketListEventWS } from "@/types/websocket";
 
 interface UseTicketListSubscriptionOptions {
   /**

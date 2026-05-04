@@ -3,11 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { queryKeys } from "@/lib/queryKeys";
 import { userApi } from "@/lib/api/users";
-import type { UserStatusWS } from "@/types/websocket";
+import {
+  statusConfig,
+  type UserActivityStatus,
+  type UserStatusWS,
+} from "@/types/websocket";
 
 export function useInterlocutorStatus(interlocutorId: number | undefined) {
   const { isConnected, subscribeToUserStatus } = useWebSocket();
-  const [wsStatus, setWsStatus] = useState<string | null>(null);
+  const [wsStatus, setWsStatus] = useState<UserActivityStatus | null>(null);
 
   const { data } = useQuery({
     queryKey: queryKeys.users.status(interlocutorId!),
@@ -31,6 +35,7 @@ export function useInterlocutorStatus(interlocutorId: number | undefined) {
 
   const currentStatus = wsStatus ?? data?.status ?? "OFFLINE";
   const isOnline = currentStatus === "AVAILABLE" || currentStatus === "BUSY";
+  const statusConf = statusConfig[currentStatus as UserActivityStatus];
 
-  return { isOnline };
+  return { isOnline, statusConf };
 }
