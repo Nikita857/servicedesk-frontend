@@ -10,6 +10,7 @@ import {
   LuPercent,
   LuList,
   LuChartNoAxesCombined,
+  LuCalendarClock,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 
@@ -71,6 +72,13 @@ const reports: ReportCard[] = [
     href: "http://192.168.0.111:5601/app/dashboards#/view/4d0f9f93-4b8b-49b9-aebd-3e2ed43988c5?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now-90d%2Fd,to:now))",
     icon: LuChartNoAxesCombined,
     color: "green",
+  },
+  {
+    title: "Запланированные задачи",
+    description: "Месячный XLSX-очет по задачам отдела",
+    href: "/dashboard/reports/scheduled-tasks",
+    icon: LuCalendarClock,
+    color: "purple",
   },
 ];
 

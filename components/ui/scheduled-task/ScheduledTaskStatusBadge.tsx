@@ -1,4 +1,4 @@
-import { ScheduledTaskStatus } from "@/types/scheduler";
+import { ScheduledTaskStatus, TASK_STATUS_CONFIG } from "@/types/scheduler";
 import { Badge } from "@chakra-ui/react/badge";
 
 interface IProps {
@@ -6,26 +6,10 @@ interface IProps {
 }
 
 export default function ScheduledTaskStatusBadge({ status }: IProps) {
-  let color = "";
-  let label = "";
-
-  switch (status) {
-    case "SCHEDULED":
-      color = "blue";
-      label = "Запланировано";
-      break;
-    case "EXECUTED":
-      color = "green";
-      label = "Выполнено";
-      break;
-    case "CANCELLED":
-      color = "gray";
-      label = "Отменено";
-      break;
-  }
+  const config = TASK_STATUS_CONFIG[status];
   return (
-    <Badge colorPalette={color} variant="subtle" size="sm" borderRadius="md">
-      {label}
+    <Badge colorPalette={config.color} variant={config.variant} size="sm" borderRadius="md">
+      {config.label}
     </Badge>
   );
 }

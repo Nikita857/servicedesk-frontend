@@ -59,10 +59,10 @@ export interface UpdateScheduledTaskRequest {
 
 export interface ScheduledTaskExecutionResponse {
   id: number;
-  ticketId: number;
+  ticketId: number | null;
   executedAt: string; // ISO 8601
   success: boolean;
-  errorMessage: string;
+  errorMessage: string | null;
 }
 
 export interface ScheduledTaskListResponse {
@@ -71,10 +71,10 @@ export interface ScheduledTaskListResponse {
   status: ScheduledTaskStatus;
   displayTicketStatus: TicketStatus[];
   scheduledAt: string; // ISO 8601
-  nextRunAt: string; // ISO 8601
+  nextRunAt: string | null; // ISO 8601
   recurrenceType: RecurrenceType;
-  assignTo: UserShortResponse;
-  deadlineAt: string; // ISO 8601
+  assignTo: UserShortResponse | null;
+  deadlineAt: string | null; // ISO 8601
   createdAt: string; // ISO 8601
 }
 
@@ -82,21 +82,21 @@ export interface ScheduledTaskResponse {
   id: number;
   title: string;
   description: string;
-  link1c: string;
-  priority: TicketPriority;
+  link1c: string | null;
+  priority: TicketPriority | null;
   createdBy: UserShortResponse;
-  assignTo: UserShortResponse;
-  supportLine: SupportLineListResponse;
-  categoryUser: CategoryResponse;
+  assignTo: UserShortResponse | null;
+  supportLine: SupportLineListResponse | null;
+  categoryUser: CategoryResponse | null;
   scheduledAt: string; // ISO 8601
-  nextRunAt: string; // ISO 8601
+  nextRunAt: string | null; // ISO 8601
   recurrenceType: RecurrenceType;
   recurrenceDaysOfWeek: DayOfWeek[];
-  recurrenceUntil: string; // ISO 8601
+  recurrenceUntil: string | null; // ISO 8601
   status: ScheduledTaskStatus;
   displayTicketStatus: TicketStatus[];
   executionsCount: number;
-  deadlineAt: string; // ISO 8601
+  deadlineAt: string | null; // ISO 8601
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }

@@ -130,6 +130,22 @@ export const reportsApi = {
     );
     return response.data.data;
   },
+
+  /**
+   * Апи получения XLSX отчета по задачам отдела
+   */
+
+  downloadScheduledTaskReport: async (
+    departmentId: number,
+    year: number,
+    month: number,
+  ): Promise<Blob> => {
+    const response = await api.get("/scheduled-tasks/report/export", {
+      params: { departmentId, year, month },
+      responseType: "blob",
+    });
+    return response.data;
+  },
 };
 
 export type {
