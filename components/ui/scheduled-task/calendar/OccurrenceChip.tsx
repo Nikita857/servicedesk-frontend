@@ -4,73 +4,96 @@ import {
   ScheduledTaskOccurrenceResponse,
   ScheduledTaskStatus,
 } from "@/types/scheduler";
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import { LuRepeat } from "react-icons/lu";
 
 interface IProps {
   occurrence: ScheduledTaskOccurrenceResponse;
 }
 
-function chipColor(
+// Цвет «акцента» (левый бордер + время) — по статусу, иначе по приоритету
+function accentColor(
   status: ScheduledTaskStatus,
   priority: ScheduledTaskOccurrenceResponse["priority"],
-) {
+): string {
   switch (status) {
     case "OVERDUE":
-      return { bg: "red.100", fg: "red.700" };
+      return "red.500";
     case "COMPLETED_LATE":
-      return { bg: "orange.100", fg: "orange.700" };
+      return "orange.500";
     case "EXECUTED":
-      return { bg: "green.100", fg: "green.700" };
+      return "green.500";
     case "CANCELLED":
-      return { bg: "gray.100", fg: "gray.500" };
+      return "gray.400";
     default:
-      return priorityColor(priority);
+      return priorityColor(priority).fg; // используем fg как насыщенный
   }
 }
 
 export default function OccurrenceChip({ occurrence }: IProps) {
-  const colors = chipColor(occurrence.taskStatus, occurrence.priority);
+  const accent = accentColor(occurrence.taskStatus, occurrence.priority);
+
+  const isDone =
+    occurrence.taskStatus === "EXECUTED" ||
+    occurrence.taskStatus === "COMPLETED_LATE";
+  const isCancelled = occurrence.taskStatus === "CANCELLED";
+  const isOverdue = occurrence.taskStatus === "OVERDUE";
+
   const isStrikethrough =
-    occurrence.ticketStatus !== null && occurrence.ticketStatus === "CLOSED";
+    isDone ||
+    isCancelled ||
+    (occurrence.ticketStatus !== null && occurrence.ticketStatus === "CLOSED");
 
   return (
     <>
-      {/* Мобильный вид: тонкая цветная полоска */}
+      {/* ── Мобильный вид: тонкая цветная полоска ───────────────────────── */}
       <Box
         display={{ base: "block", md: "none" }}
-        h="5px"
+        h="4px"
         borderRadius="full"
-        bg={colors.bg}
-        borderWidth="1px"
-        borderColor={colors.fg}
-        opacity={0.85}
+        bg={accent}
+        opacity={isDone || isCancelled ? 0.45 : 1}
       />
 
-      {/* Десктопный вид: полноценный чип с текстом */}
-      <Box
-        as="span"
+      {/* ── Десктопный вид: Left-Bar чип ─────────────────────────────────── */}
+      <Flex
         display={{ base: "none", md: "flex" }}
-        alignItems="center"
-        gap={1}
-        px={1}
+        align="center"
+        gap={1.5}
+        pl={2}
+        pr={1}
         py="1px"
-        borderRadius="sm"
+        borderLeftWidth="3px"
+        borderLeftColor={accent}
+        bg={isOverdue ? "red.50" : "transparent"}
         fontSize="xs"
-        bg={colors.bg}
-        color={colors.fg}
+        lineHeight="16px"
+        color={isDone || isCancelled ? "fg.muted" : "fg.default"}
         textDecoration={isStrikethrough ? "line-through" : "none"}
         cursor="pointer"
         overflow="hidden"
+        _hover={{ bg: "bg.subtle" }}
+        transition="background 0.12s"
       >
-        {occurrence.recurrenceType !== "NONE" && <LuRepeat size={10} />}
-        <Text as="span" flexShrink={0} fontSize="xs">
+        {occurrence.recurrenceType !== "NONE" && (
+          <Box flexShrink={0} color="fg.muted" display="flex">
+            <LuRepeat size={10} />
+          </Box>
+        )}
+        <Text
+          as="span"
+          flexShrink={0}
+          fontSize="2xs"
+          fontWeight="semibold"
+          color={isOverdue ? accent : "fg.muted"}
+          fontVariantNumeric="tabular-nums"
+        >
           {formatTime(occurrence.occurrenceAt)}
         </Text>
-        <Text as="span" truncate>
+        <Text as="span" truncate fontSize="xs">
           {occurrence.title}
         </Text>
-      </Box>
+      </Flex>
     </>
   );
 }

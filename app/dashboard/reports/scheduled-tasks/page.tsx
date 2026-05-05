@@ -112,7 +112,7 @@ export default function ScheduledTasksReportPage() {
           Отчёт: запланированные задания
         </Heading>
         <Text color="fg.muted">
-          Выберите отдел и месяц — получите XLSX с заданиями за этот период
+          Выберите отдел и месяц — получите XLSX с задачами за этот период
         </Text>
       </Box>
 

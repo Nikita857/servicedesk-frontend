@@ -131,7 +131,7 @@ export const TASK_STATUS_CONFIG: Record<
   { label: string; color: string; variant: "subtle" | "solid" }
 > = {
   SCHEDULED: { label: "Запланировано", color: "blue", variant: "subtle" },
-  IN_PROGRESS: { label: "В работе", color: "cyan", variant: "subtle" },
+  IN_PROGRESS: { label: "Тикет создан", color: "cyan", variant: "subtle" },
   EXECUTED: { label: "Выполнено", color: "green", variant: "subtle" },
   CANCELLED: { label: "Отменено", color: "gray", variant: "subtle" },
   OVERDUE: { label: "Просрочено", color: "red", variant: "subtle" },

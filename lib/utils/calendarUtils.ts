@@ -91,21 +91,16 @@ export function groupByLocalDay(
   return map;
 }
 
-export function priorityColor(priority: TicketPriority): {
-  bg: string;
-  fg: string;
-} {
-  switch (priority) {
-    case "LOW":
-      return { bg: "gray.100", fg: "gray.600" };
-    case "MEDIUM":
-      return { bg: "blue.100", fg: "blue.700" };
+// calendarUtils.ts
+export function priorityColor(p: TicketPriority) {
+  switch (p) {
     case "HIGH":
-      return { bg: "orange.100", fg: "orange.700" };
-    case "URGENT":
-      return { bg: "red.100", fg: "red.700" };
+      return { bg: "red.100", fg: "red.700", solid: "red.500" };
+    case "MEDIUM":
+      return { bg: "yellow.100", fg: "yellow.700", solid: "yellow.500" };
+    case "LOW":
+      return { bg: "blue.100", fg: "blue.700", solid: "blue.500" };
     default:
-      // Возврат дефолтных значений для безопасности
-      return { bg: "gray.100", fg: "gray.600" };
+      return { bg: "gray.100", fg: "gray.700", solid: "gray.500" };
   }
 }
