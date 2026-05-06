@@ -24,7 +24,6 @@ import { LuPlus, LuX } from "react-icons/lu";
 
 import { useWikiCategoriesAdmin } from "@/lib/hooks";
 import { adminApi } from "@/lib/api/admin";
-import type { DepartmentResponse } from "@/types/admin";
 import type {
   WikiCategoryTree,
   CreateWikiCategoryRequest,
@@ -33,6 +32,8 @@ import type {
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
 import { CategoryTree } from "@/components/features/wiki/CategoryTree";
+import { DepartmentResponse } from "@/types/department";
+import { departmentApi } from "@/lib/api/departments";
 
 export default function WikiCategoriesPage() {
   const { user } = useAuthStore();
@@ -51,7 +52,7 @@ export default function WikiCategoriesPage() {
   // Fetch departments for the department selector
   const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
     queryKey: ["admin", "departments"],
-    queryFn: () => adminApi.getDepartments(),
+    queryFn: () => departmentApi.getDepartments(),
   });
 
   // Fetch category tree
@@ -296,7 +297,9 @@ export default function WikiCategoriesPage() {
                     {(formData.departmentIds as number[])?.length > 0 && (
                       <HStack wrap="wrap" mb={2} gap={1}>
                         {(formData.departmentIds as number[]).map((id) => {
-                          const dept = departments.find((d: DepartmentResponse) => d.id === id);
+                          const dept = departments.find(
+                            (d: DepartmentResponse) => d.id === id,
+                          );
                           return dept ? (
                             <Badge key={id} size="sm" colorPalette="blue">
                               {dept.name}
@@ -320,12 +323,16 @@ export default function WikiCategoriesPage() {
                           {departments.map((d: DepartmentResponse) => (
                             <Checkbox.Root
                               key={d.id}
-                              checked={(formData.departmentIds as number[])?.includes(d.id)}
+                              checked={(
+                                formData.departmentIds as number[]
+                              )?.includes(d.id)}
                               onCheckedChange={() => toggleDepartment(d.id)}
                             >
                               <Checkbox.HiddenInput />
                               <Checkbox.Control />
-                              <Checkbox.Label fontSize="sm">{d.name}</Checkbox.Label>
+                              <Checkbox.Label fontSize="sm">
+                                {d.name}
+                              </Checkbox.Label>
                             </Checkbox.Root>
                           ))}
                         </VStack>

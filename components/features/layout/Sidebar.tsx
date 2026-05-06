@@ -16,6 +16,7 @@ import {
   LuRoute,
   LuTag,
   LuCalendarClock,
+  LuBuilding2,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -52,7 +53,8 @@ const onboardingIds: Record<string, string> = {
 };
 
 const adminItems: NavItem[] = [
-  { label: "Пользователи", href: "/dashboard/users", icon: LuUsers },
+  { label: "Пользователи", href: "/dashboard/admin/users", icon: LuUsers },
+  { label: "Отделы", href: "/dashboard/admin/departments", icon: LuBuilding2 },
   {
     label: "Линии поддержки",
     href: "/dashboard/admin/support-lines",

@@ -13,11 +13,11 @@ import {
 import { LuDownload } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { DataSelect } from "@/components/ui/DataSelect";
-import { adminApi } from "@/lib/api/admin";
 import { reportsApi } from "@/lib/api/reports";
 import { handleApiError, toast } from "@/lib/utils";
-import type { DepartmentResponse } from "@/types/admin";
 import axios from "axios";
+import { departmentApi } from "@/lib/api/departments";
+import { DepartmentResponse } from "@/types/department";
 
 const MONTHS = [
   { label: "Январь", value: "1" },
@@ -54,7 +54,7 @@ export default function ScheduledTasksReportPage() {
     async function fetchDepts() {
       setIsLoadingDepts(true);
       try {
-        const data = await adminApi.getDepartments();
+        const data = await departmentApi.getDepartments();
         setDepartments(data);
       } catch (e) {
         handleApiError(e, { context: "Загрузить список отделов" });

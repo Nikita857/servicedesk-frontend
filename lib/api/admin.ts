@@ -3,12 +3,7 @@ import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListResponse } from "@/types/ticket";
 import { handleApiError } from "../utils";
 import type { WikiCategoryTree } from "@/types/wiki";
-import type {
-  AdminUserResponse,
-  CreateUserRequest,
-  DepartmentResponse,
-  PositionResponse,
-} from "@/types/admin";
+import type { AdminUserResponse, CreateUserRequest } from "@/types/admin";
 
 // ==================== API ====================
 
@@ -171,32 +166,6 @@ export const adminApi = {
     const response = await api.get<
       ApiResponse<PaginatedResponse<TicketListResponse>>
     >(`/admin/tickets/closed?page=${page}&size=${size}`);
-    return response.data.data;
-  },
-
-  // ==================== Departments ====================
-
-  getDepartments: async (): Promise<DepartmentResponse[]> => {
-    const response =
-      await api.get<ApiResponse<DepartmentResponse[]>>("/admin/departments");
-    return response.data.data;
-  },
-
-  // Get all positions
-  getAllPositions: async (): Promise<PositionResponse[]> => {
-    const response = await api.get<ApiResponse<PositionResponse[]>>(
-      "/admin/departments/positions",
-    );
-    return response.data.data;
-  },
-
-  // Get positions by department
-  getPositionsByDepartment: async (
-    departmentId: number,
-  ): Promise<PositionResponse[]> => {
-    const response = await api.get<ApiResponse<PositionResponse[]>>(
-      `/admin/departments/${departmentId}/positions`,
-    );
     return response.data.data;
   },
 

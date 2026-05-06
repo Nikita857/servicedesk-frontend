@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Select,
-  Portal,
-  createListCollection,
-  ListCollection,
-  Text,
-} from "@chakra-ui/react";
+import { Select, Portal, ListCollection, Text } from "@chakra-ui/react";
 import { ReactNode } from "react";
 
 interface DataSelectProps<T> {

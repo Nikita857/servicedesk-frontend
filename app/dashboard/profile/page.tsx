@@ -26,6 +26,7 @@ import { TelegramCard } from "./components/TelegramCard";
 import { VkCard } from "./components/VkCard";
 import { MaxCard } from "./components/MaxCard";
 import { PasswordCard } from "./components/PasswordCard";
+import { departmentApi } from "@/lib/api/departments";
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
@@ -56,13 +57,13 @@ export default function ProfilePage() {
   // Fetch departments
   const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
     queryKey: ["admin", "departments"],
-    queryFn: () => adminApi.getDepartments(),
+    queryFn: () => departmentApi.getDepartments(),
   });
 
   // Fetch positions for selected department
   const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
     queryKey: ["admin", "positions", departmentId],
-    queryFn: () => adminApi.getPositionsByDepartment(departmentId!),
+    queryFn: () => departmentApi.getPositionsByDepartment(departmentId!),
     enabled: !!departmentId,
   });
 
@@ -89,7 +90,12 @@ export default function ProfilePage() {
   );
 
   // Initialize org IDs from profile (during render, not in effect)
-  if (!orgInitialized && profile && departments.length > 0 && departmentId === null) {
+  if (
+    !orgInitialized &&
+    profile &&
+    departments.length > 0 &&
+    departmentId === null
+  ) {
     const dept = departments.find((d) => d.name === profile.department);
     if (dept) {
       setDepartmentId(dept.id);
@@ -98,7 +104,13 @@ export default function ProfilePage() {
     }
   }
 
-  if (!orgInitialized && profile && positions.length > 0 && positionId === null && departmentId !== null) {
+  if (
+    !orgInitialized &&
+    profile &&
+    positions.length > 0 &&
+    positionId === null &&
+    departmentId !== null
+  ) {
     const pos = positions.find((p) => p.name === profile.position);
     if (pos) {
       setPositionId(pos.id);

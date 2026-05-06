@@ -122,4 +122,28 @@ export const queryKeys = {
       window,
     ],
   },
+
+  departments: {
+    // Корень — всё что связано с departments
+    all: ["departments"] as const,
+
+    // Списки
+    lists: () => [...queryKeys.departments.all, "list"] as const,
+    list: () => [...queryKeys.departments.lists()] as const,
+
+    // Конкретный элемент
+    details: () => [...queryKeys.departments.all, "detail"] as const,
+    detail: (id: number) => [...queryKeys.departments.details(), id] as const,
+
+    // Positions — вложены в departments концептуально
+    positions: () => [...queryKeys.departments.all, "positions"] as const,
+    positionsList: () =>
+      [...queryKeys.departments.positions(), "list"] as const,
+    positionsByDepartment: (departmentId: number) =>
+      [
+        ...queryKeys.departments.positions(),
+        "byDepartment",
+        departmentId,
+      ] as const,
+  },
 } as const;

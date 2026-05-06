@@ -1,4 +1,3 @@
-import { adminApi } from "@/lib/api/admin";
 import type { AdminUserResponse } from "@/types/admin";
 import {
   Button,
@@ -11,6 +10,7 @@ import {
 import { DataSelect } from "@/components/ui/DataSelect";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useEffect, useRef } from "react";
+import { departmentApi } from "@/lib/api/departments";
 
 interface EditOrgModalProps {
   isOpen: boolean;
@@ -38,14 +38,14 @@ export default function EditOrgModal({
   // Fetch departments
   const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
     queryKey: ["admin", "departments"],
-    queryFn: () => adminApi.getDepartments(),
+    queryFn: () => departmentApi.getDepartments(),
     enabled: isOpen,
   });
 
   // Fetch positions for selected department
   const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
     queryKey: ["admin", "positions", departmentId],
-    queryFn: () => adminApi.getPositionsByDepartment(departmentId!),
+    queryFn: () => departmentApi.getPositionsByDepartment(departmentId!),
     enabled: isOpen && !!departmentId,
   });
 

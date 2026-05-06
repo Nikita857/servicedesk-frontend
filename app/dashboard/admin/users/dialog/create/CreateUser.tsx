@@ -1,6 +1,5 @@
 import { DataSelect } from "@/components/ui";
 import { Tooltip } from "@/components/ui/tooltip";
-import { adminApi } from "@/lib/api/admin";
 import { fioToUsername } from "@/lib/utils";
 import type { CreateUserRequest } from "@/types/admin";
 import { SenderType, userRolesBadges } from "@/types";
@@ -21,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
 import { LuCheck } from "react-icons/lu";
 import { toast } from "@/lib/utils";
+import { departmentApi } from "@/lib/api/departments";
 
 interface CreateUserProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ export default function CreateUser({
     positionId: null,
   });
 
-  const [usernameManuallyEdited, setUsernameManyallyEdited] = useState(false)
+  const [usernameManuallyEdited, setUsernameManyallyEdited] = useState(false);
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -63,20 +63,21 @@ export default function CreateUser({
         positionId: null,
       });
 
-      setUsernameManyallyEdited(false)
+      setUsernameManyallyEdited(false);
     }
   }, [isOpen]);
 
   const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
     queryKey: ["admin", "departments"],
-    queryFn: () => adminApi.getDepartments(),
+    queryFn: () => departmentApi.getDepartments(),
     enabled: isOpen,
   });
 
   // Fetch positions for selected department
   const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
     queryKey: ["admin", "positions", newUser.departmentId],
-    queryFn: () => adminApi.getPositionsByDepartment(newUser.departmentId!),
+    queryFn: () =>
+      departmentApi.getPositionsByDepartment(newUser.departmentId!),
     enabled: isOpen && !!newUser.departmentId,
   });
 
@@ -116,7 +117,7 @@ export default function CreateUser({
 
   const handleSubmit = () => {
     if (!newUser.username || !newUser.password) {
-      setNewUser({...newUser, email: null})
+      setNewUser({ ...newUser, email: null });
       toast.error("Ошибка", "Заполните обязательные поля");
       return;
     }
@@ -134,7 +135,6 @@ export default function CreateUser({
             </Dialog.Header>
             <Dialog.Body>
               <VStack gap={4}>
-
                 <Field.Root>
                   <Field.Label>ФИО</Field.Label>
                   <Input
@@ -142,11 +142,13 @@ export default function CreateUser({
                     onChange={(e) => {
                       const fio = e.target.value;
                       setNewUser({
-                        ...newUser, fio: fio,
-                        username: usernameManuallyEdited ? newUser.username : fioToUsername(fio),
-                      })
-                      }
-                    }
+                        ...newUser,
+                        fio: fio,
+                        username: usernameManuallyEdited
+                          ? newUser.username
+                          : fioToUsername(fio),
+                      });
+                    }}
                     placeholder="Иванов Иван Иванович"
                   />
                 </Field.Root>
@@ -154,37 +156,36 @@ export default function CreateUser({
                 <Field.Root>
                   <Field.Label>Username *</Field.Label>
                   <Input
-                      value={newUser.username || ""}
-                      onChange={(e) => {
-                        setNewUser({ ...newUser, username: e.target.value })
-                        setUsernameManyallyEdited(true)
-                        }
-                      }
-                      placeholder="username"
+                    value={newUser.username || ""}
+                    onChange={(e) => {
+                      setNewUser({ ...newUser, username: e.target.value });
+                      setUsernameManyallyEdited(true);
+                    }}
+                    placeholder="username"
                   />
                 </Field.Root>
 
                 <Field.Root>
                   <Field.Label>Пароль *</Field.Label>
                   <Input
-                      type="password"
-                      value={newUser.password || ""}
-                      onChange={(e) =>
-                          setNewUser({ ...newUser, password: e.target.value })
-                      }
-                      placeholder="••••••••"
+                    type="password"
+                    value={newUser.password || ""}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, password: e.target.value })
+                    }
+                    placeholder="••••••••"
                   />
                 </Field.Root>
 
                 <Field.Root>
                   <Field.Label>E-mail</Field.Label>
                   <Input
-                      type="email"
-                      value={newUser.email || ""}
-                      onChange={(e) =>
-                          setNewUser({ ...newUser, email: e.target.value })
-                      }
-                      placeholder="E-mail"
+                    type="email"
+                    value={newUser.email || ""}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, email: e.target.value })
+                    }
+                    placeholder="E-mail"
                   />
                 </Field.Root>
 
