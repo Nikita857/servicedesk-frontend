@@ -2,7 +2,6 @@
 
 import { useAuthStore } from "@/stores";
 import { AdminTicketsView } from "@/components/features/tickets";
-import { useAssignmentsWebSocket } from "@/lib/hooks";
 import { SpecialistTicketsView } from "@/components/features/tickets/SpecialistTicketsView";
 import { UserTicketsView } from "@/components/features/tickets/UserTicketsView";
 
@@ -23,8 +22,7 @@ export default function TicketsPage() {
     return <SpecialistTicketsView />;
   }
 
-  if(isUser) {
-    return <UserTicketsView/>
+  if (isUser) {
+    return <UserTicketsView />;
   }
-
 }

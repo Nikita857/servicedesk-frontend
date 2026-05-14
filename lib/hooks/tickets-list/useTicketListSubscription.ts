@@ -40,12 +40,14 @@ export function useTicketListSubscription(
 
   const filterRef = useRef(filter);
   const onEventRef = useRef(onEvent);
+  const queryKeyRef = useRef(queryKey);
   const lastSeenRef = useRef<Map<number, string>>(new Map());
 
   useEffect(() => {
     filterRef.current = filter;
     onEventRef.current = onEvent;
-  }, [filter, onEvent]);
+    queryKeyRef.current = queryKey;
+  }, [filter, onEvent, queryKey]);
 
   useEffect(() => {
     if (!enabled || !isConnected) return;
@@ -69,12 +71,12 @@ export function useTicketListSubscription(
         return;
       }
 
-      applyEventToCache(queryClient, queryKey, event);
+      applyEventToCache(queryClient, queryKeyRef.current, event);
       onEventRef.current?.(event);
     });
 
     return unsubscribe;
-  }, [enabled, isConnected, subscribeToTickets, queryClient, queryKey]);
+  }, [enabled, isConnected, subscribeToTickets, queryClient]);
 }
 
 function applyEventToCache(
