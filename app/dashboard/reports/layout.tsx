@@ -17,15 +17,15 @@ export default function ReportsLayout({
   const router = useRouter();
   const { user, isHydrated } = useAuthStore();
   const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
+  const canViewReports = isAdmin || isSupervisor;
 
   useEffect(() => {
-    // Дождёмся гидратации (загрузки пользователя из storage)
-    if (isHydrated && !isAdmin) {
+    if (isHydrated && !canViewReports) {
       router.replace("/dashboard");
     }
-  }, [isHydrated, isAdmin, router]);
+  }, [isHydrated, canViewReports, router]);
 
-  // Показываем спиннер пока идёт гидратация
   if (!isHydrated) {
     return (
       <Flex justify="center" align="center" h="400px">
@@ -34,8 +34,7 @@ export default function ReportsLayout({
     );
   }
 
-  // Если не админ — ничего не рендерим (будет редирект)
-  if (!isAdmin) {
+  if (!canViewReports) {
     return null;
   }
 

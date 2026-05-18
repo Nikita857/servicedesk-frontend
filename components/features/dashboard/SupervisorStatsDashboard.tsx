@@ -1,0 +1,193 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Box,
+  Flex,
+  Grid,
+  Heading,
+  HStack,
+  Icon,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { LuChevronDown, LuChevronUp, LuGlobe, LuInbox } from "react-icons/lu";
+import { useQuery } from "@tanstack/react-query";
+import { statsApi } from "@/lib/api/stats";
+import { queryKeys } from "@/lib/queryKeys";
+import { TicketListModal } from "./TicketListModal";
+import { LineStatsCard, StatBox } from "./DashboardStatComponents";
+import { TicketStatus, TicketStatusCollection } from "@/types/ticket";
+
+type ModalState = {
+  isOpen: boolean;
+  title: string;
+  status: TicketStatus[] | null;
+  lineId: number | null;
+};
+
+export function SupervisorStatsDashboard() {
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    title: "",
+    status: null,
+    lineId: null,
+  });
+
+  const [linesExpanded, setLinesExpanded] = useState<boolean>(false);
+
+  const { data: globalStats, isLoading: isGlobalLoading } = useQuery({
+    queryKey: queryKeys.stats.global(),
+    queryFn: () => statsApi.getGlobalStats(),
+    staleTime: 60 * 1000,
+  });
+
+  const { data: lineStatsResponse, isLoading: isLinesLoading } = useQuery({
+    queryKey: queryKeys.stats.byAllLines(),
+    queryFn: () => statsApi.getStatsByAllLines({ page: 0, size: 20 }),
+    staleTime: 60 * 1000,
+  });
+
+  const lineStats = lineStatsResponse?.content;
+  const isLoading = isGlobalLoading || isLinesLoading;
+
+  const handleStatClick = (
+    title: string,
+    status: TicketStatus[],
+    lineId: number,
+  ) => {
+    setModal({ isOpen: true, title, status, lineId });
+  };
+
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" h="200px">
+        <Spinner />
+      </Flex>
+    );
+  }
+
+  const totalStats = [
+    {
+      label: "Новых",
+      value: globalStats?.newTickets ?? 0,
+      color: "blue.500",
+      bgColor: "blue.50",
+      darkBgColor: "blue.900/20",
+      statusKey: TicketStatusCollection.new,
+    },
+    {
+      label: "В работе",
+      value: globalStats?.openTickets ?? 0,
+      color: "orange.500",
+      bgColor: "orange.50",
+      darkBgColor: "orange.900/20",
+      statusKey: TicketStatusCollection.open,
+    },
+    {
+      label: "Закрыто",
+      value: globalStats?.closedTickets ?? 0,
+      color: "gray.500",
+      bgColor: "gray.50",
+      darkBgColor: "gray.900/20",
+      statusKey: TicketStatusCollection.closed,
+    },
+    {
+      label: "Отклонено",
+      value: globalStats?.rejectedTickets ?? 0,
+      color: "red.500",
+      bgColor: "red.50",
+      darkBgColor: "red.900/20",
+      statusKey: TicketStatusCollection.rejected,
+    },
+  ];
+
+  return (
+    <VStack align="stretch" gap={6}>
+      {globalStats && (
+        <Box
+          bg="bg.surface"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor="border.default"
+          p={5}
+        >
+          <HStack gap={2} mb={4}>
+            <Icon as={LuGlobe} color="orange.500" />
+            <Heading size="md">Общая статистика</Heading>
+            <Text color="fg.muted" fontSize="sm" ml="auto">
+              Всего заявок: {globalStats.total}
+            </Text>
+          </HStack>
+
+          <Grid
+            templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
+            gap={4}
+          >
+            {totalStats.map((stat) => (
+              <StatBox
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+                color={stat.color}
+                bgColor={stat.bgColor}
+                darkBgColor={stat.darkBgColor}
+                fontSize="3xl"
+              />
+            ))}
+          </Grid>
+
+          <HStack
+            mt={5}
+            pt={4}
+            borderTopWidth="1px"
+            borderColor="border.default"
+            justify="space-between"
+            cursor="pointer"
+            userSelect="none"
+            _hover={{ color: "fg.default" }}
+            color="fg.muted"
+            onClick={() => setLinesExpanded((v) => !v)}
+          >
+            <HStack gap={2}>
+              <Icon as={LuInbox} color="blue.500" />
+              <Heading size="md" color="fg.default">
+                По линиям поддержки
+              </Heading>
+            </HStack>
+            <Icon as={linesExpanded ? LuChevronUp : LuChevronDown} />
+          </HStack>
+
+          {linesExpanded && (
+            <Box mt={4}>
+              {lineStats && lineStats.length > 0 ? (
+                <VStack align="stretch" gap={4}>
+                  {lineStats.map((line) => (
+                    <LineStatsCard
+                      key={line.lineId}
+                      line={line}
+                      onStatClick={handleStatClick}
+                    />
+                  ))}
+                </VStack>
+              ) : (
+                <Box bg="bg.subtle" borderRadius="lg" p={6} textAlign="center">
+                  <Text color="fg.muted">Нет данных по линиям поддержки</Text>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      <TicketListModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        title={modal.title}
+        status={modal.status}
+        lineId={modal.lineId}
+      />
+    </VStack>
+  );
+}

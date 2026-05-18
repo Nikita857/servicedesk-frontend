@@ -122,8 +122,9 @@ export default function WikiArticlePage({ params }: PageProps) {
 
   const isAuthor = user?.id === article.createdBy.id;
   const isAdmin = user?.roles?.includes("ADMIN") || false;
-  // Админы могут редактировать любые статьи, специалисты - только свои
-  const canEdit = isAdmin || (isSpecialist && isAuthor);
+  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
+  // Админы и супервизоры могут редактировать любые статьи, специалисты - только свои
+  const canEdit = isAdmin || isSupervisor || (isSpecialist && isAuthor);
 
   return (
     <Box maxW="900px" mx="auto">

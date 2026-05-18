@@ -89,12 +89,13 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { colorMode } = useColorMode();
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
   const isSpecialist = user?.specialist || false;
 
   // Filter nav items based on role
   const filteredNavItems = navItems.filter((item) => {
     if (item.href === "/dashboard/reports") return isAdmin;
-    if (item.href === "/dashboard/my-tickets") return isSpecialist && !isAdmin;
+    if (item.href === "/dashboard/my-tickets") return isSpecialist && !isAdmin && !isSupervisor;
     return true;
   });
 

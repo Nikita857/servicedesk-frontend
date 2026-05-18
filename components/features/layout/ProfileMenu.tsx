@@ -26,6 +26,7 @@ export function ProfileMenu({ user }: UserProfileMenuProps) {
     "ONE_C_SUPPORT",
     "DEV1C",
     "DEVELOPER",
+    "SUPERVISOR",
     "ADMIN",
   ] as const;
 

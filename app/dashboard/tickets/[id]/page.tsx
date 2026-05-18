@@ -47,8 +47,9 @@ export default function TicketDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const isSpecialist = user?.specialist || false;
-  const canEscalate = isSpecialist;
   const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
+  const canEscalate = isSpecialist || isSupervisor;
 
   // ==================== React Query Hooks ====================
   const {
@@ -92,6 +93,7 @@ export default function TicketDetailPage({ params }: PageProps) {
   // Может ли текущий пользователь менять статус тикета
   const canManageStatus =
     isAdmin ||
+    isSupervisor ||
     user?.id === ticket?.assignedTo?.id ||
     user?.id === ticket?.createdBy?.id ||
     coExecutors.some((ce) => ce.userId === user?.id);

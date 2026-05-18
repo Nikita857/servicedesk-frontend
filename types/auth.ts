@@ -27,6 +27,7 @@ export type SenderType =
   | "ONE_C_SUPPORT"
   | "DEV1C"
   | "DEVELOPER"
+  | "SUPERVISOR"
   | "ADMIN";
 
 export interface AuthRequest {
@@ -72,6 +73,11 @@ export const userRolesBadges: Record<
     name: "Разработчик",
     color: "purple",
     description: "Разработчик ПО. Решает задачи по разработке и интеграции",
+  },
+  SUPERVISOR: {
+    name: "Супервизор",
+    color: "teal",
+    description: "Полный доступ к тикетам всех линий: просмотр, назначение, переадресация, статистика. Без доступа к системному администрированию",
   },
   ADMIN: {
     name: "Администратор",

@@ -22,12 +22,14 @@ import {
   UserStatsDashboard,
   SpecialistStatsDashboard,
   AdminStatsDashboard,
+  SupervisorStatsDashboard,
 } from "@/components/features/dashboard";
 import { UserTicketsView} from "@/components/features/tickets/UserTicketsView";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes("ADMIN");
+  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
   const isSpecialist = user?.specialist || false;
 
   // Use TanStack Query for recent tickets (keeping for "unassigned tickets" section)
@@ -43,6 +45,9 @@ export default function DashboardPage() {
   const renderStatsDashboard = () => {
     if (isAdmin) {
       return <AdminStatsDashboard />;
+    }
+    if (isSupervisor) {
+      return <SupervisorStatsDashboard />;
     }
     if (isSpecialist) {
       return <SpecialistStatsDashboard />;
@@ -62,7 +67,7 @@ export default function DashboardPage() {
       </Flex>
 
       {/* Секция невзятые тикеты (только для специалистов/админов) - СНИЗУ ВВЕРХ */}
-      {(isSpecialist || isAdmin) && (
+      {(isSpecialist || isAdmin || isSupervisor) && (
         <Flex direction="column" flex={1} minH={0} mb={6}>
           <Flex justify="space-between" align="center" mb={4} flexShrink={0}>
             <Heading size="md" color="fg.default">
@@ -114,7 +119,7 @@ export default function DashboardPage() {
           </Box>
         </Flex>
       )}
-      {(!isAdmin && !isSpecialist)&&(
+      {(!isAdmin && !isSpecialist && !isSupervisor) && (
         <UserTicketsView/>
       )}
 
@@ -122,11 +127,11 @@ export default function DashboardPage() {
       <Box
         flexShrink={0}
         mt="auto"
-        maxH={isAdmin ? "40vh" : undefined}
-        overflowY={isAdmin ? "auto" : undefined}
-        pr={isAdmin ? 2 : 0}
+        maxH={isAdmin || isSupervisor ? "40vh" : undefined}
+        overflowY={isAdmin || isSupervisor ? "auto" : undefined}
+        pr={isAdmin || isSupervisor ? 2 : 0}
         css={
-          isAdmin
+          isAdmin || isSupervisor
             ? {
                 "&::-webkit-scrollbar": { width: "4px" },
                 "&::-webkit-scrollbar-track": { background: "transparent" },

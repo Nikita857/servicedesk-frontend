@@ -10,11 +10,10 @@ export default function TicketsPage() {
   const isSpecialist = user?.specialist || false;
   const userRoles = user?.roles || [];
   const isAdmin = userRoles.includes("ADMIN");
+  const isSupervisor = userRoles.includes("SUPERVISOR");
   const isUser = userRoles.includes("USER");
 
-  // Switch views by user role
-
-  if (isAdmin) {
+  if (isAdmin || isSupervisor) {
     return <AdminTicketsView />;
   }
 

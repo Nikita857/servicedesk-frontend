@@ -71,15 +71,15 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   useEffect(() => {
     if (!isLoading && article) {
       const isAuthor = user?.id === article.createdBy.id;
-      const isAdmin = user?.roles.every((role) => role === "ADMIN");
-      if (!isSpecialist) {
+      const hasFullAccess = user?.roles.includes("ADMIN") || user?.roles.includes("SUPERVISOR");
+      if (!isSpecialist && !hasFullAccess) {
         toast.error(
           "Доступ запрещён",
           "Вы можете редактировать только свои статьи",
         );
         router.push(`/dashboard/wiki/${slug}`);
       }
-      if (!isAuthor && !isAdmin) {
+      if (!isAuthor && !hasFullAccess) {
         toast.error("Доступ запрещён", "Вы не являетесь специалистом");
         router.push(`/dashboard/wiki/${slug}`);
       }

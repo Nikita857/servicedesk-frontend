@@ -79,8 +79,9 @@ export default function TicketHeader({
   // Can cancel: ticket creator or admin, and ticket is not closed/cancelled
   const isTicketCreator = user?.id === ticket.createdBy?.id;
   const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
   const canCancel =
-    (isTicketCreator || isAdmin) &&
+    (isTicketCreator || isAdmin || isSupervisor) &&
     ticket.status !== "CLOSED" &&
     ticket.status !== "CANCELLED";
   const isMyPendingAssignment =
@@ -175,7 +176,7 @@ export default function TicketHeader({
           flexShrink={0}
         >
           {/* Take Ticket button - for specialists when ticket is unassigned */}
-          {isSpecialist && isMyPendingAssignment && (
+          {(isSpecialist || isSupervisor) && isMyPendingAssignment && (
             <Button
               size="sm"
               colorPalette="green"
@@ -185,7 +186,7 @@ export default function TicketHeader({
               Взять в работу
             </Button>
           )}
-          {isSpecialist &&
+          {(isSpecialist || isSupervisor) &&
             !ticket.assignedTo &&
             (ticket.status === "NEW" || ticket.status === "ESCALATED") &&
             !hasPendingAssignment && (
@@ -227,8 +228,8 @@ export default function TicketHeader({
           {/* Status change menu - только если пользователь управляет тикетом */}
           {canManageStatus &&
             (() => {
-              // Admin → full transitions, specialist → restricted, regular user → minimal
-              let availableTransitions = isAdmin
+              // Admin/Supervisor → full transitions, specialist → restricted, regular user → minimal
+              let availableTransitions = (isAdmin || isSupervisor)
                 ? statusTransitions[ticket.status]
                 : isSpecialist
                   ? specialistStatusTransitions[ticket.status]
