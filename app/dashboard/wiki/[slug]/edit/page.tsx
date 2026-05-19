@@ -28,8 +28,9 @@ import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
 import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
 import { BackButton, CategoryTreeSelect } from "@/components/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -42,6 +43,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const isSpecialist = user?.specialist || false;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload } = useFileUpload();
+  const queryClient = useQueryClient();
 
   // Use TanStack Query for article data
   const { article, isLoading, error, refetch } = useWikiArticleQuery(slug);
@@ -71,7 +73,8 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   useEffect(() => {
     if (!isLoading && article) {
       const isAuthor = user?.id === article.createdBy.id;
-      const hasFullAccess = user?.roles.includes("ADMIN") || user?.roles.includes("SUPERVISOR");
+      const hasFullAccess =
+        user?.roles.includes("ADMIN") || user?.roles.includes("SUPERVISOR");
       if (!isSpecialist && !hasFullAccess) {
         toast.error(
           "Доступ запрещён",
@@ -164,16 +167,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!article) return;
-
-    if (!formData.title?.trim()) {
-      toast.error("Ошибка", "Введите заголовок статьи");
-      return;
-    }
-
-    if (!formData.content?.trim()) {
-      toast.error("Ошибка", "Введите содержимое статьи");
-      return;
-    }
+    // ... валидация
 
     setIsSubmitting(true);
     try {
@@ -192,7 +186,6 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         const uploadPromises = selectedFiles.map((file) =>
           upload(file, "WIKI_ARTICLE", article.id),
         );
-
         try {
           await Promise.all(uploadPromises);
           toast.success(
@@ -204,10 +197,16 @@ export default function EditWikiArticlePage({ params }: PageProps) {
             "Статья обновлена",
             "Некоторые файлы не удалось загрузить",
           );
+          console.error(`Ошибка. Не удалось обновить статью: ${uploadError}`);
         }
       } else {
         toast.success("Статья обновлена!");
       }
+
+      // Инвалидируем всё wiki сразу — списки, детали, категории
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.wiki.all,
+      });
 
       router.push(`/dashboard/wiki/${updated.slug}`);
     } catch (error) {

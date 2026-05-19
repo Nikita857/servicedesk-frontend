@@ -60,12 +60,13 @@ const senderTypeConfig: Record<SenderType, SenderTypeConfig> = {
   ONE_C_SUPPORT: { label: "1С Поддержка", color: "blue", line: 2 },
   DEV1C: { label: "Разработчик 1С", color: "orange", line: 3 },
   DEVELOPER: { label: "Разработчик", color: "purple", line: 4 },
+  SUPERVISOR: { label: "Супервизор", color: "teal" },
   ADMIN: { label: "Администратор", color: "red" },
 };
 
 // Get sender config with fallback for unknown types
 export const getSenderConfig = (
-  senderType: SenderType | string
+  senderType: SenderType | string,
 ): SenderTypeConfig => {
   return (
     senderTypeConfig[senderType as SenderType] || {
