@@ -20,29 +20,25 @@ import {
     VStack,
 } from "@chakra-ui/react";
 import {LuCheck, LuPlus, LuSave, LuTrash2, LuUsers} from "react-icons/lu";
+import {useQuery} from "@tanstack/react-query";
 import {BackButton} from "@/components/ui";
 import {Specialist} from "@/lib/api/supportLines";
 import {useSupportLineDetail} from "@/lib/hooks/admin-support-lines";
-import type {SenderType} from "@/types/auth";
-import {activityStatusConfig, userRolesBadges} from "@/types/auth";
+import {activityStatusConfig, getSpecialistTypeInfo} from "@/types/auth";
 import {AssignmentMode, assignmentModeConfig} from "@/types/ticket";
 import {Tooltip} from "@/components/ui/tooltip";
+import {specialistTypeApi} from "@/lib/api/specialistTypes";
 
 interface PageProps {
     params: Promise<{ id: string }>;
 }
 
-// Get available roles for selection (excluding USER and ADMIN)
-const availableRoles = Object.entries(userRolesBadges)
-    .filter(([role]) => role !== "USER" && role !== "ADMIN")
-    .map(([role, info]) => ({value: role, label: info.name}));
-
+// Роли для фильтрации пользователей при добавлении специалиста
 const roleCollection = createListCollection({
-    items: availableRoles,
-});
-
-const lineRoleCollection = createListCollection({
-    items: availableRoles,
+    items: [
+        { value: "SPECIALIST", label: "Специалист" },
+        { value: "SUPERVISOR", label: "Супервизор" },
+    ],
 });
 
 const assignmentModeCollection = createListCollection({
@@ -65,6 +61,16 @@ export default function SupportLineDetailPage({params}: PageProps) {
     const {id} = use(params);
     const lineId = parseInt(id);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+    const {data: specialistTypes = []} = useQuery({
+        queryKey: ["specialist-types"],
+        queryFn: specialistTypeApi.getAll,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const lineRoleCollection = createListCollection({
+        items: specialistTypes.map((t) => ({value: t.id.toString(), label: t.name})),
+    });
 
     const {
         line,
@@ -214,9 +220,9 @@ export default function SupportLineDetailPage({params}: PageProps) {
                             </Text>
                             <Select.Root
                                 collection={lineRoleCollection}
-                                value={form.role ? [form.role] : []}
+                                value={form.specialistTypeId ? [form.specialistTypeId.toString()] : []}
                                 onValueChange={(e) =>
-                                    form.setRole((e.value[0] as SenderType) || null)
+                                    form.setSpecialistTypeId(e.value[0] ? parseInt(e.value[0]) : null)
                                 }
                             >
                                 <Select.Trigger>
@@ -520,19 +526,14 @@ function SpecialistRow({
                         @{specialist.username}
                     </Text>
                 </Box>
-                {specialist.roles?.map((role) => {
-                    const roleInfo =
-                        userRolesBadges[role as keyof typeof userRolesBadges];
+                {specialist.specialistType && (() => {
+                    const info = getSpecialistTypeInfo(specialist.specialistType);
                     return (
-                        <Badge
-                            key={role}
-                            colorPalette={roleInfo?.color || "gray"}
-                            variant="subtle"
-                        >
-                            {roleInfo?.name || role}
+                        <Badge colorPalette={info.color} variant="subtle">
+                            {info.name}
                         </Badge>
                     );
-                })}
+                })()}
                 {specialist.activityStatus && (
                     <Badge
                         colorPalette={

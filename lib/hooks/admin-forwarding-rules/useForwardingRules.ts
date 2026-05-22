@@ -5,50 +5,45 @@ import {
   type ForwardingRuleResponse,
   type RuleUpdate,
 } from "@/lib/api/forwardingRules";
+import { specialistTypeApi } from "@/lib/api/specialistTypes";
+import type { SpecialistTypeResponse } from "@/types/support-line";
 import { handleApiError, toast } from "@/lib/utils";
-
-// Роли-источники (строки матрицы) — специалисты и пользователи
-const SOURCE_ROLES = [
-  "USER",
-  "SYSADMIN",
-  "ONE_C_SUPPORT",
-  "DEV1C",
-  "DEVELOPER",
-] as const;
-
-// Роли-получатели (столбцы матрицы) — только специалистические
-const TARGET_ROLES = [
-  "SYSADMIN",
-  "ONE_C_SUPPORT",
-  "DEV1C",
-  "DEVELOPER",
-] as const;
 
 export type RuleMatrix = Record<string, Record<string, boolean>>;
 
-function buildMatrix(rules: ForwardingRuleResponse[]): RuleMatrix {
+function buildMatrix(
+  rules: ForwardingRuleResponse[],
+  types: SpecialistTypeResponse[],
+): RuleMatrix {
+  const codes = types.map((t) => t.code);
   const matrix: RuleMatrix = {};
-  for (const src of SOURCE_ROLES) {
+  for (const src of codes) {
     matrix[src] = {};
-    for (const tgt of TARGET_ROLES) {
+    for (const tgt of codes) {
       matrix[src][tgt] = false;
     }
   }
   for (const rule of rules) {
-    if (matrix[rule.sourceRole]?.[rule.targetRole] !== undefined) {
-      matrix[rule.sourceRole][rule.targetRole] = rule.enabled;
+    const src = rule.sourceRole?.code;
+    const tgt = rule.targetRole?.code;
+    if (src && tgt && matrix[src] !== undefined) {
+      matrix[src][tgt] = rule.enabled;
     }
   }
   return matrix;
 }
 
-function matrixToUpdates(matrix: RuleMatrix): RuleUpdate[] {
+function matrixToUpdates(
+  matrix: RuleMatrix,
+  types: SpecialistTypeResponse[],
+): RuleUpdate[] {
+  const codes = types.map((t) => t.code);
   const updates: RuleUpdate[] = [];
-  for (const src of SOURCE_ROLES) {
-    for (const tgt of TARGET_ROLES) {
+  for (const src of codes) {
+    for (const tgt of codes) {
       updates.push({
-        sourceRole: src,
-        targetRole: tgt,
+        sourceType: src,
+        targetType: tgt,
         enabled: matrix[src]?.[tgt] ?? false,
       });
     }
@@ -62,38 +57,44 @@ export function useForwardingRules() {
   const [isDirty, setIsDirty] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const { data: rules, isLoading } = useQuery({
+  const { data: specialistTypes = [], isLoading: isLoadingTypes } = useQuery({
+    queryKey: ["specialist-types"],
+    queryFn: specialistTypeApi.getAll,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: rules, isLoading: isLoadingRules } = useQuery({
     queryKey: ["forwarding-rules"],
     queryFn: forwardingRulesApi.getAll,
     staleTime: 60 * 1000,
   });
 
+  const activeTypes = specialistTypes.filter((t) => t.active);
+
   useEffect(() => {
-    if (rules && !isInitialized) {
-      setMatrix(buildMatrix(rules));
+    if (rules && activeTypes.length > 0 && !isInitialized) {
+      setMatrix(buildMatrix(rules, activeTypes));
       setIsInitialized(true);
     }
-  }, [rules, isInitialized]);
+  }, [rules, activeTypes.length, isInitialized]);
 
-  const toggleRule = useCallback(
-    (sourceRole: string, targetRole: string) => {
-      setMatrix((prev) => ({
-        ...prev,
-        [sourceRole]: {
-          ...prev[sourceRole],
-          [targetRole]: !prev[sourceRole]?.[targetRole],
-        },
-      }));
-      setIsDirty(true);
-    },
-    []
-  );
+  const toggleRule = useCallback((sourceCode: string, targetCode: string) => {
+    setMatrix((prev) => ({
+      ...prev,
+      [sourceCode]: {
+        ...prev[sourceCode],
+        [targetCode]: !prev[sourceCode]?.[targetCode],
+      },
+    }));
+    setIsDirty(true);
+  }, []);
 
   const saveMutation = useMutation({
-    mutationFn: () => forwardingRulesApi.update(matrixToUpdates(matrix)),
+    mutationFn: () =>
+      forwardingRulesApi.update(matrixToUpdates(matrix, activeTypes)),
     onSuccess: (data) => {
       queryClient.setQueryData(["forwarding-rules"], data);
-      setMatrix(buildMatrix(data));
+      setMatrix(buildMatrix(data, activeTypes));
       setIsDirty(false);
       toast.success("Правила маршрутизации сохранены");
     },
@@ -104,20 +105,19 @@ export function useForwardingRules() {
 
   const resetMatrix = useCallback(() => {
     if (rules) {
-      setMatrix(buildMatrix(rules));
+      setMatrix(buildMatrix(rules, activeTypes));
       setIsDirty(false);
     }
-  }, [rules]);
+  }, [rules, activeTypes]);
 
   return {
     matrix,
-    isLoading,
+    specialistTypes: activeTypes,
+    isLoading: isLoadingTypes || isLoadingRules,
     isDirty,
     isSaving: saveMutation.isPending,
     toggleRule,
     save: () => saveMutation.mutate(),
     reset: resetMatrix,
-    SOURCE_ROLES,
-    TARGET_ROLES,
   };
 }

@@ -20,17 +20,11 @@ import {
 import { Select } from "@chakra-ui/react";
 import { LuClock, LuUsers, LuChevronRight, LuPlus } from "react-icons/lu";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useSupportLines } from "@/lib/hooks/admin-support-lines";
+import { specialistTypeApi } from "@/lib/api/specialistTypes";
 import type { SupportLineListResponse, CreateSupportLineRequest } from "@/types/support-line";
-import { userRolesBadges } from "@/types/auth";
-import type { SenderType } from "@/types/auth";
-
-// Только специалистические роли для линий поддержки
-const lineRoleOptions = Object.entries(userRolesBadges)
-  .filter(([role]) => role !== "USER" && role !== "ADMIN")
-  .map(([role, info]) => ({ value: role, label: info.name }));
-
-const lineRoleCollection = createListCollection({ items: lineRoleOptions });
+import { getSpecialistTypeInfo } from "@/types/auth";
 
 function formatSla(minutes: number): string {
   if (minutes < 60) return `${minutes} мин`;
@@ -45,20 +39,30 @@ export default function SupportLinesPage() {
   const { lines, isLoading, createLine, isCreating } = useSupportLines();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const { data: specialistTypes = [] } = useQuery({
+    queryKey: ["specialist-types"],
+    queryFn: specialistTypeApi.getAll,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const specialistTypeCollection = createListCollection({
+    items: specialistTypes.map((t) => ({ value: t.id.toString(), label: t.name })),
+  });
+
   // Create form state
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newSlaMinutes, setNewSlaMinutes] = useState(1440);
   const [newDisplayOrder, setNewDisplayOrder] = useState(100);
-  const [newRole, setNewRole] = useState<SenderType | null>(null);
+  const [newSpecialistTypeId, setNewSpecialistTypeId] = useState<number | null>(null);
 
   const handleCreate = () => {
-    if (!newName.trim() || !newRole) return;
+    if (!newName.trim() || !newSpecialistTypeId) return;
     const req: CreateSupportLineRequest = {
       name: newName.trim(),
       description: newDescription.trim() || undefined,
       slaMinutes: newSlaMinutes,
-      role: newRole,
+      specialistTypeId: newSpecialistTypeId,
       displayOrder: newDisplayOrder,
     };
     createLine(req);
@@ -67,7 +71,7 @@ export default function SupportLinesPage() {
     setNewDescription("");
     setNewSlaMinutes(1440);
     setNewDisplayOrder(100);
-    setNewRole(null);
+    setNewSpecialistTypeId(null);
   };
 
   return (
@@ -119,18 +123,18 @@ export default function SupportLinesPage() {
                         Роль специалистов <Text as="span" color="red.500">*</Text>
                       </Text>
                       <Select.Root
-                        collection={lineRoleCollection}
-                        value={newRole ? [newRole] : []}
+                        collection={specialistTypeCollection}
+                        value={newSpecialistTypeId ? [newSpecialistTypeId.toString()] : []}
                         onValueChange={(e) =>
-                          setNewRole((e.value[0] as SenderType) || null)
+                          setNewSpecialistTypeId(e.value[0] ? parseInt(e.value[0]) : null)
                         }
                       >
                         <Select.Trigger>
-                          <Select.ValueText placeholder="Выберите роль" />
+                          <Select.ValueText placeholder="Выберите тип специалистов" />
                         </Select.Trigger>
                         <Select.Positioner>
                           <Select.Content>
-                            {lineRoleCollection.items.map((item) => (
+                            {specialistTypeCollection.items.map((item) => (
                               <Select.Item key={item.value} item={item}>
                                 {item.label}
                               </Select.Item>
@@ -193,7 +197,7 @@ export default function SupportLinesPage() {
                     color="white"
                     _hover={{ bg: "gray.800" }}
                     onClick={handleCreate}
-                    disabled={!newName.trim() || !newRole}
+                    disabled={!newName.trim() || !newSpecialistTypeId}
                     loading={isCreating}
                   >
                     Создать
@@ -235,10 +239,6 @@ export default function SupportLinesPage() {
 }
 
 function SupportLineCard({ line }: { line: SupportLineListResponse }) {
-  const roleInfo = line.role
-    ? userRolesBadges[line.role as keyof typeof userRolesBadges]
-    : null;
-
   return (
     <Link href={`/dashboard/admin/support-lines/${line.id}`}>
       <Box
@@ -260,9 +260,9 @@ function SupportLineCard({ line }: { line: SupportLineListResponse }) {
               <Badge colorPalette="blue" variant="subtle">
                 #{line.displayOrder}
               </Badge>
-              {roleInfo && (
-                <Badge colorPalette={roleInfo.color} variant="subtle">
-                  {roleInfo.name}
+              {line.specialistType && (
+                <Badge colorPalette={getSpecialistTypeInfo(line.specialistType.code).color} variant="subtle">
+                  {line.specialistType.name}
                 </Badge>
               )}
             </HStack>

@@ -10,7 +10,6 @@ import {
   Icon,
   Separator,
   Button,
-  Center,
 } from "@chakra-ui/react";
 import {
   LuCamera,
@@ -20,7 +19,7 @@ import {
   LuCalendar,
 } from "react-icons/lu";
 import { ProfileResponse } from "@/lib/api/profile";
-import { userRolesBadges } from "@/types/auth";
+import { userRolesBadges, getSpecialistTypeInfo } from "@/types/auth";
 import { getShortInitials } from "@/lib/utils";
 
 interface ProfileSidebarProps {
@@ -140,6 +139,15 @@ export function ProfileSidebar({
               </Badge>
             );
           })}
+          {profile.specialistType &&
+            (() => {
+              const info = getSpecialistTypeInfo(profile.specialistType);
+              return (
+                <Badge colorPalette={info.color} size="sm" variant="outline">
+                  {info.name}
+                </Badge>
+              );
+            })()}
         </HStack>
       </VStack>
 

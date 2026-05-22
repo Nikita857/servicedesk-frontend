@@ -29,7 +29,10 @@ import {
   LuChevronDown,
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { userRolesBadges as userRolesConfig } from "@/types/auth";
+import {
+  userRolesBadges as userRolesConfig,
+  getSpecialistTypeInfo,
+} from "@/types/auth";
 import type { AdminUserResponse } from "@/types/admin";
 
 interface UsersTableProps {
@@ -54,7 +57,7 @@ const getRoleBadge = (role: string) => {
     color: "gray",
   };
   return (
-    <Tooltip content={roleData.description}>
+    <Tooltip key={role} content={roleData.description}>
       <Badge
         key={role}
         colorPalette={roleData?.color || "gray"}
@@ -155,6 +158,22 @@ const UsersTable = memo(function UsersTable({
                     <Table.Cell>
                       <HStack gap={1} flexWrap="wrap">
                         {u.roles.map((role) => getRoleBadge(role))}
+                        {u.specialistType &&
+                          (() => {
+                            const info = getSpecialistTypeInfo(
+                              u.specialistType,
+                            );
+                            return (
+                              <Badge
+                                key="st"
+                                colorPalette={info.color}
+                                size="sm"
+                                variant="outline"
+                              >
+                                {info.name}
+                              </Badge>
+                            );
+                          })()}
                       </HStack>
                     </Table.Cell>
                     <Table.Cell>
@@ -186,23 +205,39 @@ const UsersTable = memo(function UsersTable({
                     <Table.Cell textAlign="right">
                       <Menu.Root>
                         <Menu.Trigger asChild>
-                          <IconButton variant="ghost" size="sm" aria-label="Действия">
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Действия"
+                          >
                             <LuChevronDown />
                           </IconButton>
                         </Menu.Trigger>
                         <Portal>
                           <Menu.Positioner>
                             <Menu.Content minW="200px">
-                              <Menu.Item value="edit-fio" onClick={() => openEditFio(u)}>
+                              <Menu.Item
+                                value="edit-fio"
+                                onClick={() => openEditFio(u)}
+                              >
                                 <LuPencil /> Редактировать ФИО
                               </Menu.Item>
-                              <Menu.Item value="edit-org" onClick={() => openEditOrg(u)}>
+                              <Menu.Item
+                                value="edit-org"
+                                onClick={() => openEditOrg(u)}
+                              >
                                 <LuBuilding2 /> Организация
                               </Menu.Item>
-                              <Menu.Item value="edit-roles" onClick={() => openEditRoles(u)}>
+                              <Menu.Item
+                                value="edit-roles"
+                                onClick={() => openEditRoles(u)}
+                              >
                                 <LuShield /> Управление ролями
                               </Menu.Item>
-                              <Menu.Item value="change-password" onClick={() => openChangePassword(u)}>
+                              <Menu.Item
+                                value="change-password"
+                                onClick={() => openChangePassword(u)}
+                              >
                                 <LuKey /> Сменить пароль
                               </Menu.Item>
                               <Menu.Separator />

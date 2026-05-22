@@ -5,7 +5,6 @@ import {supportLineApi} from "@/lib/api/supportLines";
 import {adminApi} from "@/lib/api/admin";
 import {handleApiError, toast} from "@/lib/utils";
 import {AssignmentMode} from "@/types/ticket";
-import {SenderType} from "@/types/auth";
 
 /**
  * Hook for managing the detail and editing of a specific support line.
@@ -19,7 +18,7 @@ export function useSupportLineDetail(lineId: number) {
   const [slaMinutes, setSlaMinutes] = useState(60);
   const [assignmentMode, setAssignmentMode] =
       useState<AssignmentMode>("FIRST_AVAILABLE");
-  const [role, setRole] = useState<SenderType | null>(null);
+  const [specialistTypeId, setSpecialistTypeId] = useState<number | null>(null);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [telegramChatId, setTelegramChatId] = useState<string>("");
   const [vkChatId, setVkChatId] = useState<string>("");
@@ -52,7 +51,7 @@ export function useSupportLineDetail(lineId: number) {
       setDescription(line.description || "");
       setSlaMinutes(line.slaMinutes);
       setAssignmentMode(line.assignmentMode);
-      setRole(line.role);
+      setSpecialistTypeId(line.specialistType?.id ?? null);
       setDisplayOrder(line.displayOrder);
       setTelegramChatId(line.supportLineChatsResponse?.telegramChatId?.toString() || "");
       setVkChatId(line.supportLineChatsResponse?.vkChatId?.toString() || "");
@@ -75,7 +74,7 @@ export function useSupportLineDetail(lineId: number) {
         description,
         slaMinutes,
         assignmentMode,
-        role: role ?? undefined,
+        specialistTypeId: specialistTypeId ?? undefined,
         displayOrder,
       });
 
@@ -182,14 +181,14 @@ export function useSupportLineDetail(lineId: number) {
       description,
       slaMinutes,
       assignmentMode,
-      role,
+      specialistTypeId,
       displayOrder,
       isDirty: isFormDirty,
       setDescription: (val: string) => handleFieldChange(setDescription, val),
       setSlaMinutes: (val: number) => handleFieldChange(setSlaMinutes, val),
       setAssignmentMode: (val: AssignmentMode) =>
           handleFieldChange(setAssignmentMode, val),
-      setRole: (val: SenderType | null) => handleFieldChange(setRole, val),
+      setSpecialistTypeId: (val: number | null) => handleFieldChange(setSpecialistTypeId, val),
       setDisplayOrder: (val: number) => handleFieldChange(setDisplayOrder, val),
       telegramChatId,
       setTelegramChatId: (val: string) =>

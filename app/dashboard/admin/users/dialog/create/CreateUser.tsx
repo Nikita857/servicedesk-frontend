@@ -2,7 +2,7 @@ import { DataSelect } from "@/components/ui";
 import { Tooltip } from "@/components/ui/tooltip";
 import { fioToUsername } from "@/lib/utils";
 import type { CreateUserRequest } from "@/types/admin";
-import { SenderType, userRolesBadges } from "@/types";
+import { userRolesBadges } from "@/types";
 import {
   Badge,
   Button,
@@ -250,21 +250,16 @@ export default function CreateUser({
                           <Badge
                             colorPalette={roleData.color}
                             variant={
-                              newUser.roles?.includes(roleKey as SenderType)
-                                ? "solid"
-                                : "outline"
+                              newUser.roles?.includes(roleKey) ? "solid" : "outline"
                             }
                             cursor="pointer"
                             onClick={() =>
                               toggleRole(roleKey, newUser.roles || [], (r) =>
-                                setNewUser({
-                                  ...newUser,
-                                  roles: r as SenderType[],
-                                }),
+                                setNewUser({ ...newUser, roles: r }),
                               )
                             }
                           >
-                            {newUser.roles?.includes(roleKey as SenderType) && (
+                            {newUser.roles?.includes(roleKey) && (
                               <LuCheck size={12} />
                             )}
                             {roleData.name}

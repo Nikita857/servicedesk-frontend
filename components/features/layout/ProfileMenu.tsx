@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, Flex, Text, Separator, Avatar, Portal } from "@chakra-ui/react";
 import { LuSettings, LuUser, LuLogOut, LuChevronUp } from "react-icons/lu";
-import { SenderType, User, userRolesBadges } from "@/types";
+import { User, userRolesBadges, getSpecialistTypeInfo } from "@/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/hooks";
 import { useRouter } from "next/navigation";
@@ -20,24 +20,20 @@ export function ProfileMenu({ user }: UserProfileMenuProps) {
   const popupRef = useRef<HTMLDivElement>(null);
   const { logout } = useAuth();
 
-  const rolePriority = [
-    "USER",
-    "SYSADMIN",
-    "ONE_C_SUPPORT",
-    "DEV1C",
-    "DEVELOPER",
-    "SUPERVISOR",
-    "ADMIN",
-  ] as const;
+  const rolePriority = ["USER", "SPECIALIST", "SUPERVISOR", "ADMIN"] as const;
 
   const highestRole =
     user?.roles?.reduce<string | null>((top, role) => {
-      const currentIdx = rolePriority.indexOf(role as SenderType);
-      const topIdx = top ? rolePriority.indexOf(top as SenderType) : -1;
+      const currentIdx = rolePriority.indexOf(role as (typeof rolePriority)[number]);
+      const topIdx = top ? rolePriority.indexOf(top as (typeof rolePriority)[number]) : -1;
       return currentIdx > topIdx ? role : top;
     }, null) ?? "USER";
 
-  const roleBadgeInfo = userRolesBadges[highestRole];
+  const specialistInfo = user?.specialistType
+    ? getSpecialistTypeInfo(user.specialistType)
+    : null;
+
+  const roleBadgeInfo = userRolesBadges[highestRole] ?? { name: highestRole, color: "gray", description: "" };
 
   // Close on outside click
   useEffect(() => {
@@ -165,9 +161,9 @@ export function ProfileMenu({ user }: UserProfileMenuProps) {
           <Text fontSize="md" fontWeight="medium" color="fg.default">
             {getFullNameInitials(user?.fio)}
           </Text>
-          <Tooltip content={roleBadgeInfo.description}>
-            <Text fontSize="xs" color={roleBadgeInfo.color}>
-              {roleBadgeInfo.name}
+          <Tooltip content={specialistInfo ? specialistInfo.name : roleBadgeInfo.description}>
+            <Text fontSize="xs" color={`${specialistInfo ? specialistInfo.color : roleBadgeInfo.color}.500`}>
+              {specialistInfo ? specialistInfo.name : roleBadgeInfo.name}
             </Text>
           </Tooltip>
         </Box>
