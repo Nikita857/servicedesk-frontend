@@ -94,7 +94,7 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   // Filter nav items based on role
   const filteredNavItems = navItems.filter((item) => {
-    if (item.href === "/dashboard/reports") return isAdmin;
+    if (item.href === "/dashboard/reports") return isAdmin || isSupervisor;
     if (item.href === "/dashboard/my-tickets") return isSpecialist && !isAdmin && !isSupervisor;
     return true;
   });
