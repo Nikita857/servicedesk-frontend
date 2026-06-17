@@ -4,21 +4,23 @@ import { useEffect } from "react";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import CalendarView from "@/components/ui/scheduled-task/calendar/CalendarView";
 
 export default function ScheduledTasksPage() {
   const router = useRouter();
-  const { user, isHydrated } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN");
+  const { isHydrated } = useAuthStore();
+  const { has } = useCurrentPermissions();
 
   useEffect(() => {
-    if (isHydrated && !isAdmin) {
+    if (isHydrated && !has(PERM.SCHEDULED_TASK_MANAGE)) {
       router.push("/dashboard");
     }
-  }, [isHydrated, isAdmin, router]);
+  }, [isHydrated, has, router]);
 
   if (!isHydrated) return null;
-  if (!isAdmin) return null;
+  if (!has(PERM.SCHEDULED_TASK_MANAGE)) return null;
 
   return (
     <Box>

@@ -12,6 +12,8 @@ import {
   CloseButton,
 } from "@chakra-ui/react";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { Sidebar } from "@/components/features/layout/Sidebar";
 import { Header } from "@/components/features/layout/Header";
 import { WebSocketProvider } from "@/lib/providers";
@@ -32,20 +34,21 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { isAuthenticated, isHydrated, user } = useAuthStore();
+  const { has } = useCurrentPermissions();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Онбординг только для обычных пользователей (не специалистов и не админов)
+  // Онбординг только для базовых пользователей без специальных прав
   const isOnlyUser = !!(
     user &&
-    !user.specialist &&
-    user.roles?.length === 1 &&
-    user.roles[0] === "USER"
+    !has(PERM.TICKET_READ_LINE) &&
+    !has(PERM.TICKET_READ_ALL) &&
+    !has(PERM.USER_MANAGE)
   );
   const onboarding = useOnboarding(isOnlyUser);
   useHeartbeat();
   useTabTitle({
-    isAdmin: !!user?.roles?.includes("ADMIN"),
-    isSpecialist: !!user?.specialist,
+    isAdmin: has(PERM.REPORT_VIEW),
+    isSpecialist: has(PERM.TICKET_READ_LINE) && !has(PERM.REPORT_VIEW),
   });
 
   useEffect(() => {

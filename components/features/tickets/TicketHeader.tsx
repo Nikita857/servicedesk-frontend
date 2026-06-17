@@ -38,6 +38,8 @@ import type { User } from "@/types/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { AssignmentDecisionDialog } from "./AssignmentDecisionDialog";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 interface TicketHeaderProps {
   ticket: Ticket;
@@ -76,17 +78,16 @@ export default function TicketHeader({
 
   const queryClient = useQueryClient();
 
-  // Can cancel: ticket creator or admin, and ticket is not closed/cancelled
+  const { has } = useCurrentPermissions();
+  // Can cancel: ticket creator or admin/supervisor, and ticket is not closed/cancelled
   const isTicketCreator = user?.id === ticket.createdBy?.id;
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
   const canCancel =
-    (isTicketCreator || isAdmin || isSupervisor) &&
+    (isTicketCreator || has(PERM.TICKET_UPDATE_ALL)) &&
     ticket.status !== "CLOSED" &&
     ticket.status !== "CANCELLED";
   const isMyPendingAssignment =
     currentAssignment?.status === "PENDING" &&
-    currentAssignment.toUsername === user?.username;
+    currentAssignment.toUser?.username === user?.username;
 
   // Can show escalation button: not closed/resolved and no pending assignment
   const canReassign = () => {
@@ -176,7 +177,7 @@ export default function TicketHeader({
           flexShrink={0}
         >
           {/* Take Ticket button - for specialists when ticket is unassigned */}
-          {(isSpecialist || isSupervisor) && isMyPendingAssignment && (
+          {isSpecialist && isMyPendingAssignment && (
             <Button
               size="sm"
               colorPalette="green"
@@ -186,7 +187,7 @@ export default function TicketHeader({
               Взять в работу
             </Button>
           )}
-          {(isSpecialist || isSupervisor) &&
+          {isSpecialist &&
             !ticket.assignedTo &&
             (ticket.status === "NEW" || ticket.status === "ESCALATED") &&
             !hasPendingAssignment && (
@@ -229,11 +230,12 @@ export default function TicketHeader({
           {canManageStatus &&
             (() => {
               // Admin/Supervisor → full transitions, specialist → restricted, regular user → minimal
-              let availableTransitions = (isAdmin || isSupervisor)
-                ? statusTransitions[ticket.status]
-                : isSpecialist
-                  ? specialistStatusTransitions[ticket.status]
-                  : userStatusTransitions[ticket.status];
+              let availableTransitions =
+                has(PERM.TICKET_UPDATE_ALL)
+                  ? statusTransitions[ticket.status]
+                  : has(PERM.TICKET_UPDATE_ASSIGNED)
+                    ? specialistStatusTransitions[ticket.status]
+                    : userStatusTransitions[ticket.status];
 
               // OPEN требует назначенного исполнителя — скрываем если тикет никем не взят
               if (!ticket.assignedTo) {

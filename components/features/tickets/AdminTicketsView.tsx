@@ -29,6 +29,8 @@ import {
   useAuth,
   useTicketListSubscription,
 } from "@/lib/hooks";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
 import { useWebSocket } from "@/lib/providers";
 import { useQueryClient } from "@tanstack/react-query";
@@ -50,6 +52,7 @@ function readStorage(key: string): string {
 
 export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
   const { user } = useAuth();
+  const { has } = useCurrentPermissions();
   const [page, setPage] = usePersistentPage("admin-tickets");
   const queryClient = useQueryClient();
   const { isConnected } = useWebSocket();
@@ -167,17 +170,19 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
 
         <HStack gap={2}>
           <TicketStatusHelpModal />
-          <Link href="/dashboard/tickets/new">
-            <Button
-              size="sm"
-              bg="accent.800"
-              color="white"
-              _hover={{ bg: "accent.700" }}
-            >
-              <LuPlus />
-              Новая заявка
-            </Button>
-          </Link>
+          {has(PERM.TICKET_CREATE) && (
+            <Link href="/dashboard/tickets/new">
+              <Button
+                size="sm"
+                bg="accent.800"
+                color="white"
+                _hover={{ bg: "accent.700" }}
+              >
+                <LuPlus />
+                Новая заявка
+              </Button>
+            </Link>
+          )}
         </HStack>
       </Flex>
 

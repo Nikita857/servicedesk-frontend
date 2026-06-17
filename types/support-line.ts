@@ -4,6 +4,7 @@ export interface SpecialistTypeResponse {
   id: number;
   code: string;
   name: string;
+  color: string;
   displayOrder: number;
   active: boolean;
   system: boolean;
@@ -22,7 +23,7 @@ export interface Specialist {
   fio: string | null;
   active: boolean;
   roles: string[];
-  specialistType?: string | null;
+  specialistType?: SpecialistTypeResponse | null;
   activityStatus?: ActivityStatus;
   availableForAssignment?: boolean;
 }
@@ -41,7 +42,7 @@ export interface SupportLineListResponse {
 export interface SupportLineDetail extends SupportLineListResponse {
   assignmentMode: AssignmentMode;
   specialists: Specialist[];
-  supportLineChatsResponse: SupportLineChatsResponse
+  supportLineChatsResponse: SupportLineChatsResponse;
 }
 
 export interface CreateSupportLineRequest {

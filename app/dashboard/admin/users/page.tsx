@@ -19,6 +19,7 @@ import EditFio from "./dialog/edit/EditFio";
 import ChangePassword from "./dialog/edit/ChangePassword";
 import DeleteUser from "./dialog/delete/DeleteUser";
 import EditOrgModal from "./dialog/edit/EditOrgModal";
+import EditSpecialistType from "./dialog/edit/EditSpecialistType";
 
 export default function UsersPage() {
   const { user } = useAuthStore();
@@ -55,6 +56,7 @@ export default function UsersPage() {
     isChangePasswordOpen,
     isDeleteOpen,
     isEditOrgOpen,
+    isEditSpecialistTypeOpen,
   } = dialogState;
 
   const {
@@ -65,11 +67,13 @@ export default function UsersPage() {
     openChangePassword,
     openDelete,
     openEditOrg,
+    openEditSpecialistType,
     closeEditRoles,
     closeEditFio,
     closeChangePassword,
     closeDelete,
     closeEditOrg,
+    closeEditSpecialistType,
   } = dialog;
 
   const {
@@ -94,6 +98,7 @@ export default function UsersPage() {
     handleChangePassword,
     handleDeleteUser,
     handleUpdateOrg,
+    handleUpdateSpecialistType,
   } = actions;
 
   const { toggleRole } = utils;
@@ -166,6 +171,7 @@ export default function UsersPage() {
         setPage={setPage}
         user={user}
         openEditOrg={openEditOrg}
+        openEditSpecialistType={openEditSpecialistType}
       />
 
       <CreateUser
@@ -216,6 +222,15 @@ export default function UsersPage() {
         handleDeleteUser={handleDeleteUser}
         isSubmitting={isSubmitting}
         selectedUser={selectedUser}
+      />
+
+      {/* Edit Specialist Type Dialog */}
+      <EditSpecialistType
+        isOpen={isEditSpecialistTypeOpen}
+        selectedUser={selectedUser}
+        onClose={closeEditSpecialistType}
+        onSave={handleUpdateSpecialistType}
+        isSubmitting={isSubmitting}
       />
 
       {/* Edit Organization Modal */}

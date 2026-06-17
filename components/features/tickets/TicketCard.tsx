@@ -1,7 +1,7 @@
 "use client";
 
-import { Box, Flex, Text, Badge, HStack } from "@chakra-ui/react";
-import { LuClock, LuUser } from "react-icons/lu";
+import { Box, Flex, Text, HStack } from "@chakra-ui/react";
+import { LuClock, LuUser, LuArrowUpRight } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import type { TicketListResponse } from "@/types/ticket";
 import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
@@ -13,10 +13,18 @@ interface TicketCardProps {
   unreadCount?: number;
 }
 
+function getEscalationTarget(ticket: TicketListResponse): string | null {
+  if (ticket.status !== "ESCALATED") return null;
+  const line = ticket.supportLine?.name ?? "—";
+  if (!ticket.assignedTo?.toUser) return line;
+  return `${line} (${ticket.assignedTo.toUser.fio ?? ticket.assignedTo.toUser.username})`;
+}
+
 export function TicketCard({ ticket, unreadCount = 0 }: TicketCardProps) {
   const router = useRouter();
   const statusConf = ticketStatusConfig[ticket.status];
   const priorityConf = ticketPriorityConfig[ticket.priority];
+  const escalationTarget = getEscalationTarget(ticket);
 
   return (
     <Box
@@ -108,6 +116,14 @@ export function TicketCard({ ticket, unreadCount = 0 }: TicketCardProps) {
           <LuUser size={11} />
           <Text>{ticket.createdBy.fio}</Text>
         </HStack>
+
+        {/* Escalation target */}
+        {escalationTarget && (
+          <HStack gap={1} color="orange.600" fontSize="xs" flex={1} minW={0}>
+            <LuArrowUpRight size={11} />
+            <Text truncate>{escalationTarget}</Text>
+          </HStack>
+        )}
 
         {/* Date — pushed to the right */}
         <HStack gap={1} color="fg.subtle" fontSize="xs" ml="auto">

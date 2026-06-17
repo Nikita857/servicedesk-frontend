@@ -11,13 +11,14 @@ import {
 } from "@chakra-ui/react";
 import { LuArrowRight } from "react-icons/lu";
 import Link from "next/link";
-import { useAuthStore } from "@/stores";
 import { TicketCard } from "@/components/features/tickets";
 import {
   useTicketsWebSocket,
   useAssignmentsWebSocket,
   useDashboardQuery,
 } from "@/lib/hooks";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import {
   UserStatsDashboard,
   SpecialistStatsDashboard,
@@ -27,10 +28,7 @@ import {
 import { UserTicketsView} from "@/components/features/tickets/UserTicketsView";
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN");
-  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
 
   // Use TanStack Query for recent tickets (keeping for "unassigned tickets" section)
   const { recentTickets, isLoading } = useDashboardQuery();
@@ -41,17 +39,10 @@ export default function DashboardPage() {
   // WebSocket for assignments (stats update)
   useAssignmentsWebSocket();
 
-  // Render appropriate dashboard based on role
   const renderStatsDashboard = () => {
-    if (isAdmin) {
-      return <AdminStatsDashboard />;
-    }
-    if (isSupervisor) {
-      return <SupervisorStatsDashboard />;
-    }
-    if (isSpecialist) {
-      return <SpecialistStatsDashboard />;
-    }
+    if (has(PERM.USER_MANAGE) && has(PERM.REPORT_VIEW)) return <AdminStatsDashboard />;
+    if (has(PERM.REPORT_VIEW))                          return <SupervisorStatsDashboard />;
+    if (has(PERM.TICKET_READ_LINE))                     return <SpecialistStatsDashboard />;
     return <UserStatsDashboard />;
   };
 
@@ -67,7 +58,7 @@ export default function DashboardPage() {
       </Flex>
 
       {/* Секция невзятые тикеты (только для специалистов/админов) - СНИЗУ ВВЕРХ */}
-      {(isSpecialist || isAdmin || isSupervisor) && (
+      {(has(PERM.TICKET_READ_LINE) || has(PERM.TICKET_READ_ALL)) && (
         <Flex direction="column" flex={1} minH={0} mb={6}>
           <Flex justify="space-between" align="center" mb={4} flexShrink={0}>
             <Heading size="md" color="fg.default">
@@ -119,7 +110,7 @@ export default function DashboardPage() {
           </Box>
         </Flex>
       )}
-      {(!isAdmin && !isSpecialist && !isSupervisor) && (
+      {!has(PERM.TICKET_READ_LINE) && !has(PERM.TICKET_READ_ALL) && (
         <UserTicketsView/>
       )}
 
@@ -127,11 +118,11 @@ export default function DashboardPage() {
       <Box
         flexShrink={0}
         mt="auto"
-        maxH={isAdmin || isSupervisor ? "40vh" : undefined}
-        overflowY={isAdmin || isSupervisor ? "auto" : undefined}
-        pr={isAdmin || isSupervisor ? 2 : 0}
+        maxH={has(PERM.REPORT_VIEW) ? "40vh" : undefined}
+        overflowY={has(PERM.REPORT_VIEW) ? "auto" : undefined}
+        pr={has(PERM.REPORT_VIEW) ? 2 : 0}
         css={
-          isAdmin || isSupervisor
+          has(PERM.REPORT_VIEW)
             ? {
                 "&::-webkit-scrollbar": { width: "4px" },
                 "&::-webkit-scrollbar-track": { background: "transparent" },

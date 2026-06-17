@@ -3,11 +3,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, Flex, Text, Separator, Avatar, Portal } from "@chakra-ui/react";
 import { LuSettings, LuUser, LuLogOut, LuChevronUp } from "react-icons/lu";
-import { User, userRolesBadges, getSpecialistTypeInfo } from "@/types";
+import { User } from "@/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/hooks";
+import { useRoles } from "@/lib/hooks/rbac/userRoles";
+import { useSpecialistTypes } from "@/lib/hooks/admin-specialistTypes/useSpecialistTypes";
 import { useRouter } from "next/navigation";
 import { getFullNameInitials, getShortInitials } from "@/lib/utils";
+import { getRoleAsText } from "@/lib/utils/roleColors";
 
 interface UserProfileMenuProps {
   user: User | null;
@@ -19,21 +22,21 @@ export function ProfileMenu({ user }: UserProfileMenuProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const { logout } = useAuth();
+  const { data: allRoles = [] } = useRoles();
+  const { specialistTypes } = useSpecialistTypes();
 
-  const rolePriority = ["USER", "SPECIALIST", "SUPERVISOR", "ADMIN"] as const;
+  const highestRole = user?.roles?.[user.roles.length - 1] ?? null;
 
-  const highestRole =
-    user?.roles?.reduce<string | null>((top, role) => {
-      const currentIdx = rolePriority.indexOf(role as (typeof rolePriority)[number]);
-      const topIdx = top ? rolePriority.indexOf(top as (typeof rolePriority)[number]) : -1;
-      return currentIdx > topIdx ? role : top;
-    }, null) ?? "USER";
-
-  const specialistInfo = user?.specialistType
-    ? getSpecialistTypeInfo(user.specialistType)
+  const specialistType = user?.specialistType
+    ? specialistTypes.find((st) => st.code === user.specialistType)
     : null;
 
-  const roleBadgeInfo = userRolesBadges[highestRole] ?? { name: highestRole, color: "gray", description: "" };
+  const roleInfo = highestRole
+    ? (allRoles.find((r) => r.code === highestRole) ?? {
+        name: highestRole,
+        color: "gray",
+      })
+    : { name: "—", color: "gray" };
 
   // Close on outside click
   useEffect(() => {
@@ -95,9 +98,9 @@ export function ProfileMenu({ user }: UserProfileMenuProps) {
               <Text fontSize="sm" fontWeight="medium" color="fg.muted">
                 @{user?.username}
               </Text>
-              {user?.positionName && (
+              {user?.departmentName && user.positionName && (
                 <Text fontSize="xs" color="fg.muted">
-                  {user.positionName}
+                  {user.departmentName}/{user.positionName}
                 </Text>
               )}
             </Box>
@@ -161,9 +164,16 @@ export function ProfileMenu({ user }: UserProfileMenuProps) {
           <Text fontSize="md" fontWeight="medium" color="fg.default">
             {getFullNameInitials(user?.fio)}
           </Text>
-          <Tooltip content={specialistInfo ? specialistInfo.name : roleBadgeInfo.description}>
-            <Text fontSize="xs" color={`${specialistInfo ? specialistInfo.color : roleBadgeInfo.color}.500`}>
-              {specialistInfo ? specialistInfo.name : roleBadgeInfo.name}
+          <Tooltip
+            content={specialistType ? specialistType.name : roleInfo.name}
+          >
+            <Text
+              fontSize="xs"
+              color={`${specialistType?.color ?? roleInfo.color}.500`}
+            >
+              {specialistType
+                ? specialistType.name
+                : getRoleAsText(roleInfo.name, allRoles)}
             </Text>
           </Tooltip>
         </Box>

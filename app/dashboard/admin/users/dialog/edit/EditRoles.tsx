@@ -1,6 +1,8 @@
+"use client";
+
 import { Tooltip } from "@/components/ui/tooltip";
 import type { AdminUserResponse } from "@/types/admin";
-import { userRolesBadges } from "@/types/auth";
+import { useRoles } from "@/lib/hooks/rbac/userRoles";
 import {
   HStack,
   Badge,
@@ -37,11 +39,11 @@ export default function EditRoles({
   handleUpdateRoles,
   isSubmitting,
 }: EditRolesProps) {
-  if (!selectedUser) return null;
+  const { data: allRoles = [] } = useRoles();
 
   return (
     <Dialog.Root
-      open={isEditRolesOpen}
+      open={isEditRolesOpen && !!selectedUser}
       onOpenChange={(e) => !e.open && closeEditRoles()}
     >
       <Portal>
@@ -49,26 +51,20 @@ export default function EditRoles({
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
-              <Dialog.Title>Роли: {selectedUser.username}</Dialog.Title>
+              <Dialog.Title>Роли: {selectedUser?.username}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <HStack gap={2} flexWrap="wrap">
-                {Object.entries(userRolesBadges).map(([roleKey, roleData]) => (
-                  <Tooltip key={roleKey} content={roleData.description}>
+                {allRoles.map((role) => (
+                  <Tooltip key={role.code} content={role.description ?? ""}>
                     <Badge
-                      colorPalette={roleData.color}
-                      variant={
-                        editRoles.includes(roleKey) ? "solid" : "outline"
-                      }
+                      colorPalette={role.color}
+                      variant={editRoles.includes(role.code) ? "solid" : "outline"}
                       cursor="pointer"
-                      onClick={() =>
-                        toggleRole(roleKey, editRoles, setEditRoles)
-                      }
+                      onClick={() => toggleRole(role.code, editRoles, setEditRoles)}
                     >
-                      {editRoles.includes(roleKey) ? (
-                        <LuCheck size={12} />
-                      ) : null}
-                      {roleData.name}
+                      {editRoles.includes(role.code) ? <LuCheck size={12} /> : null}
+                      {role.name}
                     </Badge>
                   </Tooltip>
                 ))}

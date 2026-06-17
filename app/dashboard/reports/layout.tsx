@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { Box, Flex, Spinner } from "@chakra-ui/react";
 
 /**
@@ -15,10 +17,9 @@ export default function ReportsLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isHydrated } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
-  const canViewReports = isAdmin || isSupervisor;
+  const { isHydrated } = useAuthStore();
+  const { has } = useCurrentPermissions();
+  const canViewReports = has(PERM.REPORT_VIEW);
 
   useEffect(() => {
     if (isHydrated && !canViewReports) {

@@ -7,6 +7,8 @@ import { useStatusWebSocket } from "@/lib/hooks/user/useStatusWebSocket";
 import { activityStatusConfig } from "@/types/auth";
 import type { UserActivityStatus } from "@/types/auth";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 const statusOrder: UserActivityStatus[] = [
   "AVAILABLE",
@@ -21,14 +23,14 @@ const statusOrder: UserActivityStatus[] = [
  */
 export function ActivityStatusDropdown() {
   const { user } = useAuthStore();
+  const { has } = useCurrentPermissions();
   const { status, isLoading, isUpdating, updateStatus } = useUserStatusQuery();
 
   // Enable real-time status updates via WebSocket
   useStatusWebSocket();
 
-  // Only show for specialists
-  const isSpecialist = user?.specialist || false;
-  if (!isSpecialist) {
+  // Only show for specialists (users who can assign/take tickets)
+  if (!has(PERM.TICKET_ASSIGN)) {
     return null;
   }
 
@@ -101,9 +103,6 @@ export function ActivityStatusDropdown() {
                 <Box flex={1}>
                   <Text fontWeight={isSelected ? "semibold" : "normal"}>
                     {config.label}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    {config.description}
                   </Text>
                 </Box>
               </Menu.Item>

@@ -97,6 +97,7 @@ export function useWikiCategoriesWithArticlesQuery(
       search: debouncedSearch,
       showAll,
       filter,
+      pageSize,
     }),
     queryFn: async () => {
       // Use search endpoint if there's a search query, otherwise use list endpoint

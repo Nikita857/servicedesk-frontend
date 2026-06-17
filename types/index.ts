@@ -11,3 +11,4 @@ export * from "./admin";
 export * from "./wiki";
 export * from "./stats";
 export * from "./attachment";
+export * from "./maintenance";

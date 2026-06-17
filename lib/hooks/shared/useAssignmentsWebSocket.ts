@@ -6,6 +6,8 @@ import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { useAuthStore } from "@/stores";
 import { AssignmentWS } from "@/types/websocket";
 import { queryKeys } from "@/lib/queryKeys";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 /**
  * Хук для синхронизации кэша при real-time назначениях заявок.
@@ -17,6 +19,8 @@ export function useAssignmentsWebSocket() {
   const { subscribeToAssignments, subscribeToAssignmentRejected, isConnected } =
     useWebSocket();
   const { user } = useAuthStore();
+  const { hasAny } = useCurrentPermissions();
+  const canReceiveAssignments = hasAny([PERM.TICKET_READ_LINE, PERM.TICKET_READ_ALL]);
   const queryClient = useQueryClient();
 
   const handleNewAssignment = useCallback(() => {
@@ -40,8 +44,7 @@ export function useAssignmentsWebSocket() {
   );
 
   useEffect(() => {
-    // Подписываемся только если есть подключение, userId и пользователь - специалист
-    if (!isConnected || !user?.id || !user?.specialist) {
+    if (!isConnected || !user?.id || !canReceiveAssignments) {
       return;
     }
     const unsubscribeNew = subscribeToAssignments(user.id, handleNewAssignment);
@@ -56,7 +59,7 @@ export function useAssignmentsWebSocket() {
     };
   }, [
     isConnected,
-    user?.specialist,
+    canReceiveAssignments,
     subscribeToAssignments,
     subscribeToAssignmentRejected,
     handleNewAssignment,

@@ -44,10 +44,19 @@ export default function CalendarDayCell({
               : "bg.surface"
             : "bg.subtle"
       }
+      _dark={{
+        bg: isToday
+          ? "blue.900/50"
+          : isCurrentMonth
+            ? isWeekend
+              ? "bg.subtle"
+              : "bg.surface"
+            : "bg.subtle",
+      }}
       opacity={isCurrentMonth ? 1 : 0.5}
       cursor="pointer"
       onClick={onClick}
-      _hover={{ bg: isToday ? "blue.100" : "bg.muted" }}
+      _hover={{ bg: isToday ? "blue.100" : "bg.muted", _dark: { bg: isToday ? "blue.800/60" : "bg.muted" } }}
       transition="background 0.12s"
       display="flex"
       flexDirection="column"
@@ -61,6 +70,13 @@ export default function CalendarDayCell({
           color={
             isToday ? "blue.700" : isCurrentMonth ? "fg.default" : "fg.muted"
           }
+          _dark={{
+            color: isToday
+              ? "blue.200"
+              : isCurrentMonth
+                ? "fg.default"
+                : "fg.muted",
+          }}
           lineHeight="1"
         >
           {date.getDate()}

@@ -19,7 +19,7 @@ import { assignmentApi } from "@/lib/api/assignments";
 import { ticketApi } from "@/lib/api/tickets";
 import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError } from "@/lib/utils";
 
 interface AssignmentDecisionDialogProps {
   assignment: AssignmentResponse | null;
@@ -133,17 +133,17 @@ export function AssignmentDecisionDialog({
                         </Box>
                       ) : null}
 
-                      {assignment.fromLineName && (
+                      {assignment.fromLine?.name && (
                         <HStack gap={1} fontSize="sm" color="fg.muted">
                           <LuArrowRight size={14} />
-                          <Text>С линии: {assignment.fromLineName}</Text>
+                          <Text>С линии: {assignment.fromLine.name}</Text>
                         </HStack>
                       )}
 
-                      {assignment.fromFio && (
+                      {assignment.fromUser?.fio && (
                         <HStack gap={1} fontSize="sm" color="fg.muted" mt={1}>
                           <LuUser size={14} />
-                          <Text>От: {assignment.fromFio}</Text>
+                          <Text>От: {assignment.fromUser.fio}</Text>
                         </HStack>
                       )}
 

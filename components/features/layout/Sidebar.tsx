@@ -17,11 +17,15 @@ import {
   LuTag,
   LuCalendarClock,
   LuBuilding2,
+  LuShieldCheck,
+  LuWrench,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
 import { useAuthStore } from "@/stores";
 import { ProfileMenu } from "./ProfileMenu";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 interface NavItem {
   label: string;
@@ -52,52 +56,41 @@ const onboardingIds: Record<string, string> = {
   "/dashboard/wiki": "onboarding-wiki",
 };
 
-const adminItems: NavItem[] = [
-  { label: "Пользователи", href: "/dashboard/admin/users", icon: LuUsers },
-  { label: "Отделы", href: "/dashboard/admin/departments", icon: LuBuilding2 },
-  {
-    label: "Линии поддержки",
-    href: "/dashboard/admin/support-lines",
-    icon: LuNetwork,
-  },
-  {
-    label: "Маршрутизация",
-    href: "/dashboard/admin/forwarding-rules",
-    icon: LuRoute,
-  },
-  {
-    label: "Планировщик задач",
-    href: "/dashboard/admin/scheduled-tasks",
-    icon: LuCalendarClock,
-  },
-  {
-    label: "Категории заявок",
-    href: "/dashboard/admin/categories",
-    icon: LuTag,
-  },
-  {
-    label: "Категории статей",
-    href: "/dashboard/admin/wiki-categories",
-    icon: LuBook,
-  },
-  { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch },
-  { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
+interface AdminNavItem extends NavItem {
+  perm: string;
+}
+
+const adminItems: AdminNavItem[] = [
+  { label: "Пользователи", href: "/dashboard/admin/users", icon: LuUsers, perm: PERM.USER_MANAGE },
+  { label: "Роли", href: "/dashboard/admin/roles", icon: LuShieldCheck, perm: PERM.ROLE_MANAGE },
+  { label: "Отделы", href: "/dashboard/admin/departments", icon: LuBuilding2, perm: PERM.DEPARTMENT_MANAGE },
+  { label: "Линии поддержки", href: "/dashboard/admin/support-lines", icon: LuNetwork, perm: PERM.SUPPORT_LINE_MANAGE },
+  { label: "Маршрутизация", href: "/dashboard/admin/forwarding-rules", icon: LuRoute, perm: PERM.FORWARDING_RULE_MANAGE },
+  { label: "Планировщик задач", href: "/dashboard/admin/scheduled-tasks", icon: LuCalendarClock, perm: PERM.SCHEDULED_TASK_MANAGE },
+  { label: "Категории заявок", href: "/dashboard/admin/categories", icon: LuTag, perm: PERM.CATEGORY_MANAGE },
+  { label: "Категории статей", href: "/dashboard/admin/wiki-categories", icon: LuBook, perm: PERM.WIKI_CATEGORY_MANAGE },
+  { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch, perm: PERM.ELASTICSEARCH_ADMIN },
+  { label: "Режим обслуживания", href: "/dashboard/admin/maintenance", icon: LuWrench, perm: PERM.MAINTENANCE_MANAGE },
+  { label: "Настройки", href: "/dashboard/settings", icon: LuSettings, perm: PERM.NOTIFICATION_SETTINGS_MANAGE },
 ];
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const { colorMode } = useColorMode();
   const { user } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
 
-  // Filter nav items based on role
   const filteredNavItems = navItems.filter((item) => {
-    if (item.href === "/dashboard/reports") return isAdmin;
-    if (item.href === "/dashboard/my-tickets") return isSpecialist && !isAdmin && !isSupervisor;
+    if (item.href === "/dashboard/tickets") return has(PERM.TICKET_READ_OWN);
+    if (item.href === "/dashboard/reports") return has(PERM.REPORT_VIEW);
+    // "Мои обращения" — для специалистов линии, у которых нет доступа ко всем тикетам
+    if (item.href === "/dashboard/my-tickets")
+      return has(PERM.TICKET_READ_LINE) && !has(PERM.TICKET_READ_ALL);
     return true;
   });
+
+  const visibleAdminItems = adminItems.filter((item) => has(item.perm));
+  const showAdminSection = visibleAdminItems.length > 0;
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -107,7 +100,6 @@ export function Sidebar({ onClose }: SidebarProps) {
   };
 
   const handleLinkClick = () => {
-    // Close mobile drawer when clicking a link
     onClose?.();
   };
 
@@ -186,8 +178,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             </Link>
           ))}
 
-          {/* Admin Section - only for admins */}
-          {isAdmin && (
+          {showAdminSection && (
             <>
               <Text
                 px={2}
@@ -201,7 +192,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 Управление
               </Text>
 
-              {adminItems.map((item) => (
+              {visibleAdminItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

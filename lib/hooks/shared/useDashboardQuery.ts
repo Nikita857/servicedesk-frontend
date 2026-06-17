@@ -22,7 +22,7 @@ export function useDashboardQuery(): UseDashboardQueryReturn {
       ]);
 
       return [...newPage.content, ...escalatedPage.content]
-        .filter((t) => !t.assignedTo?.username)
+        .filter((t) => !t.assignedTo?.toUser?.username)
         .sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

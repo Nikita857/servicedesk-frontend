@@ -91,9 +91,8 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         const currentUser = currentUserRef.current;
         const oldTicket = currentTicketRef.current;
 
-        // Check if current user is a specialist (not admin, not just user)
-        const isSpecialist = currentUser?.specialist || false;
-        const isAdmin = currentUser?.roles?.includes("ADMIN") || false;
+        const isSpecialist = currentUser?.permissions?.includes("PERM_TICKET_READ_LINE") ?? false;
+        const isAdmin = currentUser?.permissions?.includes("PERM_TICKET_READ_ALL") ?? false;
         const isTicketCreator = currentUser?.id === updatedTicket.createdBy?.id;
 
         // If specialist and assignee changed to someone else — kick them out

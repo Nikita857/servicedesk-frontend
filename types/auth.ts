@@ -17,6 +17,7 @@ export interface User {
   avatarUrl: string | null;
   specialist: boolean;
   roles: string[];
+  permissions: string[];
   specialistType?: string | null;
   departmentName: string | null;
   positionName: string | null;
@@ -97,31 +98,26 @@ export function getSpecialistTypeInfo(code: string | null | undefined): {
 // Activity Status labels and colors
 export const activityStatusConfig: Record<
   string,
-  { label: string; color: string; description: string }
+  { label: string; color: string }
 > = {
   AVAILABLE: {
     label: "Доступен",
     color: "green",
-    description: "Готов принимать новые заявки",
   },
   UNAVAILABLE: {
     label: "Недоступен",
     color: "gray",
-    description: "Временно отсутствует на месте",
   },
   BUSY: {
     label: "Занят",
     color: "red",
-    description: "Выполняет сложную задачу или на встрече",
   },
   TECHNICAL_ISSUE: {
     label: "Техн. проблемы",
     color: "orange",
-    description: "Проблемы с интернетом или оборудованием",
   },
   OFFLINE: {
     label: "Оффлайн",
     color: "gray",
-    description: "Не на работе",
   },
 };

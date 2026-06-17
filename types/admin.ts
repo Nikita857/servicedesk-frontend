@@ -23,4 +23,11 @@ export interface CreateUserRequest {
   active: boolean;
   departmentId: number | null;
   positionId: number | null;
+  specialistType?: string | null;
+}
+
+export interface BackupResponse {
+  postgresOk: boolean;
+  minioOk: boolean;
+  timestamp: string;
 }

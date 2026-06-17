@@ -23,7 +23,10 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useSupportLines } from "@/lib/hooks/admin-support-lines";
 import { specialistTypeApi } from "@/lib/api/specialistTypes";
-import type { SupportLineListResponse, CreateSupportLineRequest } from "@/types/support-line";
+import type {
+  SupportLineListResponse,
+  CreateSupportLineRequest,
+} from "@/types/support-line";
 import { getSpecialistTypeInfo } from "@/types/auth";
 
 function formatSla(minutes: number): string {
@@ -46,15 +49,22 @@ export default function SupportLinesPage() {
   });
 
   const specialistTypeCollection = createListCollection({
-    items: specialistTypes.map((t) => ({ value: t.id.toString(), label: t.name })),
+    items: specialistTypes.map((t) => ({
+      value: t.id.toString(),
+      label: t.name,
+    })),
   });
 
   // Create form state
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newSlaMinutes, setNewSlaMinutes] = useState(1440);
-  const [newDisplayOrder, setNewDisplayOrder] = useState(100);
-  const [newSpecialistTypeId, setNewSpecialistTypeId] = useState<number | null>(null);
+  const [newDisplayOrder, setNewDisplayOrder] = useState(
+    lines.length > 0 ? lines[lines.length - 1].displayOrder + 1 : 1,
+  );
+  const [newSpecialistTypeId, setNewSpecialistTypeId] = useState<number | null>(
+    null,
+  );
 
   const handleCreate = () => {
     if (!newName.trim() || !newSpecialistTypeId) return;
@@ -70,7 +80,7 @@ export default function SupportLinesPage() {
     setNewName("");
     setNewDescription("");
     setNewSlaMinutes(1440);
-    setNewDisplayOrder(100);
+    setNewDisplayOrder(lines.length > 0 ? lines[lines.length - 1].displayOrder + 1 : 1);
     setNewSpecialistTypeId(null);
   };
 
@@ -108,7 +118,10 @@ export default function SupportLinesPage() {
                   <VStack gap={4} align="stretch">
                     <Box>
                       <Text fontWeight="medium" mb={2}>
-                        Название <Text as="span" color="red.500">*</Text>
+                        Название{" "}
+                        <Text as="span" color="red.500">
+                          *
+                        </Text>
                       </Text>
                       <Input
                         placeholder="Например: 1-я линия"
@@ -120,13 +133,22 @@ export default function SupportLinesPage() {
 
                     <Box>
                       <Text fontWeight="medium" mb={2}>
-                        Роль специалистов <Text as="span" color="red.500">*</Text>
+                        Тип специалистов{" "}
+                        <Text as="span" color="red.500">
+                          *
+                        </Text>
                       </Text>
                       <Select.Root
                         collection={specialistTypeCollection}
-                        value={newSpecialistTypeId ? [newSpecialistTypeId.toString()] : []}
+                        value={
+                          newSpecialistTypeId
+                            ? [newSpecialistTypeId.toString()]
+                            : []
+                        }
                         onValueChange={(e) =>
-                          setNewSpecialistTypeId(e.value[0] ? parseInt(e.value[0]) : null)
+                          setNewSpecialistTypeId(
+                            e.value[0] ? parseInt(e.value[0]) : null,
+                          )
                         }
                       >
                         <Select.Trigger>
@@ -180,7 +202,10 @@ export default function SupportLinesPage() {
                           type="number"
                           value={newDisplayOrder}
                           onChange={(e) =>
-                            setNewDisplayOrder(parseInt(e.target.value) || 100)
+                            setNewDisplayOrder(
+                              parseInt(e.target.value) ||
+                                (lines.length > 0 ? lines[lines.length - 1].displayOrder + 1 : 1),
+                            )
                           }
                           min={0}
                         />
@@ -261,7 +286,12 @@ function SupportLineCard({ line }: { line: SupportLineListResponse }) {
                 #{line.displayOrder}
               </Badge>
               {line.specialistType && (
-                <Badge colorPalette={getSpecialistTypeInfo(line.specialistType.code).color} variant="subtle">
+                <Badge
+                  colorPalette={
+                    getSpecialistTypeInfo(line.specialistType.code).color
+                  }
+                  variant="subtle"
+                >
                   {line.specialistType.name}
                 </Badge>
               )}

@@ -14,6 +14,8 @@ import type {
 import { SenderType, Ticket } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 interface TypingUser {
   fio: string | null;
@@ -37,6 +39,8 @@ interface UseChatWebSocketReturn {
  */
 export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   const { user } = useAuthStore();
+  const { has } = useCurrentPermissions();
+  const canViewInternal = has(PERM.TICKET_COMMENT_INTERNAL);
   const {
     isConnected,
     subscribeToChatMessages,
@@ -240,7 +244,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
       handleIncomingMessage,
     );
 
-    const unsubscribeInternal = user?.specialist
+    const unsubscribeInternal = canViewInternal
       ? subscribeToInternalComments(ticketId, handleIncomingMessage)
       : undefined;
 
@@ -254,7 +258,7 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
     subscribeToChatMessages,
     subscribeToInternalComments,
     handleIncomingMessage,
-    user?.specialist,
+    canViewInternal,
   ]);
 
   // Подписка на индикатор набора текста

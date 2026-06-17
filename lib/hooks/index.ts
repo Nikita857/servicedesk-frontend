@@ -1,5 +1,6 @@
 // Auth
 export { useAuth } from "./shared/useAuth";
+export { useCurrentPermissions } from "./shared/usePermissions";
 
 // Dashboard
 export { useDashboardQuery } from "./shared/useDashboardQuery";

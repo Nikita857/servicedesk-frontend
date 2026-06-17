@@ -1,6 +1,8 @@
 import { Box, Flex, Text, VStack, HStack, Avatar } from "@chakra-ui/react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { type TicketStatus } from "@/types";
 import { useChatWebSocket } from "@/lib/hooks/ticket-chat/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
@@ -22,7 +24,8 @@ export function TicketChat({
   isCreator = false,
 }: TicketChatProps) {
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
+  const isSpecialist = has(PERM.TICKET_ASSIGN);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const { ticket } = useTicketQuery(ticketId);

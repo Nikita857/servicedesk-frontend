@@ -7,23 +7,40 @@ import {
   ticketPriorityConfig,
   ticketStatusConfig,
 } from "@/types/ticket";
-import { LuCheck, LuUserCheck, LuUserX, LuX } from "react-icons/lu";
+import {
+  LuArrowUpRight,
+  LuCheck,
+  LuUsers,
+  LuUserCheck,
+  LuUserX,
+  LuX,
+} from "react-icons/lu";
 import { Tooltip } from "@/components/ui";
 
 interface TicketCompactCardProps {
   ticket: TicketListResponse;
   currentUserName: string | undefined;
+  isCoExecutor?: boolean;
+}
+
+function getEscalationTarget(ticket: TicketListResponse): string | null {
+  if (ticket.status !== "ESCALATED") return null;
+  const line = ticket.supportLine?.name ?? "—";
+  if (!ticket.assignedTo?.toUser) return line;
+  return `${line} (${ticket.assignedTo.toUser.fio ?? ticket.assignedTo.toUser.username})`;
 }
 
 export function TicketCompactCard({
   ticket,
   currentUserName,
+  isCoExecutor = false,
 }: TicketCompactCardProps) {
   const router = useRouter();
   const priorityConf = ticketPriorityConfig[ticket.priority];
   const statusConf = ticketStatusConfig[ticket.status];
 
-  const isAssignedToMe = ticket.assignedTo?.username === currentUserName;
+  const isAssignedToMe = ticket.assignedTo?.toUser?.username === currentUserName;
+  const escalationTarget = getEscalationTarget(ticket);
 
   return (
     <Box
@@ -111,6 +128,20 @@ export function TicketCompactCard({
                 <LuUserCheck size={11} color="var(--chakra-colors-green-600)" />
               </Flex>
             </Tooltip>
+          ) : isCoExecutor ? (
+            <Tooltip content="Вы соисполнитель">
+              <Flex
+                w="18px"
+                h="18px"
+                borderRadius="full"
+                bg="blue.subtle"
+                align="center"
+                justify="center"
+                flexShrink={0}
+              >
+                <LuUsers size={11} color="var(--chakra-colors-blue-600)" />
+              </Flex>
+            </Tooltip>
           ) : (
             <Tooltip content="Заявкой занимается другой специалист">
               <Flex
@@ -128,10 +159,10 @@ export function TicketCompactCard({
           ))}
       </Flex>
 
-      {/* Row 2: Priority dot + label + Status pill */}
+      {/* Row 2: Priority dot + label + Escalation target + Status pill */}
       <Flex align="center" gap={2}>
         {/* Priority */}
-        <HStack gap={1.5}>
+        <HStack gap={1.5} flexShrink={0}>
           <Box
             w="5px"
             h="5px"
@@ -147,6 +178,16 @@ export function TicketCompactCard({
             {priorityConf.label}
           </Text>
         </HStack>
+
+        {/* Escalation target */}
+        {escalationTarget && (
+          <HStack gap={1} color="orange.600" flex={1} minW={0}>
+            <LuArrowUpRight size={10} />
+            <Text fontSize="10px" truncate>
+              {escalationTarget}
+            </Text>
+          </HStack>
+        )}
 
         {/* Status pill */}
         <HStack
