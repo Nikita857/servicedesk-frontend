@@ -1,12 +1,13 @@
-import { SenderType } from "@/types/auth";
+import { SocialNetworks } from "./profile";
 
 export interface AdminUserResponse {
   id: number;
   fio: string | null;
   username: string;
   avatarUrl: string | null;
-  telegramId: number | null;
+  socialNetworks: SocialNetworks;
   specialist: boolean;
+  specialistType?: string | null;
   departmentName: string | null;
   positionName: string | null;
   roles: string[];
@@ -16,10 +17,17 @@ export interface AdminUserResponse {
 export interface CreateUserRequest {
   username: string;
   password: string;
-  fio: string | null;
+  fio: string;
   email: string | null;
-  roles: SenderType[] | null;
+  roles: string[] | null;
   active: boolean;
   departmentId: number | null;
   positionId: number | null;
+  specialistType?: string | null;
+}
+
+export interface BackupResponse {
+  postgresOk: boolean;
+  minioOk: boolean;
+  timestamp: string;
 }

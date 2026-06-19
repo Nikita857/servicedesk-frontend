@@ -2,6 +2,8 @@ import { adminApi } from "@/lib/api/admin";
 import type { AdminUserResponse, CreateUserRequest } from "@/types/admin";
 import { handleApiError, toast } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +14,8 @@ const USERS_QUERY_KEY = "admin-users";
 export const useCrudUsers = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN");
+  const { has } = useCurrentPermissions();
+  const canManageUsers = has(PERM.USER_MANAGE);
   const router = useRouter();
 
   // Pagination & search state
@@ -35,6 +38,7 @@ export const useCrudUsers = () => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isEditOrgOpen, setIsEditOrgOpen] = useState(false);
+  const [isEditSpecialistTypeOpen, setIsEditSpecialistTypeOpen] = useState(false);
 
   // Selected user for editing
   const [selectedUser, setSelectedUser] = useState<AdminUserResponse | null>(null);
@@ -46,12 +50,12 @@ export const useCrudUsers = () => {
   const [editDepartmentId, setEditDepartmentId] = useState<number | null>(null);
   const [editPositionId, setEditPositionId] = useState<number | null>(null);
 
-  // Redirect if not admin
+  // Redirect if no user management permission
   useEffect(() => {
-    if (user && !isAdmin) {
+    if (user && !canManageUsers) {
       router.push("/dashboard");
     }
-  }, [user, isAdmin, router]);
+  }, [user, canManageUsers, router]);
 
   // ==================== QUERY ====================
 
@@ -59,7 +63,7 @@ export const useCrudUsers = () => {
     queryKey: [USERS_QUERY_KEY, page, debouncedSearchQuery],
     queryFn: () =>
       adminApi.getUsers(page, 20, debouncedSearchQuery || undefined),
-    enabled: !!isAdmin,
+    enabled: canManageUsers,
     staleTime: 30 * 1000, // 30 seconds
   });
 
@@ -148,6 +152,19 @@ export const useCrudUsers = () => {
     },
   });
 
+  const updateSpecialistTypeMutation = useMutation({
+    mutationFn: ({ id, code }: { id: number; code: string | null }) =>
+      adminApi.updateSpecialistType(id, code),
+    onSuccess: () => {
+      toast.success("Тип специалиста обновлён");
+      setIsEditSpecialistTypeOpen(false);
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: (error) => {
+      handleApiError(error, { context: "обновить тип специалиста" });
+    },
+  });
+
   const updateOrgMutation = useMutation({
     mutationFn: ({
       id,
@@ -213,6 +230,11 @@ export const useCrudUsers = () => {
     deleteUserMutation.mutate(selectedUser.id);
   };
 
+  const handleUpdateSpecialistType = async (code: string | null) => {
+    if (!selectedUser) return;
+    updateSpecialistTypeMutation.mutate({ id: selectedUser.id, code });
+  };
+
   const handleUpdateOrg = async () => {
     if (!selectedUser) return;
     updateOrgMutation.mutate({
@@ -226,7 +248,7 @@ export const useCrudUsers = () => {
 
   const openEditRoles = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
-    setEditRoles([...targetUser.roles]);
+    setEditRoles(targetUser.roles.map((r) => (r.startsWith("ROLE_") ? r : `ROLE_${r}`)));
     setIsEditRolesOpen(true);
   }, []);
 
@@ -245,6 +267,11 @@ export const useCrudUsers = () => {
   const openDelete = useCallback((targetUser: AdminUserResponse) => {
     setSelectedUser(targetUser);
     setIsDeleteOpen(true);
+  }, []);
+
+  const openEditSpecialistType = useCallback((targetUser: AdminUserResponse) => {
+    setSelectedUser(targetUser);
+    setIsEditSpecialistTypeOpen(true);
   }, []);
 
   const openEditOrg = useCallback((targetUser: AdminUserResponse) => {
@@ -283,11 +310,12 @@ export const useCrudUsers = () => {
     updateFioMutation.isPending ||
     changePasswordMutation.isPending ||
     deleteUserMutation.isPending ||
-    updateOrgMutation.isPending;
+    updateOrgMutation.isPending ||
+    updateSpecialistTypeMutation.isPending;
 
   return {
     /* ===== AUTH ===== */
-    isAdmin,
+    isAdmin: canManageUsers,
 
     /* ===== LOADING ===== */
     isLoading: usersQuery.isLoading,
@@ -329,6 +357,7 @@ export const useCrudUsers = () => {
       isChangePasswordOpen,
       isDeleteOpen,
       isEditOrgOpen,
+      isEditSpecialistTypeOpen,
     },
 
     dialog: {
@@ -340,12 +369,14 @@ export const useCrudUsers = () => {
       openChangePassword,
       openDelete,
       openEditOrg,
+      openEditSpecialistType,
 
       closeEditRoles: () => setIsEditRolesOpen(false),
       closeEditFio: () => setIsEditFioOpen(false),
       closeChangePassword: () => setIsChangePasswordOpen(false),
       closeDelete: () => setIsDeleteOpen(false),
       closeEditOrg: () => setIsEditOrgOpen(false),
+      closeEditSpecialistType: () => setIsEditSpecialistTypeOpen(false),
     },
 
     actions: {
@@ -357,6 +388,7 @@ export const useCrudUsers = () => {
       handleChangePassword,
       handleDeleteUser,
       handleUpdateOrg,
+      handleUpdateSpecialistType,
     },
 
     utils: {

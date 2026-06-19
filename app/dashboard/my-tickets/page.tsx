@@ -3,21 +3,22 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { UserTicketsView } from "@/components/features/tickets/UserTicketsView";
 
 export default function MyTicketsPage() {
   const router = useRouter();
-  const { user, isHydrated } = useAuthStore();
-
-  const isSpecialist = user?.specialist ?? false;
+  const { isHydrated } = useAuthStore();
+  const { has } = useCurrentPermissions();
 
   useEffect(() => {
-    if (isHydrated && !isSpecialist) {
+    if (isHydrated && !has(PERM.TICKET_READ_LINE)) {
       router.replace("/dashboard/tickets");
     }
-  }, [isHydrated, isSpecialist, router]);
+  }, [isHydrated, has, router]);
 
-  if (!isHydrated || !isSpecialist) return null;
+  if (!isHydrated || !has(PERM.TICKET_READ_LINE)) return null;
 
   return <UserTicketsView initialFilter="my" />;
 }

@@ -154,8 +154,8 @@ function TicketRow({ ticket }: { ticket: TicketListResponse }) {
           <Text fontSize="xs" color="fg.muted" flexShrink={0}>
             {new Date(ticket.createdAt).toLocaleDateString("ru-RU")}
           </Text>
-          {ticket.assignedTo?.fio != null && (
-            <Text>Исполнитель: {ticket.assignedTo.fio}</Text>
+          {ticket.assignedTo?.toUser?.fio != null && (
+            <Text>Исполнитель: {ticket.assignedTo.toUser.fio}</Text>
           )}
         </Flex>
       </Box>

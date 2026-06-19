@@ -1,3 +1,4 @@
+import { SocialNetworks } from "./profile";
 import type { ActivityStatus } from "./support-line";
 
 export type UserActivityStatus = ActivityStatus;
@@ -12,10 +13,12 @@ export interface User {
   id: number;
   username: string;
   fio: string | null;
-  telegramId: number | null;
+  socialNetworks: SocialNetworks;
   avatarUrl: string | null;
   specialist: boolean;
   roles: string[];
+  permissions: string[];
+  specialistType?: string | null;
   departmentName: string | null;
   positionName: string | null;
   active: boolean;
@@ -53,31 +56,17 @@ export const userRolesBadges: Record<
     color: "gray",
     description: "Может создавать заявки и общаться со специалистами",
   },
-  SYSADMIN: {
-    name: "Сисадмин",
+  SPECIALIST: {
+    name: "Специалист",
     color: "green",
     description:
-      "Специалист 1-й линии поддержки. Решает базовые технические вопросы",
-  },
-  ONE_C_SUPPORT: {
-    name: "1С Поддержка",
-    color: "blue",
-    description: "Специалист по поддержке продуктов 1С",
-  },
-  DEV1C: {
-    name: "Разработчик 1С",
-    color: "orange",
-    description: "Разработчик 1С. Решает сложные задачи по 1С",
-  },
-  DEVELOPER: {
-    name: "Разработчик",
-    color: "purple",
-    description: "Разработчик ПО. Решает задачи по разработке и интеграции",
+      "Обрабатывает заявки. Тип специалиста определяет линию поддержки",
   },
   SUPERVISOR: {
     name: "Супервизор",
     color: "teal",
-    description: "Полный доступ к тикетам всех линий: просмотр, назначение, переадресация, статистика. Без доступа к системному администрированию",
+    description:
+      "Полный доступ к тикетам всех линий: просмотр, назначение, переадресация, статистика",
   },
   ADMIN: {
     name: "Администратор",
@@ -87,34 +76,48 @@ export const userRolesBadges: Record<
   },
 };
 
+// Конфиг для отображения SpecialistType по коду (без запроса к API)
+export const specialistTypeDisplayConfig: Record<
+  string,
+  { name: string; color: string }
+> = {
+  SYSADMIN: { name: "Сисадмин", color: "green" },
+  ONE_C_SUPPORT: { name: "1С Поддержка", color: "blue" },
+  DEV1C: { name: "Разработчик 1С", color: "orange" },
+  DEVELOPER: { name: "Разработчик", color: "purple" },
+};
+
+export function getSpecialistTypeInfo(code: string | null | undefined): {
+  name: string;
+  color: string;
+} {
+  if (!code) return { name: "—", color: "gray" };
+  return specialistTypeDisplayConfig[code] ?? { name: code, color: "gray" };
+}
+
 // Activity Status labels and colors
 export const activityStatusConfig: Record<
   string,
-  { label: string; color: string; description: string }
+  { label: string; color: string }
 > = {
   AVAILABLE: {
     label: "Доступен",
     color: "green",
-    description: "Готов принимать новые заявки",
   },
   UNAVAILABLE: {
     label: "Недоступен",
     color: "gray",
-    description: "Временно отсутствует на месте",
   },
   BUSY: {
     label: "Занят",
     color: "red",
-    description: "Выполняет сложную задачу или на встрече",
   },
   TECHNICAL_ISSUE: {
     label: "Техн. проблемы",
     color: "orange",
-    description: "Проблемы с интернетом или оборудованием",
   },
   OFFLINE: {
     label: "Оффлайн",
     color: "gray",
-    description: "Не на работе",
   },
 };

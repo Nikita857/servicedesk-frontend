@@ -1,16 +1,17 @@
 import api from "./client";
 import type { ApiResponse } from "@/types/api";
+import type { SpecialistTypeResponse } from "@/types/support-line";
 
 export interface ForwardingRuleResponse {
   id: number;
-  sourceRole: string;
-  targetRole: string;
+  sourceRole: SpecialistTypeResponse;
+  targetRole: SpecialistTypeResponse;
   enabled: boolean;
 }
 
 export interface RuleUpdate {
-  sourceRole: string;
-  targetRole: string;
+  sourceType: string;
+  targetType: string;
   enabled: boolean;
 }
 

@@ -3,7 +3,11 @@ import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListResponse } from "@/types/ticket";
 import { handleApiError } from "../utils";
 import type { WikiCategoryTree } from "@/types/wiki";
-import type { AdminUserResponse, CreateUserRequest } from "@/types/admin";
+import type {
+  AdminUserResponse,
+  BackupResponse,
+  CreateUserRequest,
+} from "@/types/admin";
 
 // ==================== API ====================
 
@@ -51,7 +55,7 @@ export const adminApi = {
 
   // Create new user
   createUser: async (params: CreateUserRequest): Promise<AdminUserResponse> => {
-    const payload: Partial<CreateUserRequest> = {
+    const payload = {
       username: params.username,
       password: params.password,
       fio: params.fio,
@@ -60,12 +64,13 @@ export const adminApi = {
       active: params.active,
       departmentId: params.departmentId ?? null,
       positionId: params.positionId ?? null,
+      specialistTypeCode: params.specialistType ?? null,
     };
 
     try {
       const response = await api.post<ApiResponse<AdminUserResponse>>(
-        "/admin/users", // без query-параметров
-        payload, // ← JSON в теле
+        "/admin/users",
+        payload,
       );
       return response.data.data;
     } catch (error) {
@@ -117,6 +122,19 @@ export const adminApi = {
   ): Promise<AdminUserResponse> => {
     const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/active?active=${active}`,
+    );
+    return response.data.data;
+  },
+
+  // Update user specialist type
+  updateSpecialistType: async (
+    id: number,
+    code: string | null,
+  ): Promise<AdminUserResponse> => {
+    const params = new URLSearchParams();
+    if (code) params.append("code", code);
+    const response = await api.patch<ApiResponse<AdminUserResponse>>(
+      `/admin/users/${id}/specialist-type?${params.toString()}`,
     );
     return response.data.data;
   },
@@ -173,6 +191,12 @@ export const adminApi = {
     const response = await api.get<ApiResponse<WikiCategoryTree[]>>(
       `/wiki/categories/tree`,
     );
+    return response.data.data;
+  },
+
+  runBackup: async (): Promise<BackupResponse> => {
+    const response =
+      await api.post<ApiResponse<BackupResponse>>("/admin/backup/run");
     return response.data.data;
   },
 };

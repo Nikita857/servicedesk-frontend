@@ -32,6 +32,8 @@ import { wikiApi, WikiAttachment } from "@/lib/api/wiki";
 import { attachmentApi } from "@/lib/api/attachments";
 import { useWikiArticleQuery } from "@/lib/hooks";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { formatDate, toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiContent } from "@/components/features/wiki";
 import { API_BASE_URL } from "@/lib/config";
@@ -61,7 +63,7 @@ export default function WikiArticlePage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
 
   // Use TanStack Query for article data
   const { article, isLoading, isLiking, handleLike, error } =
@@ -121,10 +123,8 @@ export default function WikiArticlePage({ params }: PageProps) {
   }
 
   const isAuthor = user?.id === article.createdBy.id;
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
-  // Админы и супервизоры могут редактировать любые статьи, специалисты - только свои
-  const canEdit = isAdmin || isSupervisor || (isSpecialist && isAuthor);
+  // Полный доступ — редактируют любые статьи; частичный — только свои
+  const canEdit = has(PERM.WIKI_EDIT_ALL) || (has(PERM.WIKI_EDIT_OWN) && isAuthor);
 
   return (
     <Box maxW="900px" mx="auto">

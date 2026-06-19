@@ -1,5 +1,14 @@
 import type { AssignmentMode } from "./ticket";
-import type { SenderType } from "./auth";
+
+export interface SpecialistTypeResponse {
+  id: number;
+  code: string;
+  name: string;
+  color: string;
+  displayOrder: number;
+  active: boolean;
+  system: boolean;
+}
 
 export type ActivityStatus =
   | "AVAILABLE"
@@ -14,6 +23,7 @@ export interface Specialist {
   fio: string | null;
   active: boolean;
   roles: string[];
+  specialistType?: SpecialistTypeResponse | null;
   activityStatus?: ActivityStatus;
   availableForAssignment?: boolean;
 }
@@ -25,14 +35,14 @@ export interface SupportLineListResponse {
   slaMinutes: number;
   specialistCount: number;
   displayOrder: number;
-  role: SenderType | null;
+  specialistType: SpecialistTypeResponse | null;
   specialistIds: number[];
 }
 
 export interface SupportLineDetail extends SupportLineListResponse {
   assignmentMode: AssignmentMode;
   specialists: Specialist[];
-  supportLineChatsResponse: SupportLineChatsResponse
+  supportLineChatsResponse: SupportLineChatsResponse;
 }
 
 export interface CreateSupportLineRequest {
@@ -40,7 +50,7 @@ export interface CreateSupportLineRequest {
   description?: string;
   slaMinutes?: number;
   assignmentMode?: AssignmentMode;
-  role: SenderType;
+  specialistTypeId: number;
   displayOrder?: number;
 }
 
@@ -49,7 +59,7 @@ export interface UpdateSupportLineRequest {
   description?: string;
   slaMinutes?: number;
   assignmentMode?: AssignmentMode;
-  role?: SenderType;
+  specialistTypeId?: number;
   displayOrder?: number;
 }
 

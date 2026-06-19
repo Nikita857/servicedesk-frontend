@@ -50,8 +50,9 @@ export function MaxCard({
       </HStack>
 
       <Text fontSize="sm" color="fg.muted" mb={4}>
-        Привяжите MAX (Mail.ru) для получения уведомлений. Ваш MAX ID можно
-        узнать в настройках профиля мессенджера.
+        Привяжите MAX для получения уведомлений. Ваш MAX ID можно узнать в
+        настройках профиля мессенджера. Или написав боту (инструкция в модуле
+        Статьи)
       </Text>
 
       <VStack gap={4} align="stretch" mt="auto">

@@ -17,7 +17,7 @@ export interface Message {
   ticketId: number;
   content: string;
   sender: UserShortResponse;
-  senderType: SenderType;
+  senderType: string;
   internal: boolean;
   readByUser: boolean;
   readBySpecialist: boolean;

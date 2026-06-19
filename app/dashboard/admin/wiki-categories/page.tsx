@@ -30,6 +30,8 @@ import type {
   UpdateWikiCategoryRequest,
 } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { useRouter } from "next/navigation";
 import { CategoryTree } from "@/components/features/wiki/CategoryTree";
 import { DepartmentResponse } from "@/types/department";
@@ -38,7 +40,7 @@ import { departmentApi } from "@/lib/api/departments";
 export default function WikiCategoriesPage() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const { has } = useCurrentPermissions();
 
   const {
     isLoading,
@@ -153,8 +155,8 @@ export default function WikiCategoriesPage() {
     return filterNodes(treeData);
   }, [treeData, searchTerm]);
 
-  // Redirect non-admins
-  if (!isAdmin) {
+  // Redirect users without wiki category management permission
+  if (!has(PERM.WIKI_CATEGORY_MANAGE)) {
     router.push("/dashboard");
     return null;
   }

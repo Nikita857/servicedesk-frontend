@@ -5,6 +5,8 @@ import {useWebSocket} from "@/lib/providers/WebSocketProvider";
 import {useAuthStore} from "@/stores";
 import {queryKeys} from "@/lib/queryKeys";
 import type {UserStatusWS} from "@/types/websocket";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 /**
  * Hook for handling real-time user status updates via WebSocket
@@ -14,6 +16,8 @@ export function useStatusWebSocket() {
     const queryClient = useQueryClient();
     const {isConnected, subscribeToUserStatus } =
         useWebSocket();
+    const { hasAny } = useCurrentPermissions();
+    const hasActivityStatus = hasAny([PERM.TICKET_READ_LINE, PERM.TICKET_READ_ALL]);
 
     const prevConnectedRef = useRef<boolean>(false);
 
@@ -22,7 +26,7 @@ export function useStatusWebSocket() {
         const wasConnected = prevConnectedRef.current;
         prevConnectedRef.current = isConnected;
 
-        if (isConnected && !wasConnected && user?.specialist) {
+        if (isConnected && !wasConnected && hasActivityStatus) {
             queryClient.invalidateQueries({queryKey: queryKeys.users.myStatus()});
         }
     }, [isConnected, user, queryClient]);

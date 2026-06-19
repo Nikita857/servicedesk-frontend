@@ -14,25 +14,18 @@ import {
 } from "@chakra-ui/react";
 import { LuSave, LuUndo2 } from "react-icons/lu";
 import { useForwardingRules } from "@/lib/hooks/admin-forwarding-rules";
-import { userRolesBadges } from "@/types/auth";
-
-const roleLabel = (role: string): string =>
-  userRolesBadges[role]?.name || role;
-
-const roleColor = (role: string): string =>
-  userRolesBadges[role]?.color || "gray";
+import { getSpecialistTypeInfo } from "@/types/auth";
 
 export default function ForwardingRulesPage() {
   const {
     matrix,
+    specialistTypes,
     isLoading,
     isDirty,
     isSaving,
     toggleRule,
     save,
     reset,
-    SOURCE_ROLES,
-    TARGET_ROLES,
   } = useForwardingRules();
 
   if (isLoading) {
@@ -52,8 +45,8 @@ export default function ForwardingRulesPage() {
             Правила маршрутизации
           </Heading>
           <Text color="fg.muted" fontSize="sm">
-            Настройка разрешённых направлений переадресации тикетов между ролями.
-            Администратор всегда может переадресовать на любую линию.
+            Настройка разрешённых направлений переадресации тикетов между типами
+            специалистов. Администратор всегда может переадресовать на любую линию.
           </Text>
         </Box>
 
@@ -88,8 +81,8 @@ export default function ForwardingRulesPage() {
         overflowX="auto"
       >
         <Text fontSize="sm" color="fg.muted" mb={4}>
-          Строки — роль пользователя, выполняющего переадресацию. Столбцы — роль
-          целевой линии.
+          Строки — тип специалиста, выполняющего переадресацию. Столбцы — тип
+          специалистов целевой линии.
         </Text>
 
         <Table.Root variant="outline" size="sm">
@@ -102,29 +95,29 @@ export default function ForwardingRulesPage() {
               >
                 Откуда ↓ / Куда →
               </Table.ColumnHeader>
-              {TARGET_ROLES.map((role) => (
-                <Table.ColumnHeader key={role} textAlign="center" bg="bg.subtle">
-                  <Badge colorPalette={roleColor(role)} variant="subtle">
-                    {roleLabel(role)}
+              {specialistTypes.map((type) => (
+                <Table.ColumnHeader key={type.code} textAlign="center" bg="bg.subtle">
+                  <Badge colorPalette={getSpecialistTypeInfo(type.code).color} variant="subtle">
+                    {type.name}
                   </Badge>
                 </Table.ColumnHeader>
               ))}
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {SOURCE_ROLES.map((srcRole) => (
-              <Table.Row key={srcRole}>
+            {specialistTypes.map((srcType) => (
+              <Table.Row key={srcType.code}>
                 <Table.Cell fontWeight="medium">
-                  <Badge colorPalette={roleColor(srcRole)} variant="subtle">
-                    {roleLabel(srcRole)}
+                  <Badge colorPalette={getSpecialistTypeInfo(srcType.code).color} variant="subtle">
+                    {srcType.name}
                   </Badge>
                 </Table.Cell>
-                {TARGET_ROLES.map((tgtRole) => (
-                  <Table.Cell key={tgtRole} textAlign="center">
+                {specialistTypes.map((tgtType) => (
+                  <Table.Cell key={tgtType.code} textAlign="center">
                     <Flex justify="center">
                       <Checkbox.Root
-                        checked={matrix[srcRole]?.[tgtRole] ?? false}
-                        onCheckedChange={() => toggleRule(srcRole, tgtRole)}
+                        checked={matrix[srcType.code]?.[tgtType.code] ?? false}
+                        onCheckedChange={() => toggleRule(srcType.code, tgtType.code)}
                       >
                         <Checkbox.HiddenInput />
                         <Checkbox.Control />
@@ -142,8 +135,8 @@ export default function ForwardingRulesPage() {
                   Администратор
                 </Badge>
               </Table.Cell>
-              {TARGET_ROLES.map((tgtRole) => (
-                <Table.Cell key={tgtRole} textAlign="center">
+              {specialistTypes.map((type) => (
+                <Table.Cell key={type.code} textAlign="center">
                   <Flex justify="center">
                     <Checkbox.Root checked disabled>
                       <Checkbox.HiddenInput />

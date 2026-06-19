@@ -19,6 +19,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
 import { useFileUpload } from "@/lib/hooks";
@@ -29,7 +31,7 @@ import { adminApi } from "@/lib/api/admin";
 export default function NewWikiArticlePage() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload } = useFileUpload();
 
@@ -53,14 +55,14 @@ export default function NewWikiArticlePage() {
 
   // Redirect non-specialists
   useEffect(() => {
-    if (!isSpecialist) {
+    if (!has(PERM.WIKI_CREATE)) {
       toast.error(
         "Доступ запрещён",
         "Только специалисты могут создавать статьи",
       );
       router.push("/dashboard/wiki");
     }
-  }, [isSpecialist, router]);
+  }, [has, router]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -135,7 +137,7 @@ export default function NewWikiArticlePage() {
     }
   };
 
-  if (!isSpecialist) {
+  if (!has(PERM.WIKI_CREATE)) {
     return null;
   }
 

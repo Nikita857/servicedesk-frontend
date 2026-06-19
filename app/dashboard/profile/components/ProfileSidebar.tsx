@@ -10,7 +10,6 @@ import {
   Icon,
   Separator,
   Button,
-  Center,
 } from "@chakra-ui/react";
 import {
   LuCamera,
@@ -18,10 +17,13 @@ import {
   LuShield,
   LuStar,
   LuCalendar,
+  LuUser,
 } from "react-icons/lu";
 import { ProfileResponse } from "@/lib/api/profile";
-import { userRolesBadges } from "@/types/auth";
 import { getShortInitials } from "@/lib/utils";
+import { useRoles } from "@/lib/hooks/rbac/userRoles";
+import { useSpecialistTypes } from "@/lib/hooks/admin-specialistTypes/useSpecialistTypes";
+import { getRoleBadge } from "@/lib/utils/roleColors";
 
 interface ProfileSidebarProps {
   profile: ProfileResponse;
@@ -40,6 +42,9 @@ export function ProfileSidebar({
   fileInputRef,
   onFileChange,
 }: ProfileSidebarProps) {
+  const { data: allRoles = [] } = useRoles();
+  const { specialistTypes } = useSpecialistTypes();
+
   return (
     <Box
       bg="bg.surface"
@@ -129,19 +134,38 @@ export function ProfileSidebar({
           </Text>
         </HStack>
         <HStack flexWrap="wrap" gap={2}>
-          {profile.roles.map((role) => {
-            const roleInfo = userRolesBadges[role] || {
-              name: role,
-              color: "gray",
-            };
-            return (
-              <Badge key={role} colorPalette={roleInfo.color} size="sm">
-                {roleInfo.name}
-              </Badge>
-            );
-          })}
+          {profile.roles.map((role) => getRoleBadge(role, allRoles))}
         </HStack>
       </VStack>
+
+      {/* Roles */}
+      {profile.isSpecialist && (
+        <VStack align="start" display={"flex"} gap={3} mb={4}>
+          <HStack gap={2}>
+            <Icon as={LuUser} color="fg.muted" />
+            <Text fontSize="sm" color="fg.muted">
+              Специлист:
+            </Text>
+          </HStack>
+          <HStack gap={2}>
+            {profile.specialistType &&
+              (() => {
+                const found = specialistTypes.find(
+                  (st) => st.code === profile.specialistType,
+                );
+                return (
+                  <Badge
+                    colorPalette={found?.color ?? "gray"}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {found?.name ?? profile.specialistType}
+                  </Badge>
+                );
+              })()}
+          </HStack>
+        </VStack>
+      )}
 
       {/* Specialist Rating */}
       {profile.isSpecialist && profile.averageRating !== null && (

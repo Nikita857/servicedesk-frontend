@@ -26,6 +26,8 @@ import {
   LuUserCheck,
 } from "react-icons/lu";
 import { useAuth, useSpecialistTicketsByStatus } from "@/lib/hooks";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { TicketCompactCard } from "./TicketCompactCard";
 import { AssignmentCompactCard } from "./AssignmentCompactCard";
@@ -40,6 +42,15 @@ import { Page } from "@/types";
 export function SpecialistTicketsView() {
   const { NEW, OPEN, PENDING, ESCALATED, CLOSED } = useSpecialistTicketsByStatus(5);
   const { user } = useAuth();
+  const { has } = useCurrentPermissions();
+
+  // Co-executor ticket IDs
+  const coExecutorQuery = useQuery({
+    queryKey: queryKeys.assignments.myCoExecutorTicketIds(),
+    queryFn: () => assignmentApi.getMyCoExecutorTicketIds(),
+    staleTime: 60 * 1000,
+  });
+  const coExecutorTicketIds = new Set(coExecutorQuery.data ?? []);
 
   // Pending assignments query
   const [assignmentsPage, setAssignmentsPage] = useState(0);
@@ -71,17 +82,19 @@ export function SpecialistTicketsView() {
 
           <HStack gap={3}>
             <TicketStatusHelpModal />
-            <Link href="/dashboard/tickets/new">
-              <Button
-                size="sm"
-                bg="gray.900"
-                color="white"
-                _hover={{ bg: "gray.800" }}
-              >
-                <LuPlus />
-                Новый тикет
-              </Button>
-            </Link>
+            {has(PERM.TICKET_CREATE) && (
+              <Link href="/dashboard/tickets/new">
+                <Button
+                  size="sm"
+                  bg="gray.900"
+                  color="white"
+                  _hover={{ bg: "gray.800" }}
+                >
+                  <LuPlus />
+                  Новый тикет
+                </Button>
+              </Link>
+            )}
           </HStack>
         </Flex>
 
@@ -96,6 +109,7 @@ export function SpecialistTicketsView() {
             page={NEW.data?.page}
             onPageChange={NEW.actions.setPage}
             currentUser={user?.username}
+            coExecutorTicketIds={coExecutorTicketIds}
           />
 
           {/* ESCALATED TICKETS */}
@@ -108,6 +122,7 @@ export function SpecialistTicketsView() {
             page={ESCALATED.data?.page}
             onPageChange={ESCALATED.actions.setPage}
             currentUser={user?.username}
+            coExecutorTicketIds={coExecutorTicketIds}
           />
 
           {/* OPEN TICKETS */}
@@ -120,6 +135,7 @@ export function SpecialistTicketsView() {
             page={OPEN.data?.page}
             onPageChange={OPEN.actions.setPage}
             currentUser={user?.username}
+            coExecutorTicketIds={coExecutorTicketIds}
           />
 
           {/* PENDING TICKETS */}
@@ -132,6 +148,7 @@ export function SpecialistTicketsView() {
             page={PENDING.data?.page}
             onPageChange={PENDING.actions.setPage}
             currentUser={user?.username}
+            coExecutorTicketIds={coExecutorTicketIds}
           />
 
           {/* ASSIGNMENTS (pending for me) */}
@@ -153,6 +170,7 @@ export function SpecialistTicketsView() {
             page={CLOSED.data?.page}
             onPageChange={CLOSED.actions.setPage}
             currentUser={user?.username}
+            coExecutorTicketIds={coExecutorTicketIds}
           />
         </SimpleGrid>
       </Box>
@@ -175,6 +193,7 @@ interface TicketTileProps {
   page: Page | undefined;
   onPageChange: (page: number) => void;
   currentUser: string | undefined;
+  coExecutorTicketIds: Set<number>;
 }
 
 function TicketTile({
@@ -186,6 +205,7 @@ function TicketTile({
   page,
   onPageChange,
   currentUser,
+  coExecutorTicketIds,
 }: TicketTileProps) {
   return (
     <Box
@@ -240,6 +260,7 @@ function TicketTile({
                 key={ticket.id}
                 ticket={ticket}
                 currentUserName={currentUser}
+                isCoExecutor={coExecutorTicketIds.has(ticket.id)}
               />
             ))}
           </VStack>

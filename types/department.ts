@@ -18,6 +18,6 @@ export interface DepartmentResponse {
 export interface PositionResponse {
   id: number;
   name: string;
-  departmentId: string;
+  departmentId: number;
   departmentName: string;
 }

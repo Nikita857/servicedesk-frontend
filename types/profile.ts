@@ -6,6 +6,7 @@ export interface ProfileResponse {
   socialNetwork: SocialNetworks;
   avatarUrl: string | null;
   roles: string[];
+  specialistType?: string | null;
   department: string | null;
   position: string | null;
   isSpecialist: boolean;

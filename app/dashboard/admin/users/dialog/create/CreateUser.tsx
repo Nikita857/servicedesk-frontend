@@ -2,7 +2,8 @@ import { DataSelect } from "@/components/ui";
 import { Tooltip } from "@/components/ui/tooltip";
 import { fioToUsername } from "@/lib/utils";
 import type { CreateUserRequest } from "@/types/admin";
-import { SenderType, userRolesBadges } from "@/types";
+import { useRoles } from "@/lib/hooks/rbac/userRoles";
+import { useSpecialistTypes } from "@/lib/hooks/admin-specialistTypes/useSpecialistTypes";
 import {
   Badge,
   Button,
@@ -47,6 +48,8 @@ export default function CreateUser({
   });
 
   const [usernameManuallyEdited, setUsernameManyallyEdited] = useState(false);
+  const { data: allRoles = [] } = useRoles();
+  const { specialistTypes } = useSpecialistTypes();
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -61,6 +64,7 @@ export default function CreateUser({
         active: true,
         departmentId: null,
         positionId: null,
+        specialistType: null,
       });
 
       setUsernameManyallyEdited(false);
@@ -244,34 +248,51 @@ export default function CreateUser({
                 <Field.Root>
                   <Field.Label>Роли</Field.Label>
                   <HStack gap={2} flexWrap="wrap">
-                    {Object.entries(userRolesBadges).map(
-                      ([roleKey, roleData]) => (
-                        <Tooltip key={roleKey} content={roleData.description}>
-                          <Badge
-                            colorPalette={roleData.color}
-                            variant={
-                              newUser.roles?.includes(roleKey as SenderType)
-                                ? "solid"
-                                : "outline"
-                            }
-                            cursor="pointer"
-                            onClick={() =>
-                              toggleRole(roleKey, newUser.roles || [], (r) =>
-                                setNewUser({
-                                  ...newUser,
-                                  roles: r as SenderType[],
-                                }),
-                              )
-                            }
-                          >
-                            {newUser.roles?.includes(roleKey as SenderType) && (
-                              <LuCheck size={12} />
-                            )}
-                            {roleData.name}
-                          </Badge>
-                        </Tooltip>
-                      ),
-                    )}
+                    {allRoles.map((role) => (
+                      <Tooltip key={role.code} content={role.description ?? ""}>
+                        <Badge
+                          colorPalette={role.color}
+                          variant={newUser.roles?.includes(role.code) ? "solid" : "outline"}
+                          cursor="pointer"
+                          onClick={() =>
+                            toggleRole(role.code, newUser.roles || [], (r) =>
+                              setNewUser({ ...newUser, roles: r }),
+                            )
+                          }
+                        >
+                          {newUser.roles?.includes(role.code) && <LuCheck size={12} />}
+                          {role.name}
+                        </Badge>
+                      </Tooltip>
+                    ))}
+                  </HStack>
+                </Field.Root>
+
+                <Field.Root>
+                  <Field.Label>Тип специалиста</Field.Label>
+                  <HStack gap={2} flexWrap="wrap">
+                    <Badge
+                      variant={!newUser.specialistType ? "solid" : "outline"}
+                      colorPalette="gray"
+                      cursor="pointer"
+                      onClick={() => setNewUser({ ...newUser, specialistType: null })}
+                    >
+                      Нет
+                    </Badge>
+                    {specialistTypes.filter((t) => t.active).map((t) => (
+                      <Badge
+                        key={t.code}
+                        colorPalette={t.color}
+                        variant={newUser.specialistType === t.code ? "solid" : "outline"}
+                        cursor="pointer"
+                        onClick={() =>
+                          setNewUser({ ...newUser, specialistType: t.code })
+                        }
+                      >
+                        {newUser.specialistType === t.code && <LuCheck size={12} />}
+                        {t.name}
+                      </Badge>
+                    ))}
                   </HStack>
                 </Field.Root>
               </VStack>

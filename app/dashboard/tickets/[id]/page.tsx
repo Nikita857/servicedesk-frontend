@@ -17,6 +17,8 @@ import {
 import { LuChevronDown, LuChevronUp } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import TicketHeader from "@/components/features/tickets/TicketHeader";
 import EscalationPanel from "@/components/features/tickets/EscalationPanel";
 import TicketSidebar from "@/components/features/tickets/TicketSidebar";
@@ -46,10 +48,8 @@ export default function TicketDetailPage({ params }: PageProps) {
   const [descOpen, setDescOpen] = useState(true);
   const router = useRouter();
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSupervisor = user?.roles?.includes("SUPERVISOR") || false;
-  const canEscalate = isSpecialist || isSupervisor;
+  const { has } = useCurrentPermissions();
+  const canEscalate = has(PERM.TICKET_FORWARD);
 
   // ==================== React Query Hooks ====================
   const {
@@ -92,8 +92,7 @@ export default function TicketDetailPage({ params }: PageProps) {
 
   // Может ли текущий пользователь менять статус тикета
   const canManageStatus =
-    isAdmin ||
-    isSupervisor ||
+    has(PERM.TICKET_UPDATE_ALL) ||
     user?.id === ticket?.assignedTo?.id ||
     user?.id === ticket?.createdBy?.id ||
     coExecutors.some((ce) => ce.userId === user?.id);
@@ -136,7 +135,7 @@ export default function TicketDetailPage({ params }: PageProps) {
       <TicketHeader
         ticket={ticket}
         setTicket={updateTicket}
-        isSpecialist={isSpecialist}
+        isSpecialist={has(PERM.TICKET_ASSIGN)}
         canEscalate={canEscalate}
         canManageStatus={canManageStatus}
         showEscalation={escalation.showEscalation}
@@ -144,7 +143,7 @@ export default function TicketDetailPage({ params }: PageProps) {
         isOnLastLine={isOnLastLine}
         hasPendingAssignment={
           currentAssignment?.status === "PENDING" &&
-          !!currentAssignment?.toUsername
+          !!currentAssignment?.toUser?.username
         }
         currentAssignment={currentAssignment ?? null}
         onAssignmentDecision={refetch}
@@ -260,7 +259,7 @@ export default function TicketDetailPage({ params }: PageProps) {
           <AssignmentPanel
             currentAssignment={currentAssignment}
             assignmentHistory={assignmentHistory}
-            isSpecialist={isSpecialist}
+            isSpecialist={has(PERM.TICKET_ASSIGN)}
             currentUsername={user?.username}
             onDecision={refetch}
           />
@@ -269,7 +268,7 @@ export default function TicketDetailPage({ params }: PageProps) {
         {/* Sidebar */}
         <GridItem>
           <Box mb={2}>
-            <TicketSidebar ticket={ticket} isSpecialist={isSpecialist} />
+            <TicketSidebar ticket={ticket} isSpecialist={has(PERM.TICKET_ASSIGN)} />
           </Box>
           <DeadlineBanner ticketId={ticketId} />
         </GridItem>

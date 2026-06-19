@@ -30,6 +30,8 @@ export const queryKeys = {
       [...queryKeys.assignments.all, "history", ticketId] as const,
     coExecutors: (ticketId: number) =>
       [...queryKeys.assignments.all, "co-executors", ticketId] as const,
+    myCoExecutorTicketIds: () =>
+      [...queryKeys.assignments.all, "my-co-executor-ticket-ids"] as const,
   },
 
   // Support Lines
@@ -57,6 +59,7 @@ export const queryKeys = {
       search?: string;
       showAll?: boolean;
       filter?: string;
+      pageSize?: number;
     }) => [...queryKeys.wiki.all, "categories-with-articles", params] as const,
     details: () => [...queryKeys.wiki.all, "detail"] as const,
     detail: (slug: string) => [...queryKeys.wiki.details(), slug] as const,
@@ -145,5 +148,22 @@ export const queryKeys = {
         "byDepartment",
         departmentId,
       ] as const,
+  },
+  rbac: {
+    all: ["rbac"] as const,
+    roles: () => [...queryKeys.rbac.all, "roles"] as const,
+    roleDetail: (id: number) => [...queryKeys.rbac.roles(), id] as const,
+    permissions: () => [...queryKeys.rbac.all, "permissions"] as const,
+    userRoles: (userId: number) =>
+      [...queryKeys.rbac.all, "user-roles", userId] as const,
+  },
+  specialistTypes: {
+    all: ["specialist-types"] as const,
+    list: () => [...queryKeys.specialistTypes.all, "list"] as const,
+  },
+  maintenance: {
+    all: ["maintenance"] as const,
+    status: () => [...queryKeys.maintenance.all, "status"] as const,
+    settings: () => [...queryKeys.maintenance.all, "settings"] as const,
   },
 } as const;

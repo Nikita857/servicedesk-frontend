@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Collapsible,
+  Flex,
   HStack,
   Icon,
   Text,
@@ -14,7 +15,8 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import {
-  LuArrowRight, LuBan,
+  LuArrowRight,
+  LuBan,
   LuCheck,
   LuChevronDown,
   LuChevronUp,
@@ -32,27 +34,42 @@ interface AssignmentPanelProps {
   onDecision?: () => void;
 }
 
-/** Форматирует отправителя назначения */
 function assignmentFrom(a: AssignmentResponse): string {
-  return a.fromFio || a.fromUsername || a.fromLineName || "—";
+  return a.fromUser?.fio || a.fromUser?.username || a.fromLine?.name || "—";
 }
-
-/** Форматирует получателя назначения */
 function assignmentTo(a: AssignmentResponse): string {
-  return a.toFio || a.toUsername || a.toLineName || "—";
+  return a.toUser?.fio || a.toUser?.username || a.toLine?.name || "—";
 }
 
-const STATUS_ICON = {
-  ACCEPTED: { icon: LuCheck, color: "green.500" },
-  REJECTED: { icon: LuX, color: "red.500" },
-  PENDING: { icon: LuClock, color: "yellow.500" },
-  CANCELLED: { icon: LuBan, color: "gray.500" },
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+// Стабильный цвет аватара по имени
+function avatarPalette(name: string): { bg: string; fg: string } {
+  const palettes = [
+    { bg: "blue.100", fg: "blue.700" },
+    { bg: "purple.100", fg: "purple.700" },
+    { bg: "orange.100", fg: "orange.700" },
+    { bg: "green.100", fg: "green.700" },
+    { bg: "pink.100", fg: "pink.700" },
+    { bg: "teal.100", fg: "teal.700" },
+  ];
+  const idx = name.charCodeAt(0) % palettes.length;
+  return palettes[idx];
+}
+
+const STATUS_CONF = {
+  ACCEPTED: { icon: LuCheck, color: "green.500", bg: "green.50" },
+  REJECTED: { icon: LuX, color: "red.500", bg: "red.50" },
+  PENDING: { icon: LuClock, color: "yellow.500", bg: "yellow.50" },
+  CANCELLED: { icon: LuBan, color: "gray.500", bg: "gray.100" },
 } as const;
 
-/**
- * Панель назначений — компактный timeline.
- * Выводится под чатом в деталях тикета.
- */
 export default function AssignmentPanel({
   currentAssignment,
   assignmentHistory,
@@ -69,7 +86,7 @@ export default function AssignmentPanel({
 
   const isPendingForMe =
     currentAssignment?.status === "PENDING" &&
-    currentAssignment.toUsername === currentUsername;
+    currentAssignment.toUser?.username === currentUsername;
 
   const invalidateCaches = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
@@ -114,6 +131,7 @@ export default function AssignmentPanel({
   }
 
   const historyCount = assignmentHistory.length;
+  const totalEvents = historyCount + (currentAssignment ? 1 : 0);
 
   return (
     <Box
@@ -124,192 +142,371 @@ export default function AssignmentPanel({
       overflow="hidden"
       mt={4}
     >
-      {/* Заголовок */}
-      <HStack px={3} py={2} borderBottomWidth="1px" borderColor="border.default" gap={2}>
-        <LuForward size={14} color="var(--chakra-colors-fg-muted)" />
-        <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wide">
-          Назначения
-        </Text>
-        {historyCount > 0 && (
-          <Text fontSize="xs" color="fg.subtle" ml="auto">
-            {historyCount} в истории
+      {/* ── Заголовок с иконкой-бейджем ────────────────────────────────── */}
+      <HStack
+        px={3}
+        py={3}
+        gap={2.5}
+        bg="bg.subtle"
+        borderBottomWidth="1px"
+        borderColor="border.default"
+      >
+        <Flex
+          w="28px"
+          h="28px"
+          borderRadius="md"
+          bg="bg.surface"
+          borderWidth="1px"
+          borderColor="border.default"
+          align="center"
+          justify="center"
+          color="fg.muted"
+          flexShrink={0}
+        >
+          <LuForward size={14} />
+        </Flex>
+        <Box>
+          <Text
+            fontSize="sm"
+            fontWeight="semibold"
+            color="fg.default"
+            lineHeight="1.2"
+          >
+            Назначения
           </Text>
-        )}
+          <Text fontSize="xs" color="fg.muted" mt="1px">
+            {totalEvents}{" "}
+            {pluralize(totalEvents, ["событие", "события", "событий"])}
+          </Text>
+        </Box>
       </HStack>
 
-      {/* Pending — action card (требует действия от текущего специалиста) */}
-      {isPendingForMe && currentAssignment && (
-        <Box
-          px={3} py={2}
-          bg="orange.50"
-          borderBottomWidth="1px"
-          borderColor="orange.200"
-          _dark={{ bg: "orange.900/20", borderColor: "orange.800" }}
-        >
-          <HStack justify="space-between" mb={2}>
-            <HStack gap={1.5}>
-              <Icon as={LuClock} boxSize={3.5} color="orange.500" />
-              <Text fontSize="xs" fontWeight="semibold" color="orange.700" _dark={{ color: "orange.300" }}>
-                Требует вашего решения
+      {/* ── Контент ────────────────────────────────────────────────────── */}
+      <VStack align="stretch" gap={2.5} p={3}>
+        {/* Pending action card */}
+        {isPendingForMe && currentAssignment && (
+          <Box
+            bgGradient="linear(to-b, orange.50, transparent)"
+            bg={{ base: "orange.50", _dark: "orange.900/20" }}
+            borderWidth="1px"
+            borderColor="orange.200"
+            _dark={{ borderColor: "orange.800" }}
+            borderRadius="lg"
+            p={3}
+            boxShadow="0 1px 2px rgba(221, 107, 32, 0.08)"
+          >
+            {/* Бейдж "Требует решения" */}
+            <HStack
+              display="inline-flex"
+              bg="orange.500"
+              color="white"
+              px={2}
+              py={0.5}
+              borderRadius="full"
+              gap={1}
+              mb={2.5}
+            >
+              <Icon as={LuClock} boxSize={2.5} />
+              <Text
+                fontSize="2xs"
+                fontWeight="bold"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                Требует решения
               </Text>
             </HStack>
-            <Text fontSize="xs" color="fg.muted">{formatDate(currentAssignment.createdAt)}</Text>
-          </HStack>
 
-          <Text fontSize="xs" color="fg.muted" mb={1}>
-            {assignmentFrom(currentAssignment)}
-            <Box as="span" mx={1} color="fg.subtle"><LuArrowRight style={{ display: "inline" }} size={10} /></Box>
-            <Box as="span" fontWeight="medium" color="fg.default">{assignmentTo(currentAssignment)}</Box>
-            {currentAssignment.toLineName && (
-              <Box as="span" color="fg.muted"> · {currentAssignment.toLineName}</Box>
-            )}
-          </Text>
-
-          {currentAssignment.note && (
-            <Text fontSize="xs" color="fg.muted" fontStyle="italic" mb={2} lineClamp={2}>
-              {currentAssignment.note}
-            </Text>
-          )}
-
-          {showRejectForm ? (
-            <VStack align="stretch" gap={2} mt={2}>
-              <Textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Укажите причину отклонения"
-                rows={2}
-                size="xs"
-              />
-              <HStack gap={2} justify="flex-end">
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => { setShowRejectForm(false); setRejectReason(""); }}
-                  disabled={isRejecting}
+            {/* From → To */}
+            <HStack gap={2.5} mb={2.5}>
+              <Avatar name={assignmentFrom(currentAssignment)} size="28px" />
+              <Box flex={1} minW={0}>
+                <Text fontSize="2xs" color="fg.muted" lineHeight="1">
+                  От
+                </Text>
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="fg.default"
+                  truncate
+                  mt="2px"
                 >
-                  Назад
-                </Button>
+                  {assignmentFrom(currentAssignment)}
+                </Text>
+              </Box>
+              <Icon
+                as={LuArrowRight}
+                boxSize={3.5}
+                color="fg.subtle"
+                flexShrink={0}
+              />
+              <Box flex={1} minW={0} textAlign="right">
+                <Text fontSize="2xs" color="fg.muted" lineHeight="1">
+                  Вам
+                  {currentAssignment.toLine?.name &&
+                    ` · ${currentAssignment.toLine?.name}`}
+                </Text>
+                <Text
+                  fontSize="sm"
+                  fontWeight="semibold"
+                  color="orange.700"
+                  _dark={{ color: "orange.300" }}
+                  truncate
+                  mt="2px"
+                >
+                  {assignmentTo(currentAssignment)}
+                </Text>
+              </Box>
+            </HStack>
+
+            {/* Note */}
+            {currentAssignment.note && (
+              <Box
+                bg="bg.surface"
+                borderWidth="1px"
+                borderColor="border.muted"
+                borderRadius="md"
+                px={2.5}
+                py={2}
+                mb={2.5}
+              >
+                <Text fontSize="sm" color="fg.default" lineHeight="1.45">
+                  {currentAssignment.note}
+                </Text>
+              </Box>
+            )}
+
+            {/* Actions */}
+            {showRejectForm ? (
+              <VStack align="stretch" gap={2}>
+                <Textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Укажите причину отклонения"
+                  rows={2}
+                  size="xs"
+                  bg="bg.surface"
+                />
+                <HStack gap={2} justify="flex-end">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => {
+                      setShowRejectForm(false);
+                      setRejectReason("");
+                    }}
+                    disabled={isRejecting}
+                  >
+                    Назад
+                  </Button>
+                  <Button
+                    colorPalette="red"
+                    size="xs"
+                    onClick={handleReject}
+                    loading={isRejecting}
+                    disabled={!rejectReason.trim()}
+                  >
+                    <LuX /> Отклонить
+                  </Button>
+                </HStack>
+              </VStack>
+            ) : (
+              <HStack gap={2}>
                 <Button
+                  variant="outline"
                   colorPalette="red"
                   size="xs"
-                  onClick={handleReject}
-                  loading={isRejecting}
-                  disabled={!rejectReason.trim()}
+                  flex={1}
+                  onClick={() => setShowRejectForm(true)}
                 >
-                  <LuX />
-                  Отклонить
+                  <LuX /> Отклонить
+                </Button>
+                <Button
+                  colorPalette="green"
+                  size="xs"
+                  flex={1}
+                  onClick={handleAccept}
+                  loading={isAccepting}
+                >
+                  <LuCheck /> Принять
                 </Button>
               </HStack>
-            </VStack>
-          ) : (
-            <HStack gap={2} justify="flex-end" mt={2}>
-              <Button
-                variant="outline"
-                colorPalette="red"
-                size="xs"
-                onClick={() => setShowRejectForm(true)}
-              >
-                <LuX />
-                Отклонить
-              </Button>
-              <Button
-                colorPalette="green"
-                size="xs"
-                onClick={handleAccept}
-                loading={isAccepting}
-              >
-                <LuCheck />
-                Принять
-              </Button>
-            </HStack>
-          )}
-        </Box>
-      )}
+            )}
 
-      {/* Текущее назначение (не pending для меня) */}
-      {currentAssignment && !isPendingForMe && (
-        <AssignmentRow a={currentAssignment} />
-      )}
-
-      {/* История */}
-      {historyCount > 0 && (
-        <Collapsible.Root open={showHistory} onOpenChange={(e) => setShowHistory(e.open)}>
-          <Collapsible.Trigger asChild>
-            <Button
-              variant="ghost"
-              size="xs"
-              w="full"
-              justifyContent="space-between"
-              px={3}
-              py={2}
-              h="auto"
-              borderTopWidth={currentAssignment ? "1px" : "0"}
-              borderColor="border.default"
-              borderRadius="0"
-              color="fg.muted"
-              _hover={{ bg: "bg.subtle" }}
+            <Text
+              fontSize="2xs"
+              color="fg.subtle"
+              textAlign="right"
+              mt={2}
+              fontVariantNumeric="tabular-nums"
             >
-              <Text fontSize="xs">История назначений</Text>
-              {showHistory ? <LuChevronUp size={12} /> : <LuChevronDown size={12} />}
-            </Button>
-          </Collapsible.Trigger>
+              Назначено · {formatDate(currentAssignment.createdAt)}
+            </Text>
+          </Box>
+        )}
 
-          <Collapsible.Content>
-            <VStack align="stretch" gap={0} divideY="1px">
-              {assignmentHistory.map((a) => (
-                <AssignmentRow key={a.id} a={a} dimmed />
-              ))}
-            </VStack>
-          </Collapsible.Content>
-        </Collapsible.Root>
-      )}
+        {/* Текущее (не pending для меня) */}
+        {currentAssignment && !isPendingForMe && (
+          <AssignmentCard a={currentAssignment} />
+        )}
+
+        {/* История — toggle */}
+        {historyCount > 0 && (
+          <Collapsible.Root
+            open={showHistory}
+            onOpenChange={(e) => setShowHistory(e.open)}
+          >
+            <Collapsible.Trigger asChild>
+              <Button
+                w="full"
+                size="xs"
+                variant="ghost"
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderStyle="dashed"
+                borderColor="border.default"
+                borderRadius="md"
+                color="fg.muted"
+                fontWeight="medium"
+                _hover={{ bg: "bg.muted" }}
+              >
+                {showHistory ? "Скрыть" : `Показать историю · ${historyCount}`}
+                {showHistory ? <LuChevronUp /> : <LuChevronDown />}
+              </Button>
+            </Collapsible.Trigger>
+
+            <Collapsible.Content>
+              <VStack align="stretch" gap={1.5} mt={2}>
+                {assignmentHistory.map((a) => (
+                  <AssignmentCard key={a.id} a={a} />
+                ))}
+              </VStack>
+            </Collapsible.Content>
+          </Collapsible.Root>
+        )}
+      </VStack>
     </Box>
   );
 }
 
-/** Одна строка назначения в timeline */
-function AssignmentRow({ a, dimmed = false }: { a: AssignmentResponse; dimmed?: boolean }) {
-  const statusConf = STATUS_ICON[a.status] ?? STATUS_ICON.PENDING;
-  const to = assignmentTo(a);
-  const from = a.fromFio || a.fromUsername || a.fromLineName;
+/** Одно назначение в виде компактной карточки */
+function AssignmentCard({ a }: { a: AssignmentResponse }) {
+  const conf = STATUS_CONF[a.status] ?? STATUS_CONF.PENDING;
 
   return (
     <HStack
-      px={3} py={2}
-      gap={2.5}
       align="flex-start"
-      opacity={dimmed ? 0.75 : 1}
-      _hover={{ bg: "bg.subtle" }}
+      gap={2.5}
+      px={2.5}
+      py={2}
+      bg="bg.surface"
+      borderWidth="1px"
+      borderColor="border.muted"
+      borderRadius="md"
+      _hover={{ bg: "bg.subtle", borderColor: "border.default" }}
+      transition="background 0.12s, border-color 0.12s"
     >
-      {/* Статус-иконка */}
-      <Icon as={statusConf.icon} boxSize={3.5} color={statusConf.color} mt="1px" flexShrink={0} />
+      {/* Статус-кружок */}
+      <Flex
+        w="22px"
+        h="22px"
+        borderRadius="full"
+        bg={conf.bg}
+        color={conf.color}
+        align="center"
+        justify="center"
+        flexShrink={0}
+        mt="1px"
+      >
+        <Icon as={conf.icon} boxSize={3} />
+      </Flex>
 
-      {/* Направление */}
+      {/* Содержимое */}
       <Box flex={1} minW={0}>
-        <HStack gap={1} flexWrap="wrap">
-          {from && (
-            <>
-              <Text fontSize="xs" color="fg.muted" lineClamp={1}>{from}</Text>
-              <Icon as={LuArrowRight} boxSize={3} color="fg.subtle" flexShrink={0} />
-            </>
-          )}
-          <Text fontSize="xs" fontWeight="medium" color="fg.default" lineClamp={1}>{to}</Text>
-          {a.toLineName && (a.toFio || a.toUsername) && (
-            <Text fontSize="xs" color="fg.muted">· {a.toLineName}</Text>
+        <HStack gap={1.5} flexWrap="wrap">
+          <Text fontSize="xs" color="fg.muted" lineClamp={1}>
+            {assignmentFrom(a)}
+          </Text>
+          <Icon
+            as={LuArrowRight}
+            boxSize={2.5}
+            color="fg.subtle"
+            flexShrink={0}
+          />
+          <Text
+            fontSize="xs"
+            fontWeight="semibold"
+            color="fg.default"
+            lineClamp={1}
+          >
+            {assignmentTo(a)}
+          </Text>
+          {a.toLine.name && (a.toUser?.fio || a.toUser?.username) && (
+            <Text
+              fontSize="2xs"
+              color="fg.muted"
+              bg="bg.muted"
+              px={1.5}
+              py="1px"
+              borderRadius="sm"
+              flexShrink={0}
+            >
+              {a.toLine?.name}
+            </Text>
           )}
         </HStack>
 
         {a.rejectedReason && (
-          <Text fontSize="xs" color="red.500" mt={0.5} lineClamp={1}>
-            {a.rejectedReason}
+          <Text fontSize="xs" color="red.600" mt={1} lineClamp={2}>
+            «{a.rejectedReason}»
           </Text>
         )}
       </Box>
 
       {/* Дата */}
-      <Text fontSize="xs" color="fg.subtle" flexShrink={0} whiteSpace="nowrap">
+      <Text
+        fontSize="2xs"
+        color="fg.subtle"
+        flexShrink={0}
+        whiteSpace="nowrap"
+        fontVariantNumeric="tabular-nums"
+      >
         {formatDate(a.createdAt)}
       </Text>
     </HStack>
   );
+}
+
+/** Аватар с инициалами и стабильным цветом по имени */
+function Avatar({ name, size = "24px" }: { name: string; size?: string }) {
+  const { bg, fg } = avatarPalette(name);
+  const initials = getInitials(name);
+  const fontSize = `calc(${size} * 0.4)`;
+
+  return (
+    <Flex
+      w={size}
+      h={size}
+      borderRadius="full"
+      bg={bg}
+      color={fg}
+      align="center"
+      justify="center"
+      fontSize={fontSize}
+      fontWeight="bold"
+      flexShrink={0}
+    >
+      {initials}
+    </Flex>
+  );
+}
+
+/** Простая плюрализация для русского */
+function pluralize(n: number, forms: [string, string, string]): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
+    return forms[1];
+  return forms[2];
 }

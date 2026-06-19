@@ -78,6 +78,7 @@ function MessageBubble({
   onImageClick,
 }: MessageBubbleProps) {
   const senderConf = getSenderConfig(msg.senderType);
+  const senderColor = msg.sender.color ?? senderConf.color;
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const canDelete = isOwn && isSpecialist && !!onDeleteMessage;
@@ -113,7 +114,7 @@ function MessageBubble({
           <Text
             fontSize="xs"
             fontWeight="semibold"
-            color={`${senderConf.color}.600`}
+            color={`${senderColor}.600`}
             mb={0.5}
           >
             {msg.sender.fio || msg.sender.username}

@@ -3,7 +3,12 @@
 import { Page } from "./api";
 import type { CategoryResponse } from "./category";
 import type { SupportLineListResponse } from "./support-line";
-import type { AssignmentResponse, CoExecutorResponse } from "./assignment";
+import type {
+  AssignmentResponse,
+  AssignmentShortResponse,
+  CoExecutorResponse,
+  SupportLineShortResponse,
+} from "./assignment";
 
 export type TicketStatus =
   | "NEW"
@@ -32,6 +37,7 @@ export interface UserShortResponse {
   fio: string | null;
   avatarUrl: string | null;
   isSpecialist: boolean;
+  color?: string;
 }
 
 // List item (for tables)
@@ -41,8 +47,8 @@ export interface TicketListResponse {
   status: TicketStatus;
   priority: TicketPriority;
   createdBy: UserShortResponse;
-  assignedTo: UserShortResponse | null;
-  supportLineName: string | null;
+  assignedTo: AssignmentShortResponse | null;
+  supportLine: SupportLineShortResponse | null;
   createdAt: string;
   slaDeadline: string | null;
 }

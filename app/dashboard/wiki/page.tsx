@@ -13,6 +13,8 @@ import {
 } from "@chakra-ui/react";
 import { LuPlus, LuBookOpen, LuHeart } from "react-icons/lu";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { useWikiCategoriesWithArticlesQuery } from "@/lib/hooks";
 import Link from "next/link";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -42,7 +44,7 @@ function filterFavorites(
 
 export default function WikiPage() {
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
 
   const userFilters = [
       { value: "my", label: "Мой отдел" },
@@ -55,6 +57,7 @@ export default function WikiPage() {
       { value: "all", label: "Все статьи" },
   ];
 
+  const [showFavorites, setShowFavorites] = useState(false);
 
   const {
     categories,
@@ -69,9 +72,7 @@ export default function WikiPage() {
     setFilter,
     setShowAll,
     submitSearch,
-  } = useWikiCategoriesWithArticlesQuery({ pageSize: 5 });
-
-  const [showFavorites, setShowFavorites] = useState(false);
+  } = useWikiCategoriesWithArticlesQuery({ pageSize: showFavorites ? 1000 : 5 });
 
   const wikiOnboarding = useOnboarding(true, "sd_wiki_onboarding_seen");
 
@@ -120,7 +121,6 @@ export default function WikiPage() {
             colorPalette={showFavorites ? "red" : "gray"}
             onClick={() => {
               setShowFavorites(!showFavorites);
-              if (!showFavorites) setShowAll(false);
             }}
             size={{ base: "sm", md: "md" }}
           >
@@ -141,13 +141,13 @@ export default function WikiPage() {
                 }
                 if (val !== "all") setShowFavorites(false);
               }}
-              items={user?.roles.some((role) => role === "USER") ? userFilters : specialistFilters}
+              items={!has(PERM.WIKI_CREATE) ? userFilters : specialistFilters}
               size="sm"
               width={{ base: "full", md: "auto" }}
             />
           </Box>
 
-          {isSpecialist && (
+          {has(PERM.WIKI_CREATE) && (
             <Link href="/dashboard/wiki/new">
               <Button
                 bg="gray.900"
@@ -202,7 +202,7 @@ export default function WikiPage() {
             </Button>
           )}
 
-          {isSpecialist && !activeSearch && !showFavorites && (
+          {has(PERM.WIKI_CREATE) && !activeSearch && !showFavorites && (
             <Link href="/dashboard/wiki/new">
               <Button
                 mt={4}

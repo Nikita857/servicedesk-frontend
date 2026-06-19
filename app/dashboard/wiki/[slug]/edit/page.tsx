@@ -24,6 +24,8 @@ import {
 } from "@/lib/api/wiki";
 import { attachmentApi } from "@/lib/api/attachments";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
 import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
@@ -40,7 +42,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload } = useFileUpload();
   const queryClient = useQueryClient();
@@ -73,21 +75,19 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   useEffect(() => {
     if (!isLoading && article) {
       const isAuthor = user?.id === article.createdBy.id;
-      const hasFullAccess =
-        user?.roles.includes("ADMIN") || user?.roles.includes("SUPERVISOR");
-      if (!isSpecialist && !hasFullAccess) {
+      if (!has(PERM.WIKI_CREATE) && !has(PERM.WIKI_EDIT_ALL)) {
         toast.error(
           "Доступ запрещён",
           "Вы можете редактировать только свои статьи",
         );
         router.push(`/dashboard/wiki/${slug}`);
       }
-      if (!isAuthor && !hasFullAccess) {
-        toast.error("Доступ запрещён", "Вы не являетесь специалистом");
+      if (!isAuthor && !has(PERM.WIKI_EDIT_ALL)) {
+        toast.error("Доступ запрещён", "Нет прав на редактирование чужой статьи");
         router.push(`/dashboard/wiki/${slug}`);
       }
     }
-  }, [isLoading, article, isSpecialist, user?.id, router, slug, user?.roles]);
+  }, [isLoading, article, has, user?.id, router, slug]);
 
   // Fetch category tree
   const { data: categoryTree = [], isLoading: loadingCategories } = useQuery({
