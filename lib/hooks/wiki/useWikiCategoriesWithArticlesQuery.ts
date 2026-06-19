@@ -15,6 +15,19 @@ interface UseWikiCategoriesWithArticlesQueryOptions {
 
 export type WikiFilter = "my" | "public" | "all";
 
+const FILTER_STORAGE_KEY = "sd_wiki_filter";
+
+// Читаем сохранённый таб из localStorage (один раз при монтировании)
+function readSavedFilter(): WikiFilter {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (saved && ["my", "public", "all"].includes(saved)) {
+      return saved as WikiFilter;
+    }
+  }
+  return "my";
+}
+
 interface UseWikiCategoriesWithArticlesQueryReturn {
   categories: WikiCategoryWithArticles[];
   isLoading: boolean;
@@ -82,13 +95,16 @@ export function useWikiCategoriesWithArticlesQuery(
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [likingArticleId, setLikingArticleId] = useState<number | null>(null);
-  const [showAll, setShowAll] = useState(false);
-  const [filter, setFilterState] = useState<WikiFilter>("my");
+  const [filter, setFilterState] = useState<WikiFilter>(readSavedFilter);
+  const [showAll, setShowAll] = useState(() => readSavedFilter() === "all");
 
   const setFilter = useCallback((newFilter: WikiFilter) => {
     setFilterState(newFilter);
     setPage(0);
-  }, []);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(FILTER_STORAGE_KEY, newFilter);
+    }
+  }, [setPage]);
 
   // Categories query
   const categoriesQuery = useQuery({
@@ -208,14 +224,14 @@ export function useWikiCategoriesWithArticlesQuery(
       setPage(0);
       setDebouncedSearch(searchQuery);
     },
-    [searchQuery],
+    [searchQuery, setPage, setDebouncedSearch],
   );
 
   // Submit search programmatically (used by WikiSearchBar)
   const submitSearch = useCallback((query: string) => {
     setPage(0);
     setDebouncedSearch(query);
-  }, []);
+  }, [setPage, setDebouncedSearch]);
 
   // Handle like button click
   const handleLike = useCallback(
