@@ -33,6 +33,7 @@ export interface CreateScheduledTaskRequest {
   recurrenceType: RecurrenceType; // required
   recurrenceDaysOfWeek?: DayOfWeek[];
   recurrenceUntil?: string; // ISO 8601
+  deadlineOffsetMinutes?: number;
   deadlineAt?: string; // ISO 8601
 }
 
@@ -54,6 +55,7 @@ export interface UpdateScheduledTaskRequest {
   recurrenceType?: RecurrenceType;
   recurrenceDaysOfWeek?: DayOfWeek[];
   recurrenceUntil?: string; // ISO 8601
+  deadlineOffsetMinutes?: number;
   deadlineAt?: string; // ISO 8601
 }
 
@@ -75,6 +77,7 @@ export interface ScheduledTaskListResponse {
   recurrenceType: RecurrenceType;
   assignTo: UserShortResponse | null;
   deadlineAt: string | null; // ISO 8601
+  deadlineOffsetMinutes: number | null;
   createdAt: string; // ISO 8601
 }
 
@@ -96,6 +99,7 @@ export interface ScheduledTaskResponse {
   status: ScheduledTaskStatus;
   displayTicketStatus: TicketStatus[];
   executionsCount: number;
+  deadlineOffsetMinutes: number | null;
   deadlineAt: string | null; // ISO 8601
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
@@ -112,6 +116,7 @@ export interface ScheduledTaskOccurrenceResponse {
   ticketId: number | null;
   ticketStatus: TicketStatus | null;
   taskStatus: ScheduledTaskStatus;
+  occurrenceStatus: ScheduledTaskStatus;
   deadlineAt: string | null;
 }
 
@@ -124,6 +129,11 @@ export interface ScheduledTaskDeadlineResponse {
   taskId: number;
   taskTitle: string;
   deadlineAt: string;
+}
+
+export interface SetOccurrenceDeadlineRequest {
+  occurrenceAt: string; // ISO — ровно как пришло из календаря
+  deadlineAt: string; // ISO
 }
 
 export const TASK_STATUS_CONFIG: Record<

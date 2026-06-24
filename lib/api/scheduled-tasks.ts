@@ -7,6 +7,7 @@ import {
   ScheduledTaskListResponse,
   ScheduledTaskOccurrenceResponse,
   ScheduledTaskResponse,
+  SetOccurrenceDeadlineRequest,
   UpdateScheduledTaskRequest,
 } from "@/types/scheduler";
 import api from "./client";
@@ -73,5 +74,20 @@ export const scheduledTasksApi = {
   ): Promise<ScheduledTaskDeadlineResponse | null> => {
     const response = await api.get(`/scheduled-tasks/by-ticket/${ticketId}`);
     return response.data.data;
+  },
+  setOccurrenceDeadline: async (
+    id: number,
+    body: SetOccurrenceDeadlineRequest,
+  ): Promise<void> => {
+    await api.put(`/scheduled-tasks/${id}/occurrences/deadline`, body);
+  },
+
+  clearOccurrenceDeadline: async (
+    id: number,
+    occurrenceAt: string,
+  ): Promise<void> => {
+    await api.delete(`/scheduled-tasks/${id}/occurrences/deadline`, {
+      params: { occurrenceAt },
+    });
   },
 };

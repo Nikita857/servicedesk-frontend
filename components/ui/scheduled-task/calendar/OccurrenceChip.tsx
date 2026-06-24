@@ -31,18 +31,15 @@ function accentColor(
 }
 
 export default function OccurrenceChip({ occurrence }: IProps) {
-  const accent = accentColor(occurrence.taskStatus, occurrence.priority);
+  const accent = accentColor(occurrence.occurrenceStatus, occurrence.priority);
 
   const isDone =
-    occurrence.taskStatus === "EXECUTED" ||
-    occurrence.taskStatus === "COMPLETED_LATE";
-  const isCancelled = occurrence.taskStatus === "CANCELLED";
-  const isOverdue = occurrence.taskStatus === "OVERDUE";
+    occurrence.occurrenceStatus === "EXECUTED" ||
+    occurrence.occurrenceStatus === "COMPLETED_LATE";
+  const isCancelled = occurrence.occurrenceStatus === "CANCELLED";
+  const isOverdue = occurrence.occurrenceStatus === "OVERDUE";
 
-  const isStrikethrough =
-    isDone ||
-    isCancelled ||
-    (occurrence.ticketStatus !== null && occurrence.ticketStatus === "CLOSED");
+  const isStrikethrough = isDone || isCancelled;
 
   return (
     <>

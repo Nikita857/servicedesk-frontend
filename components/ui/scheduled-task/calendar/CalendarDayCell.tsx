@@ -20,6 +20,11 @@ export default function CalendarDayCell({
   const isToday = formatLocalDayKey(date) === formatLocalDayKey(new Date());
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
+  // Сводка по просроченным вхождениям за день (per-occurrence статус)
+  const overdueCount = occurrences.filter(
+    (o) => o.occurrenceStatus === "OVERDUE",
+  ).length;
+
   // Адаптивно: мобильно показываем только полоски (компактнее), desktop — 3 чипа
   const visibleDesktop = occurrences.slice(0, 3);
   const hiddenDesktop = occurrences.length - visibleDesktop.length;
@@ -82,17 +87,41 @@ export default function CalendarDayCell({
           {date.getDate()}
         </Text>
 
-        {occurrences.length > 0 && (
-          <Text
-            fontSize="2xs"
-            fontWeight="semibold"
-            color="fg.subtle"
-            display={{ base: "none", md: "block" }}
-            fontVariantNumeric="tabular-nums"
-          >
-            {occurrences.length}
-          </Text>
-        )}
+        <Flex align="center" gap={1}>
+          {overdueCount > 0 && (
+            <Flex
+              align="center"
+              justify="center"
+              bg="red.500"
+              color="white"
+              borderRadius="full"
+              minW="16px"
+              h="16px"
+              px="4px"
+              title={`Просрочено вхождений: ${overdueCount}`}
+            >
+              <Text
+                fontSize="2xs"
+                fontWeight="bold"
+                lineHeight="1"
+                fontVariantNumeric="tabular-nums"
+              >
+                {overdueCount}
+              </Text>
+            </Flex>
+          )}
+          {occurrences.length > 0 && (
+            <Text
+              fontSize="2xs"
+              fontWeight="semibold"
+              color="fg.subtle"
+              display={{ base: "none", md: "block" }}
+              fontVariantNumeric="tabular-nums"
+            >
+              {occurrences.length}
+            </Text>
+          )}
+        </Flex>
       </Flex>
 
       {/* ── Чипы: десктоп ──────────────────────────────────────────────── */}

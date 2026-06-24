@@ -1,4 +1,8 @@
 import { useCancelScheduledTask } from "@/lib/hooks/scheduled-tasks/useCancelScheduledTask";
+import {
+  useSetOccurrenceDeadline,
+  useClearOccurrenceDeadline,
+} from "@/lib/hooks/scheduled-tasks";
 import { formatDate, formatTime } from "@/lib/utils/formatters";
 import {
   ScheduledTaskOccurrenceResponse,
@@ -152,6 +156,22 @@ function OccurrenceCard({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const setDeadline = useSetOccurrenceDeadline();
+  const clearDeadline = useClearOccurrenceDeadline();
+  const [deadlineOpen, setDeadlineOpen] = useState(false);
+  const [deadlineValue, setDeadlineValue] = useState("");
+
+  // Видимость действий — на уровне задачи/шаблона, не вхождения
+  const canEditDeadline =
+    occurrence.recurrenceType !== "NONE" &&
+    occurrence.taskStatus !== "CANCELLED";
+  const canManageTemplate =
+    occurrence.isVirtual &&
+    occurrence.taskStatus !== "CANCELLED" &&
+    occurrence.taskStatus !== "EXECUTED" &&
+    occurrence.taskStatus !== "COMPLETED_LATE";
+  const hasActions = canEditDeadline || canManageTemplate;
+
   return (
     <Box borderWidth="1px" borderColor="border.default" borderRadius="lg" p={3}>
       <Flex justify="space-between" align="flex-start" mb={2}>
@@ -159,8 +179,8 @@ function OccurrenceCard({
           fontWeight="medium"
           fontSize="sm"
           textDecoration={
-            ["CLOSED", "REJECTED", "CANCELLED"].includes(
-              occurrence.ticketStatus ?? "",
+            ["EXECUTED", "COMPLETED_LATE", "CANCELLED"].includes(
+              occurrence.occurrenceStatus,
             )
               ? "line-through"
               : "none"
@@ -170,20 +190,47 @@ function OccurrenceCard({
         >
           {formatTime(occurrence.occurrenceAt)} · {occurrence.title}
         </Text>
-        {occurrence.taskStatus && (
-          <Tooltip content="Статус задачи">
-            <Badge
-              colorPalette={TASK_STATUS_CONFIG[occurrence.taskStatus].color}
-              variant={TASK_STATUS_CONFIG[occurrence.taskStatus].variant}
-              fontSize="xs"
-            >
-              {TASK_STATUS_CONFIG[occurrence.taskStatus].label}
-            </Badge>
-          </Tooltip>
-        )}
+        <HStack gap={1} flexShrink={0}>
+          {occurrence.occurrenceStatus && (
+            <Tooltip content="Статус вхождения">
+              <Badge
+                colorPalette={
+                  TASK_STATUS_CONFIG[occurrence.occurrenceStatus].color
+                }
+                variant={
+                  TASK_STATUS_CONFIG[occurrence.occurrenceStatus].variant
+                }
+                fontSize="xs"
+              >
+                {TASK_STATUS_CONFIG[occurrence.occurrenceStatus].label}
+              </Badge>
+            </Tooltip>
+          )}
+          {canManageTemplate && (
+            <Tooltip content="Отменить задачу">
+              <IconButton
+                aria-label="Отменить задачу"
+                size="xs"
+                variant="ghost"
+                colorPalette="red"
+                onClick={() => setConfirmOpen(true)}
+              >
+                <LuTrash2 />
+              </IconButton>
+            </Tooltip>
+          )}
+        </HStack>
       </Flex>
 
-      <HStack gap={3} fontSize="xs" color="fg.muted" mb={2}>
+      {/* ── Инфо-блок: метаданные + тикет, перенос строк ──────────────── */}
+      <Flex
+        wrap="wrap"
+        rowGap={1.5}
+        columnGap={3}
+        align="center"
+        fontSize="xs"
+        color="fg.muted"
+      >
         {occurrence.recurrenceType !== "NONE" && (
           <HStack gap={1}>
             <LuRepeat size={12} />
@@ -199,55 +246,68 @@ function OccurrenceCard({
           </HStack>
         )}
         {occurrence.deadlineAt && (
-          <HStack gap={1}>
+          <HStack
+            gap={1}
+            color={
+              occurrence.occurrenceStatus === "OVERDUE" ? "red.500" : "fg.muted"
+            }
+          >
             <LuClock size={12} />
-            <Text
-              color={
-                occurrence.taskStatus === "OVERDUE" ? "red.500" : "fg.muted"
-              }
-            >
-              до {formatDate(occurrence.deadlineAt)}
-            </Text>
+            <Text>до {formatDate(occurrence.deadlineAt)}</Text>
           </HStack>
         )}
-      </HStack>
+        {occurrence.ticketId && occurrence.ticketStatus && (
+          <HStack gap={1.5}>
+            <LuTicket size={12} />
+            <Link href={`/dashboard/tickets/${occurrence.ticketId}`}>
+              <Text color="accent.600" _hover={{ textDecoration: "underline" }}>
+                Тикет #{occurrence.ticketId}
+              </Text>
+            </Link>
+            <Badge
+              colorPalette={ticketStatusConfig[occurrence.ticketStatus].color}
+              variant="subtle"
+              size="sm"
+            >
+              {ticketStatusConfig[occurrence.ticketStatus].label}
+            </Badge>
+          </HStack>
+        )}
+      </Flex>
 
-      {occurrence.ticketId && occurrence.ticketStatus && (
-        <HStack gap={2} mb={2} fontSize="xs">
-          <LuTicket size={12} />
-          <Link href={`/dashboard/tickets/${occurrence.ticketId}`}>
-            <Text color="accent.600" _hover={{ textDecoration: "underline" }}>
-              Тикет #{occurrence.ticketId}
-            </Text>
-          </Link>
-          <Badge
-            colorPalette={ticketStatusConfig[occurrence.ticketStatus].color}
-            variant="subtle"
-            size="sm"
-          >
-            {ticketStatusConfig[occurrence.ticketStatus].label}
-          </Badge>
-        </HStack>
-      )}
-
-      {occurrence.isVirtual &&
-        occurrence.taskStatus !== "CANCELLED" &&
-        occurrence.taskStatus !== "EXECUTED" &&
-        occurrence.taskStatus !== "COMPLETED_LATE" && (
-          <HStack gap={2} mt={1}>
+      {/* ── Футер действий: разделитель + кнопки в один ряд ────────────── */}
+      {hasActions && (
+        <Flex
+          wrap="wrap"
+          gap={2}
+          mt={3}
+          pt={3}
+          borderTopWidth="1px"
+          borderColor="border.subtle"
+        >
+          {canEditDeadline && (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                setDeadlineValue(
+                  occurrence.deadlineAt
+                    ? toLocalDateTimeString(occurrence.deadlineAt)
+                    : "",
+                );
+                setDeadlineOpen(true);
+              }}
+            >
+              <LuClock size={12} /> Изменить срок
+            </Button>
+          )}
+          {canManageTemplate && (
             <Button size="xs" variant="outline" onClick={onEdit}>
               <LuPencil size={12} /> Открыть шаблон
             </Button>
-            <Button
-              size="xs"
-              colorPalette="red"
-              variant="outline"
-              onClick={() => setConfirmOpen(true)}
-            >
-              <LuTrash2 size={12} /> Отменить
-            </Button>
-          </HStack>
-        )}
+          )}
+        </Flex>
+      )}
 
       <Dialog.Root
         open={confirmOpen}
@@ -295,6 +355,100 @@ function OccurrenceCard({
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
+
+      <Dialog.Root
+        open={deadlineOpen}
+        onOpenChange={(e) => !e.open && setDeadlineOpen(false)}
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>Срок выполнения · {occurrence.title}</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                <Text fontSize="sm" color="fg.muted" mb={2}>
+                  Срок применится только к этому дню (
+                  {formatDate(occurrence.occurrenceAt)}). Остальные вхождения не
+                  изменятся.
+                </Text>
+                <input
+                  type="datetime-local"
+                  value={deadlineValue}
+                  onChange={(e) => setDeadlineValue(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--chakra-colors-border-default)",
+                    background: "var(--chakra-colors-bg-subtle)",
+                    fontSize: "14px",
+                    color: "var(--chakra-colors-fg-default)",
+                  }}
+                />
+              </Dialog.Body>
+              <Dialog.Footer>
+                {occurrence.deadlineAt && (
+                  <Button
+                    variant="outline"
+                    colorPalette="red"
+                    mr="auto"
+                    loading={clearDeadline.isPending}
+                    onClick={() =>
+                      clearDeadline.mutate(
+                        {
+                          id: occurrence.taskId,
+                          occurrenceAt: occurrence.occurrenceAt,
+                        },
+                        { onSuccess: () => setDeadlineOpen(false) },
+                      )
+                    }
+                  >
+                    Сбросить
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setDeadlineOpen(false)}>
+                  Отмена
+                </Button>
+                <Button
+                  bg="gray.900"
+                  color="white"
+                  _hover={{ bg: "gray.800" }}
+                  loading={setDeadline.isPending}
+                  disabled={!deadlineValue}
+                  onClick={() =>
+                    setDeadline.mutate(
+                      {
+                        id: occurrence.taskId,
+                        body: {
+                          occurrenceAt: occurrence.occurrenceAt,
+                          deadlineAt: new Date(deadlineValue).toISOString(),
+                        },
+                      },
+                      { onSuccess: () => setDeadlineOpen(false) },
+                    )
+                  }
+                >
+                  Сохранить
+                </Button>
+              </Dialog.Footer>
+              <Dialog.CloseTrigger asChild>
+                <CloseButton size="sm" />
+              </Dialog.CloseTrigger>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </Box>
+  );
+}
+
+function toLocalDateTimeString(iso: string): string {
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
   );
 }
