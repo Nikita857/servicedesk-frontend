@@ -72,11 +72,15 @@ export const ticketApi = {
   },
 
   // Get tickets assigned to me
-  listAssigned: async (page = 0, size = 20): Promise<PagedTicketList> => {
+  listAssigned: async (
+    page = 0,
+    size = 20,
+    status?: TicketStatus,
+  ): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>(
       "/tickets/assigned",
       {
-        params: { page, size },
+        params: { page, size, statuses: status || undefined },
       },
     );
     return response.data.data;

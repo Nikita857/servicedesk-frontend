@@ -7,20 +7,11 @@ import {
   ticketPriorityConfig,
   ticketStatusConfig,
 } from "@/types/ticket";
-import {
-  LuArrowUpRight,
-  LuCheck,
-  LuUsers,
-  LuUserCheck,
-  LuUserX,
-  LuX,
-} from "react-icons/lu";
-import { Tooltip } from "@/components/ui";
+import { LuArrowUpRight } from "react-icons/lu";
+import { TicketHandlerBadge } from "./TicketHandlerBadge";
 
 interface TicketCompactCardProps {
   ticket: TicketListResponse;
-  currentUserName: string | undefined;
-  isCoExecutor?: boolean;
 }
 
 function getEscalationTarget(ticket: TicketListResponse): string | null {
@@ -30,16 +21,11 @@ function getEscalationTarget(ticket: TicketListResponse): string | null {
   return `${line} (${ticket.assignedTo.toUser.fio ?? ticket.assignedTo.toUser.username})`;
 }
 
-export function TicketCompactCard({
-  ticket,
-  currentUserName,
-  isCoExecutor = false,
-}: TicketCompactCardProps) {
+export function TicketCompactCard({ ticket }: TicketCompactCardProps) {
   const router = useRouter();
   const priorityConf = ticketPriorityConfig[ticket.priority];
   const statusConf = ticketStatusConfig[ticket.status];
 
-  const isAssignedToMe = ticket.assignedTo?.toUser?.username === currentUserName;
   const escalationTarget = getEscalationTarget(ticket);
 
   return (
@@ -79,84 +65,6 @@ export function TicketCompactCard({
         >
           {ticket.title}
         </Text>
-
-        {/* Closed status icon */}
-        {ticket.status === "CLOSED" &&
-          (isAssignedToMe ? (
-            <Tooltip content="Тикет закрыт вами">
-              <Flex
-                w="18px"
-                h="18px"
-                borderRadius="full"
-                bg="green.subtle"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuCheck size={11} color="var(--chakra-colors-green-600)" />
-              </Flex>
-            </Tooltip>
-          ) : (
-            <Tooltip content="Тикет закрыт другим пользователем">
-              <Flex
-                w="18px"
-                h="18px"
-                borderRadius="full"
-                bg="red.subtle"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuX size={11} color="var(--chakra-colors-red-600)" />
-              </Flex>
-            </Tooltip>
-          ))}
-
-        {/* Open assignment icon */}
-        {ticket.status === "OPEN" &&
-          (isAssignedToMe ? (
-            <Tooltip content="Вы исполнитель">
-              <Flex
-                w="18px"
-                h="18px"
-                borderRadius="full"
-                bg="green.subtle"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuUserCheck size={11} color="var(--chakra-colors-green-600)" />
-              </Flex>
-            </Tooltip>
-          ) : isCoExecutor ? (
-            <Tooltip content="Вы соисполнитель">
-              <Flex
-                w="18px"
-                h="18px"
-                borderRadius="full"
-                bg="blue.subtle"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuUsers size={11} color="var(--chakra-colors-blue-600)" />
-              </Flex>
-            </Tooltip>
-          ) : (
-            <Tooltip content="Заявкой занимается другой специалист">
-              <Flex
-                w="18px"
-                h="18px"
-                borderRadius="full"
-                bg="red.subtle"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuUserX size={11} color="var(--chakra-colors-red-600)" />
-              </Flex>
-            </Tooltip>
-          ))}
       </Flex>
 
       {/* Row 2: Priority dot + label + Escalation target + Status pill */}
@@ -178,6 +86,9 @@ export function TicketCompactCard({
             {priorityConf.label}
           </Text>
         </HStack>
+
+        {/* Handler / pool — кто занимается заявкой */}
+        <TicketHandlerBadge ticket={ticket} />
 
         {/* Escalation target */}
         {escalationTarget && (

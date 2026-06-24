@@ -7,6 +7,7 @@ import type { TicketListResponse } from "@/types/ticket";
 import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
 import { formatDate } from "@/lib/utils";
 import PriorityBadge from "@/components/ui/ticket/PriorityBadge";
+import { TicketHandlerBadge } from "./TicketHandlerBadge";
 
 interface TicketCardProps {
   ticket: TicketListResponse;
@@ -111,11 +112,14 @@ export function TicketCard({ ticket, unreadCount = 0 }: TicketCardProps) {
         {/* Priority badge */}
         <PriorityBadge color={priorityConf.color} label={priorityConf.label} />
 
-        {/* Assignee / Author */}
+        {/* Author */}
         <HStack gap={1} color="fg.muted" fontSize="xs">
           <LuUser size={11} />
           <Text>{ticket.createdBy.fio}</Text>
         </HStack>
+
+        {/* Handler / pool — кто занимается заявкой */}
+        <TicketHandlerBadge ticket={ticket} />
 
         {/* Escalation target */}
         {escalationTarget && (
