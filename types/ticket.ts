@@ -47,6 +47,7 @@ export interface TicketListResponse {
   status: TicketStatus;
   priority: TicketPriority;
   createdBy: UserShortResponse;
+  handler: UserShortResponse | null;
   assignedTo: AssignmentShortResponse | null;
   supportLine: SupportLineShortResponse | null;
   createdAt: string;

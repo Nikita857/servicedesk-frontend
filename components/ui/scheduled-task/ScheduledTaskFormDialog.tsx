@@ -98,6 +98,7 @@ export default function ScheduledTaskFormDialog({
           recurrenceType: task.recurrenceType,
           recurrenceDaysOfWeek: task.recurrenceDaysOfWeek ?? [],
           recurrenceUntil: task.recurrenceUntil ?? undefined,
+          deadlineOffsetMinutes: task.deadlineOffsetMinutes ?? undefined,
           deadlineAt: task.deadlineAt ?? undefined,
         });
       } else if (prefilledDate) {
@@ -210,6 +211,10 @@ export default function ScheduledTaskFormDialog({
       deadlineAt:
         formData.recurrenceType === "NONE" && formData.deadlineAt
           ? new Date(formData.deadlineAt).toISOString()
+          : undefined,
+      deadlineOffsetMinutes:
+        formData.recurrenceType !== "NONE"
+          ? formData.deadlineOffsetMinutes
           : undefined,
     };
 
@@ -454,6 +459,33 @@ export default function ScheduledTaskFormDialog({
                           fontSize: "14px",
                           color: "var(--chakra-colors-fg-default)",
                         }}
+                      />
+                    </Box>
+                  )}
+
+                  {formData.recurrenceType !== "NONE" && (
+                    <Box>
+                      <Text
+                        mb={1}
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="fg.default"
+                      >
+                        Срок выполнения (минут от запуска, опционально)
+                      </Text>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={formData.deadlineOffsetMinutes ?? ""}
+                        onChange={(e) =>
+                          patch({
+                            deadlineOffsetMinutes: e.target.value
+                              ? Number(e.target.value)
+                              : undefined,
+                          })
+                        }
+                        placeholder="Например: 120 (2 часа)"
+                        bg="bg.subtle"
                       />
                     </Box>
                   )}

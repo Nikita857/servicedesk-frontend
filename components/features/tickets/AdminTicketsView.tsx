@@ -24,11 +24,7 @@ import { TicketCard } from "./TicketCard";
 import { TicketCompactCard } from "./TicketCompactCard";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { SDPagination } from "@/components/ui/SDPagination";
-import {
-  usePersistentPage,
-  useAuth,
-  useTicketListSubscription,
-} from "@/lib/hooks";
+import { usePersistentPage, useTicketListSubscription } from "@/lib/hooks";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
@@ -44,6 +40,7 @@ const ASSIGNED_PAGE_SIZE = 6;
 const STORAGE_KEY_STATUS = "sd_filter_admin_status";
 const STORAGE_KEY_LINE = "sd_filter_admin_line";
 const STORAGE_KEY_TAB = "sd_admin_tab";
+const STORAGE_KEY_ASSIGNED_STATUS = "sd_filter_assigned_status";
 
 function readStorage(key: string): string {
   if (typeof window === "undefined") return "";
@@ -51,7 +48,6 @@ function readStorage(key: string): string {
 }
 
 export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
-  const { user } = useAuth();
   const { has } = useCurrentPermissions();
   const [page, setPage] = usePersistentPage("admin-tickets");
   const queryClient = useQueryClient();
@@ -66,10 +62,17 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
     () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | "",
   );
+
   const [lineFilter, setLineFilter] = useState<number | "">(() => {
     const v = readStorage(STORAGE_KEY_LINE);
     return v ? Number(v) : "";
   });
+
+  const [assignedStatusFilter, setAssignedStatusFilter] = useState<
+    TicketStatus | ""
+  >(() => readStorage(STORAGE_KEY_ASSIGNED_STATUS) as TicketStatus | "");
+
+  const [assignedPage, setAssignedPage] = useState(0);
 
   const handleTabChange = useCallback(
     (value: "all" | "assigned") => {
@@ -79,6 +82,12 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     },
     [setPage],
   );
+
+  const handleAssignedStatusChange = useCallback((value: TicketStatus | "") => {
+    setAssignedStatusFilter(value);
+    sessionStorage.setItem(STORAGE_KEY_ASSIGNED_STATUS, value);
+    setAssignedPage(0);
+  }, []);
 
   const handleStatusChange = useCallback(
     (value: TicketStatus | "") => {
@@ -137,13 +146,18 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const [assignedPage, setAssignedPage] = useState(0);
   const { data: assignedData, isLoading: assignedLoading } = useQuery({
     queryKey: queryKeys.tickets.list({
       filter: "assigned",
       page: assignedPage,
+      status: assignedStatusFilter || undefined,
     }),
-    queryFn: () => ticketApi.listAssigned(assignedPage, ASSIGNED_PAGE_SIZE),
+    queryFn: () =>
+      ticketApi.listAssigned(
+        assignedPage,
+        ASSIGNED_PAGE_SIZE,
+        assignedStatusFilter || undefined,
+      ),
     staleTime: 300 * 1000,
     refetchInterval: 300 * 1000,
   });
@@ -268,6 +282,28 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
         </Flex>
       )}
 
+      {/* Filters — only on "assigned" tab (status only) */}
+      {tab === "assigned" && (
+        <Flex gap={2} mb={4} wrap="wrap">
+          <NativeSelect.Root size="sm">
+            <NativeSelect.Field
+              value={assignedStatusFilter}
+              onChange={(e) =>
+                handleAssignedStatusChange(e.target.value as TicketStatus | "")
+              }
+            >
+              <option value="">Активные</option>
+              {(Object.keys(ticketStatusConfig) as TicketStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {ticketStatusConfig[s].label}
+                </option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+        </Flex>
+      )}
+
       {/* Content */}
       {tab === "all" ? (
         isLoading ? (
@@ -320,11 +356,7 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
       ) : (
         <VStack gap={2} align="stretch">
           {assignedTickets.map((ticket) => (
-            <TicketCompactCard
-              key={ticket.id}
-              ticket={ticket}
-              currentUserName={user?.username}
-            />
+            <TicketCompactCard key={ticket.id} ticket={ticket} />
           ))}
           {assignedData && assignedData.page.totalPages > 1 && (
             <SDPagination

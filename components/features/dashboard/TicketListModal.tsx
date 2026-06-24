@@ -21,6 +21,7 @@ import type { TicketListResponse, TicketStatus } from "@/types/ticket";
 import { ticketPriorityConfig, ticketStatusConfig } from "@/types/ticket";
 import { useState } from "react";
 import { SDPagination } from "@/components/ui/SDPagination";
+import { TicketHandlerBadge } from "@/components/features/tickets/TicketHandlerBadge";
 
 const PAGE_SIZE = 6;
 
@@ -154,9 +155,7 @@ function TicketRow({ ticket }: { ticket: TicketListResponse }) {
           <Text fontSize="xs" color="fg.muted" flexShrink={0}>
             {new Date(ticket.createdAt).toLocaleDateString("ru-RU")}
           </Text>
-          {ticket.assignedTo?.toUser?.fio != null && (
-            <Text>Исполнитель: {ticket.assignedTo.toUser.fio}</Text>
-          )}
+          <TicketHandlerBadge ticket={ticket} />
         </Flex>
       </Box>
     </Link>
