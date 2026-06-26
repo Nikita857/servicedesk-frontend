@@ -78,16 +78,21 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const applyCachedState = useCallback(() => {
+    const c = readCache();
+    if (cacheStillTrustworthy(c)) setActive(c);
+  }, []);
+
   useEffect(() => {
     // Сразу после монтирования показываем экран из кэша (если бэк лежит — переживём даунтайм),
     // затем запускаем поллинг, который перезапишет состояние при первом ответе.
-    const c = readCache();
-    if (cacheStillTrustworthy(c)) setActive(c);
+    // Применяем кэш и делаем первый опрос в микротаске — без синхронного setState в теле эффекта.
+    queueMicrotask(applyCachedState);
+    queueMicrotask(poll);
 
-    poll(); // немедленно при монтировании
     const id = setInterval(poll, POLL_INTERVAL);
     return () => clearInterval(id);
-  }, [poll]);
+  }, [poll, applyCachedState]);
 
   const exempt = EXEMPT_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),

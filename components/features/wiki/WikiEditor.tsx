@@ -84,9 +84,8 @@ function EditorToolbar({
   onVideoUpload: () => void;
   isUploading: boolean;
 }) {
-  if (!editor) return null;
-
   const addLink = useCallback(() => {
+    if (!editor) return;
     const previousUrl = editor.getAttributes("link").href;
     const url = window.prompt("URL ссылки:", previousUrl);
 
@@ -101,6 +100,7 @@ function EditorToolbar({
   }, [editor]);
 
   const addYoutube = useCallback(() => {
+    if (!editor) return;
     const url = window.prompt("Введите URL видео с YouTube:");
 
     if (url === null) return;
@@ -115,6 +115,8 @@ function EditorToolbar({
       height: 480,
     });
   }, [editor]);
+
+  if (!editor) return null;
 
   return (
     <Flex

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   forwardingRulesApi,
@@ -71,12 +71,11 @@ export function useForwardingRules() {
 
   const activeTypes = specialistTypes.filter((t) => t.active);
 
-  useEffect(() => {
-    if (rules && activeTypes.length > 0 && !isInitialized) {
-      setMatrix(buildMatrix(rules, activeTypes));
-      setIsInitialized(true);
-    }
-  }, [rules, activeTypes.length, isInitialized]);
+  // Инициализация матрицы один раз, когда подгрузились правила и типы (render-time).
+  if (rules && activeTypes.length > 0 && !isInitialized) {
+    setMatrix(buildMatrix(rules, activeTypes));
+    setIsInitialized(true);
+  }
 
   const toggleRule = useCallback((sourceCode: string, targetCode: string) => {
     setMatrix((prev) => ({

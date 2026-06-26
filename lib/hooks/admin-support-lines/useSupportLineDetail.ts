@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useState} from "react";
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {useRouter} from "next/navigation";
 import {supportLineApi} from "@/lib/api/supportLines";
@@ -24,7 +24,6 @@ export function useSupportLineDetail(lineId: number) {
   const [vkChatId, setVkChatId] = useState<string>("");
   const [maxChatId, setMaxChatId] = useState<string>("");
   const [isFormDirty, setIsFormDirty] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Specialist selection state
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -45,26 +44,21 @@ export function useSupportLineDetail(lineId: number) {
     staleTime: 60 * 1000,
   });
 
-  // Sync form state when data is loaded (initial sync)
-  useEffect(() => {
-    if (line && !isInitialized) {
-      setDescription(line.description || "");
-      setSlaMinutes(line.slaMinutes);
-      setAssignmentMode(line.assignmentMode);
-      setSpecialistTypeId(line.specialistType?.id ?? null);
-      setDisplayOrder(line.displayOrder);
-      setTelegramChatId(line.supportLineChatsResponse?.telegramChatId?.toString() || "");
-      setVkChatId(line.supportLineChatsResponse?.vkChatId?.toString() || "");
-      setMaxChatId(line.supportLineChatsResponse?.maxChatId?.toString() || "");
-      setIsInitialized(true);
-    }
-  }, [line, isInitialized]);
-
-  // Reset initialization when lineId changes
-  useEffect(() => {
-    setIsInitialized(false);
+  // Синхронизация формы с данными (render-time): новый объект line (загрузка, смена lineId,
+  // обновление через setQueryData) = новая ссылка → ре-синк и сброс dirty.
+  const [syncedLine, setSyncedLine] = useState<object | null>(null);
+  if (line && line !== syncedLine) {
+    setSyncedLine(line);
+    setDescription(line.description || "");
+    setSlaMinutes(line.slaMinutes);
+    setAssignmentMode(line.assignmentMode);
+    setSpecialistTypeId(line.specialistType?.id ?? null);
+    setDisplayOrder(line.displayOrder);
+    setTelegramChatId(line.supportLineChatsResponse?.telegramChatId?.toString() || "");
+    setVkChatId(line.supportLineChatsResponse?.vkChatId?.toString() || "");
+    setMaxChatId(line.supportLineChatsResponse?.maxChatId?.toString() || "");
     setIsFormDirty(false);
-  }, [lineId]);
+  }
 
   // --- Mutations ---
 
@@ -91,7 +85,6 @@ export function useSupportLineDetail(lineId: number) {
       queryClient.invalidateQueries({queryKey: ["support-lines"]});
       toast.success("Линия обновлена");
       setIsFormDirty(false);
-      setIsInitialized(false);
     },
     onError: (error) => {
       handleApiError(error);
@@ -162,7 +155,7 @@ export function useSupportLineDetail(lineId: number) {
       ) || [];
 
   const handleFieldChange = useCallback(
-      (setter: (val: any) => void, val: any) => {
+      <T>(setter: (val: T) => void, val: T) => {
         setter(val);
         setIsFormDirty(true);
       },
