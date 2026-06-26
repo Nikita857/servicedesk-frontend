@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Heading,
@@ -11,24 +11,83 @@ import {
   Flex,
   Spinner,
   Badge,
+  Input,
+  createListCollection,
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
-import { BackButton } from "@/components/ui";
-import { reportsApi, type PagedTicketReport } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
-import { ticketStatusConfig, ticketPriorityConfig } from "@/types/ticket";
+import { LuX } from "react-icons/lu";
+import { BackButton, DataSelect } from "@/components/ui";
+import { SDPagination } from "@/components/ui/SDPagination";
+import { reportsApi, type AllTicketsFilter } from "@/lib/api/reports";
+import { handleApiError } from "@/lib/utils";
+import {
+  ticketStatusConfig,
+  ticketPriorityConfig,
+  type TicketStatus,
+  type TicketPriority,
+} from "@/types/ticket";
+import { PaginatedResponse, TicketReportListResponse } from "@/types";
+
+const statusCollection = createListCollection({
+  items: [
+    { value: "", label: "Все статусы" },
+    ...(Object.keys(ticketStatusConfig) as TicketStatus[]).map((v) => ({
+      value: v,
+      label: ticketStatusConfig[v].label,
+    })),
+  ],
+});
+
+const priorityCollection = createListCollection({
+  items: [
+    { value: "", label: "Все приоритеты" },
+    ...(Object.keys(ticketPriorityConfig) as TicketPriority[]).map((v) => ({
+      value: v,
+      label: ticketPriorityConfig[v].label,
+    })),
+  ],
+});
 
 export default function AllTicketsReportPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<PagedTicketReport | null>(null);
+  const [data, setData] = useState<PaginatedResponse<
+    TicketReportListResponse
+  > | null>(null);
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  const loadData = async (pageNum: number) => {
+  // Фильтры
+  const [status, setStatus] = useState<string[]>([]);
+  const [priority, setPriority] = useState<string[]>([]);
+  const [creatorName, setCreatorName] = useState("");
+  const [executorName, setExecutorName] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const filter = useMemo<AllTicketsFilter>(
+    () => ({
+      status: (status[0] as TicketStatus) || undefined,
+      priority: (priority[0] as TicketPriority) || undefined,
+      creatorName: creatorName.trim() || undefined,
+      executorName: executorName.trim() || undefined,
+      from: from || undefined,
+      to: to || undefined,
+    }),
+    [status, priority, creatorName, executorName, from, to],
+  );
+
+  const hasActiveFilter =
+    !!filter.status ||
+    !!filter.priority ||
+    !!filter.creatorName ||
+    !!filter.executorName ||
+    !!filter.from ||
+    !!filter.to;
+
+  const loadData = useCallback(async (pageNum: number, f: AllTicketsFilter) => {
     setIsLoading(true);
     try {
-      const result = await reportsApi.getAllTickets(pageNum, pageSize);
+      const result = await reportsApi.getAllTickets(pageNum, pageSize, f);
       setData(result);
       setPage(pageNum);
     } catch (error) {
@@ -38,11 +97,25 @@ export default function AllTicketsReportPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData(0);
   }, []);
+
+  // Любое изменение фильтра сбрасывает на первую страницу.
+  // Debounce 400ms сглаживает ввод в текстовые поля.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadData(0, filter);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [filter, loadData]);
+
+  const resetFilters = () => {
+    setStatus([]);
+    setPriority([]);
+    setCreatorName("");
+    setExecutorName("");
+    setFrom("");
+    setTo("");
+  };
 
   const formatDate = (dateStr: string | null): string => {
     if (!dateStr) return "—";
@@ -62,6 +135,94 @@ export default function AllTicketsReportPage() {
           Все заявки
         </Heading>
         <Text color="fg.muted">Полный список заявок, включая удалённые</Text>
+      </Box>
+
+      {/* Filters */}
+      <Box
+        mb={4}
+        p={4}
+        bg="bg.surface"
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor="border.default"
+      >
+        <Flex gap={3} wrap="wrap" align="end">
+          <Box minW="180px" flex="1">
+            <DataSelect
+              label="Статус"
+              size="sm"
+              collection={statusCollection}
+              value={status}
+              onValueChange={(e) => setStatus(e.value)}
+              placeholder="Все статусы"
+            />
+          </Box>
+          <Box minW="180px" flex="1">
+            <DataSelect
+              label="Приоритет"
+              size="sm"
+              collection={priorityCollection}
+              value={priority}
+              onValueChange={(e) => setPriority(e.value)}
+              placeholder="Все приоритеты"
+            />
+          </Box>
+          <Box minW="180px" flex="1">
+            <Text fontSize="sm" fontWeight="medium" color="fg.default" mb={1}>
+              Создатель
+            </Text>
+            <Input
+              size="sm"
+              value={creatorName}
+              onChange={(e) => setCreatorName(e.target.value)}
+              placeholder="ФИО создателя"
+            />
+          </Box>
+          <Box minW="180px" flex="1">
+            <Text fontSize="sm" fontWeight="medium" color="fg.default" mb={1}>
+              Исполнитель
+            </Text>
+            <Input
+              size="sm"
+              value={executorName}
+              onChange={(e) => setExecutorName(e.target.value)}
+              placeholder="ФИО исполнителя"
+            />
+          </Box>
+          <Box minW="150px" flex="1">
+            <Text fontSize="sm" fontWeight="medium" color="fg.default" mb={1}>
+              Создан с
+            </Text>
+            <Input
+              size="sm"
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </Box>
+          <Box minW="150px" flex="1">
+            <Text fontSize="sm" fontWeight="medium" color="fg.default" mb={1}>
+              Создан по
+            </Text>
+            <Input
+              size="sm"
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </Box>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={resetFilters}
+            disabled={!hasActiveFilter}
+          >
+            <LuX />
+            Сбросить
+          </Button>
+        </Flex>
       </Box>
 
       {/* Loading */}
@@ -94,11 +255,11 @@ export default function AllTicketsReportPage() {
                 Всего заявок
               </Text>
               <Text fontSize="lg" fontWeight="semibold" color="fg.default">
-                {(data.totalElements ?? 0).toLocaleString("ru-RU")}
+                {(data.page.totalElements ?? 0).toLocaleString("ru-RU")}
               </Text>
             </VStack>
             <Text fontSize="sm" color="fg.muted">
-              Страница {page + 1} из {data.totalPages ?? 1}
+              Страница {page + 1} из {data.page.totalPages ?? 1}
             </Text>
           </HStack>
 
@@ -191,60 +352,20 @@ export default function AllTicketsReportPage() {
               </Box>
 
               {/* Pagination */}
-              <HStack
-                px={6}
-                py={4}
-                borderTopWidth="1px"
-                borderColor="border.default"
-                justify="center"
-                gap={2}
-              >
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={data.first}
-                  onClick={() => loadData(page - 1)}
+              {data.page.totalPages > 1 && (
+                <Box
+                  px={6}
+                  py={4}
+                  borderTopWidth="1px"
+                  borderColor="border.default"
                 >
-                  <LuChevronLeft />
-                  Назад
-                </Button>
-                <HStack gap={1}>
-                  {Array.from(
-                    { length: Math.min(data.totalPages, 5) },
-                    (_, i) => {
-                      let pageNum: number;
-                      if (data.totalPages <= 5) {
-                        pageNum = i;
-                      } else if (page < 3) {
-                        pageNum = i;
-                      } else if (page >= data.totalPages - 2) {
-                        pageNum = data.totalPages - 5 + i;
-                      } else {
-                        pageNum = page - 2 + i;
-                      }
-                      return (
-                        <Button
-                          key={pageNum}
-                          size="sm"
-                          variant={pageNum === page ? "solid" : "ghost"}
-                          onClick={() => loadData(pageNum)}
-                        >
-                          {pageNum + 1}
-                        </Button>
-                      );
-                    }
-                  )}
-                </HStack>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={data.last}
-                  onClick={() => loadData(page + 1)}
-                >
-                  Вперёд
-                  <LuChevronRight />
-                </Button>
-              </HStack>
+                  <SDPagination
+                    page={data.page}
+                    action={(p) => loadData(p, filter)}
+                    size="sm"
+                  />
+                </Box>
+              )}
             </>
           )}
         </Box>
