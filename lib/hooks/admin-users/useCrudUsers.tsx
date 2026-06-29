@@ -68,8 +68,8 @@ export const useCrudUsers = () => {
   });
 
   const users = usersQuery.data?.content ?? [];
-  const totalPages = usersQuery.data?.page?.totalPages ?? 0;
-  const totalElements = usersQuery.data?.page?.totalElements ?? 0;
+  const pageInfo = usersQuery.data?.page;
+  const totalElements = pageInfo?.totalElements ?? 0;
 
   // ==================== MUTATIONS ====================
 
@@ -323,11 +323,10 @@ export const useCrudUsers = () => {
 
     /* ===== PAGINATION / SEARCH ===== */
     pageable: {
-      page,
       setPage,
       searchQuery,
       setSearchQuery,
-      totalPages,
+      pageInfo,
       totalElements,
     },
 

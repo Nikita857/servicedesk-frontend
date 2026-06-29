@@ -40,14 +40,8 @@ export default function UsersPage() {
     utils,
   } = useCrudUsers();
 
-  const {
-    page,
-    setPage,
-    searchQuery,
-    setSearchQuery,
-    totalPages,
-    totalElements,
-  } = pageable;
+  const { setPage, searchQuery, setSearchQuery, pageInfo, totalElements } =
+    pageable;
 
   const {
     isCreateOpen,
@@ -166,8 +160,7 @@ export default function UsersPage() {
         openEditRoles={openEditRoles}
         openChangePassword={openChangePassword}
         openDelete={openDelete}
-        totalPages={totalPages}
-        page={page}
+        page={pageInfo}
         setPage={setPage}
         user={user}
         openEditOrg={openEditOrg}

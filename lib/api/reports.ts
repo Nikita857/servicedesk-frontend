@@ -1,5 +1,6 @@
 import api from "./client";
-import type { ApiResponse } from "@/types/api";
+import { type ApiResponse, type PaginatedResponse } from "@/types/api";
+import type { TicketStatus, TicketPriority } from "@/types/ticket";
 import type {
   TimeReportBySpecialist,
   TimeReportByLine,
@@ -8,9 +9,24 @@ import type {
   ResolutionTimeStats,
   TicketStatsByCategory,
   TicketStatsByStatus,
-  PagedTicketReport,
   SpecialistWorkload,
+  TicketReportListResponse,
 } from "@/types/stats";
+
+/**
+ * Фильтр отчёта «Все заявки» (включая удалённые).
+ * Поля соответствуют backend `TicketFilter` (@ModelAttribute).
+ */
+export interface AllTicketsFilter {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  creatorName?: string;
+  executorName?: string;
+  /** Дата создания «от», ISO-формат YYYY-MM-DD (backend LocalDate) */
+  from?: string;
+  /** Дата создания «до», ISO-формат YYYY-MM-DD (backend LocalDate) */
+  to?: string;
+}
 
 /**
  * Reports API
@@ -113,11 +129,14 @@ export const reportsApi = {
   /**
    * Все тикеты (включая удалённые) — пагинация
    */
-  getAllTickets: async (page = 0, size = 20): Promise<PagedTicketReport> => {
-    const response = await api.get<ApiResponse<PagedTicketReport>>(
-      "/reports/tickets/all",
-      { params: { page, size } },
-    );
+  getAllTickets: async (
+    page = 0,
+    size = 20,
+    filter: AllTicketsFilter = {},
+  ): Promise<PaginatedResponse<TicketReportListResponse>> => {
+    const response = await api.get<
+      ApiResponse<PaginatedResponse<TicketReportListResponse>>
+    >("/reports/tickets/all", { params: { page, size, ...filter } });
     return response.data.data;
   },
 
@@ -156,6 +175,5 @@ export type {
   ResolutionTimeStats,
   TicketStatsByCategory,
   TicketStatsByStatus,
-  PagedTicketReport,
   SpecialistWorkload,
 };

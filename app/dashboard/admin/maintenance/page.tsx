@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Heading,
@@ -45,13 +45,14 @@ export default function MaintenancePage() {
   const [message, setMessage] = useState("");
   const [endsAtLocal, setEndsAtLocal] = useState("");
 
-  // Синхронизируем форму с загруженными настройками.
-  useEffect(() => {
-    if (!settings) return;
+  // Синхронизируем форму с загруженными настройками (render-time: один раз на новый объект settings).
+  const [syncedSettings, setSyncedSettings] = useState<object | null>(null);
+  if (settings && settings !== syncedSettings) {
+    setSyncedSettings(settings);
     setEnabled(settings.enabled);
     setMessage(settings.message ?? "");
     setEndsAtLocal(settings.endsAt ? toLocalInputValue(settings.endsAt) : "");
-  }, [settings]);
+  }
 
   const handleSave = () => {
     updateSettings({
