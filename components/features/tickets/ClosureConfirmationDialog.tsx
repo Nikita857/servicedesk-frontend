@@ -10,11 +10,10 @@ import {
   HStack,
   Dialog,
   Portal,
-  CloseButton,
 } from "@chakra-ui/react";
 import { LuCheck, LuRotateCcw, LuCircleAlert } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError } from "@/lib/utils";
 import { suppressTicketToast } from "@/lib/hooks";
 import type { Ticket } from "@/types/ticket";
 import { useAuthStore } from "@/stores";
@@ -94,7 +93,7 @@ export function ClosureConfirmationDialog({
     try {
       const updatedTicket = await ticketApi.rejectClosure(
         ticket.id,
-        rejectReason || undefined
+        rejectReason || undefined,
       );
       onTicketUpdate(updatedTicket);
       setIsOpen(false);

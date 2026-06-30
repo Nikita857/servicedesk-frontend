@@ -38,7 +38,6 @@ import { DepartmentResponse } from "@/types/department";
 import { departmentApi } from "@/lib/api/departments";
 
 export default function WikiCategoriesPage() {
-  const { user } = useAuthStore();
   const router = useRouter();
   const { has } = useCurrentPermissions();
 

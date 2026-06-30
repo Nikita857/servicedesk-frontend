@@ -19,10 +19,9 @@ import {
   LuMinus,
   LuCheckCheck,
 } from "react-icons/lu";
-import Link from "next/link";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type ResolutionTimeStats } from "@/lib/api/reports";
-import { handleApiError, toast, formatDurationFull } from "@/lib/utils";
+import { handleApiError, formatDurationFull } from "@/lib/utils";
 
 export default function ResolutionTimeReportPage() {
   const [isLoading, setIsLoading] = useState(true);

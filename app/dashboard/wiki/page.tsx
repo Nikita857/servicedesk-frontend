@@ -12,7 +12,6 @@ import {
   Center,
 } from "@chakra-ui/react";
 import { LuPlus, LuBookOpen, LuHeart } from "react-icons/lu";
-import { useAuthStore } from "@/stores";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { useWikiCategoriesWithArticlesQuery } from "@/lib/hooks";
@@ -43,18 +42,17 @@ function filterFavorites(
 }
 
 export default function WikiPage() {
-  const { user } = useAuthStore();
   const { has } = useCurrentPermissions();
 
   const userFilters = [
-      { value: "my", label: "Мой отдел" },
-      { value: "public", label: "Публичные" },
+    { value: "my", label: "Мой отдел" },
+    { value: "public", label: "Публичные" },
   ];
 
   const specialistFilters = [
-      { value: "my", label: "Мой отдел" },
-      { value: "public", label: "Публичные" },
-      { value: "all", label: "Все статьи" },
+    { value: "my", label: "Мой отдел" },
+    { value: "public", label: "Публичные" },
+    { value: "all", label: "Все статьи" },
   ];
 
   const [showFavorites, setShowFavorites] = useState(false);
@@ -72,7 +70,9 @@ export default function WikiPage() {
     setFilter,
     setShowAll,
     submitSearch,
-  } = useWikiCategoriesWithArticlesQuery({ pageSize: showFavorites ? 1000 : 5 });
+  } = useWikiCategoriesWithArticlesQuery({
+    pageSize: showFavorites ? 1000 : 5,
+  });
 
   const wikiOnboarding = useOnboarding(true, "sd_wiki_onboarding_seen");
 

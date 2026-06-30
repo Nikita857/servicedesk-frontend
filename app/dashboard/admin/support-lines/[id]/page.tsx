@@ -24,11 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BackButton } from "@/components/ui";
 import { Specialist } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
-import {
-  activityStatusConfig,
-  getSpecialistTypeInfo,
-  userRolesBadges,
-} from "@/types/auth";
+import { activityStatusConfig, userRolesBadges } from "@/types/auth";
 import { AssignmentMode, assignmentModeConfig } from "@/types/ticket";
 import { Tooltip } from "@/components/ui/tooltip";
 import { specialistTypeApi } from "@/lib/api/specialistTypes";
