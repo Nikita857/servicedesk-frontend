@@ -10,7 +10,7 @@ import {
   Button,
   Icon,
 } from "@chakra-ui/react";
-import { LuLock, LuSave } from "react-icons/lu";
+import { LuLock } from "react-icons/lu";
 
 interface PasswordCardProps {
   oldPassword: string;

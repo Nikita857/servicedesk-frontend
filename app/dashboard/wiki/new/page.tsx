@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
 import {
   Box,
   Flex,
@@ -18,7 +17,6 @@ import { LuSave, LuPaperclip, LuX, LuFile } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
-import { useAuthStore } from "@/stores";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
@@ -30,7 +28,6 @@ import { adminApi } from "@/lib/api/admin";
 
 export default function NewWikiArticlePage() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload } = useFileUpload();
@@ -124,6 +121,7 @@ export default function NewWikiArticlePage() {
             "Статья создана",
             "Некоторые файлы не удалось загрузить",
           );
+          console.error(`Ошибка загрзки вложений к статье: ${uploadError}`);
         }
       } else {
         toast.success("Статья опубликована!");

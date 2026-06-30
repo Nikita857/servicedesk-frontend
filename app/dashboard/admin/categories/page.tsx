@@ -22,7 +22,13 @@ import {
   type ListCollection,
 } from "@chakra-ui/react";
 import { Select } from "@chakra-ui/react";
-import { LuPlus, LuChevronDown, LuPencil, LuTrash2, LuTag } from "react-icons/lu";
+import {
+  LuPlus,
+  LuChevronDown,
+  LuPencil,
+  LuTrash2,
+  LuTag,
+} from "react-icons/lu";
 import { useQuery } from "@tanstack/react-query";
 import { useCategories } from "@/lib/hooks/admin-categories";
 import { supportLineApi } from "@/lib/api/supportLines";
@@ -79,10 +85,13 @@ export default function CategoriesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(DEFAULT_FORM);
 
-  const [editTarget, setEditTarget] = useState<CategoryDetailResponse | null>(null);
+  const [editTarget, setEditTarget] = useState<CategoryDetailResponse | null>(
+    null,
+  );
   const [editForm, setEditForm] = useState(DEFAULT_FORM);
 
-  const [deleteTarget, setDeleteTarget] = useState<CategoryDetailResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] =
+    useState<CategoryDetailResponse | null>(null);
 
   const handleCreate = () => {
     createCategory({
@@ -213,7 +222,9 @@ export default function CategoriesPage() {
                 <Table.ColumnHeader>Название</Table.ColumnHeader>
                 <Table.ColumnHeader>Тип</Table.ColumnHeader>
                 <Table.ColumnHeader>Линия</Table.ColumnHeader>
-                <Table.ColumnHeader textAlign="right">Действия</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="right">
+                  Действия
+                </Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -238,7 +249,11 @@ export default function CategoriesPage() {
                     </Table.Cell>
                     <Table.Cell>
                       {typeInfo && (
-                        <Badge colorPalette={typeInfo.color} variant="subtle" size="sm">
+                        <Badge
+                          colorPalette={typeInfo.color}
+                          variant="subtle"
+                          size="sm"
+                        >
                           {typeInfo.label}
                         </Badge>
                       )}
@@ -257,14 +272,21 @@ export default function CategoriesPage() {
                     <Table.Cell textAlign="right">
                       <Menu.Root>
                         <Menu.Trigger asChild>
-                          <IconButton variant="ghost" size="sm" aria-label="Действия">
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Действия"
+                          >
                             <LuChevronDown />
                           </IconButton>
                         </Menu.Trigger>
                         <Portal>
                           <Menu.Positioner>
                             <Menu.Content minW="160px">
-                              <Menu.Item value="edit" onClick={() => openEdit(cat)}>
+                              <Menu.Item
+                                value="edit"
+                                onClick={() => openEdit(cat)}
+                              >
                                 <LuPencil /> Редактировать
                               </Menu.Item>
                               <Menu.Separator />
@@ -291,7 +313,9 @@ export default function CategoriesPage() {
       {/* Edit dialog */}
       <Dialog.Root
         open={!!editTarget}
-        onOpenChange={(e) => { if (!e.open) setEditTarget(null); }}
+        onOpenChange={(e) => {
+          if (!e.open) setEditTarget(null);
+        }}
         lazyMount
         unmountOnExit
       >
@@ -332,7 +356,9 @@ export default function CategoriesPage() {
       {/* Delete dialog */}
       <Dialog.Root
         open={!!deleteTarget}
-        onOpenChange={(e) => { if (!e.open) setDeleteTarget(null); }}
+        onOpenChange={(e) => {
+          if (!e.open) setDeleteTarget(null);
+        }}
         lazyMount
         unmountOnExit
       >
@@ -345,8 +371,8 @@ export default function CategoriesPage() {
               </Dialog.Header>
               <Dialog.Body>
                 <Text>
-                  Категория <Text as="strong">«{deleteTarget?.name}»</Text> будет
-                  деактивирована. Данные сохранятся в базе.
+                  Категория <Text as="strong">«{deleteTarget?.name}»</Text>{" "}
+                  будет деактивирована. Данные сохранятся в базе.
                 </Text>
               </Dialog.Body>
               <Dialog.Footer>
@@ -355,7 +381,10 @@ export default function CategoriesPage() {
                 </Dialog.ActionTrigger>
                 <Button
                   colorPalette="red"
-                  onClick={() => { deleteCategory(deleteTarget!.id); setDeleteTarget(null); }}
+                  onClick={() => {
+                    deleteCategory(deleteTarget!.id);
+                    setDeleteTarget(null);
+                  }}
                   loading={isDeleting}
                 >
                   Удалить
@@ -386,7 +415,10 @@ function CategoryForm({
     <VStack gap={4} align="stretch">
       <Box>
         <Text fontWeight="medium" mb={2}>
-          Название <Text as="span" color="red.500">*</Text>
+          Название{" "}
+          <Text as="span" color="red.500">
+            *
+          </Text>
         </Text>
         <Input
           placeholder="Например: Проблема с оборудованием"
@@ -417,7 +449,9 @@ function CategoryForm({
           <Select.Root
             collection={typeCollection}
             value={[form.type]}
-            onValueChange={(e) => set({ type: (e.value[0] as CategoryType) || "GENERAL" })}
+            onValueChange={(e) =>
+              set({ type: (e.value[0] as CategoryType) || "GENERAL" })
+            }
           >
             <Select.Trigger>
               <Select.ValueText />
@@ -441,7 +475,9 @@ function CategoryForm({
           <Input
             type="number"
             value={form.displayOrder}
-            onChange={(e) => set({ displayOrder: parseInt(e.target.value) || 0 })}
+            onChange={(e) =>
+              set({ displayOrder: parseInt(e.target.value) || 0 })
+            }
             min={0}
           />
         </Box>
@@ -453,7 +489,9 @@ function CategoryForm({
         </Text>
         <Select.Root
           collection={lineCollection}
-          value={form.recommendedLineId ? [form.recommendedLineId.toString()] : [""]}
+          value={
+            form.recommendedLineId ? [form.recommendedLineId.toString()] : [""]
+          }
           onValueChange={(e) =>
             set({ recommendedLineId: e.value[0] ? parseInt(e.value[0]) : null })
           }
@@ -463,7 +501,7 @@ function CategoryForm({
           </Select.Trigger>
           <Select.Positioner>
             <Select.Content>
-              {lineCollection.items.map((item: any) => (
+              {lineCollection.items.map((item: Record<string, string>) => (
                 <Select.Item key={item.value} item={item}>
                   {item.label}
                 </Select.Item>

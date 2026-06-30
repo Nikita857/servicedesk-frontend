@@ -6,7 +6,6 @@ import { useUserStatusQuery } from "@/lib/hooks/user/useUserStatusQuery";
 import { useStatusWebSocket } from "@/lib/hooks/user/useStatusWebSocket";
 import { activityStatusConfig } from "@/types/auth";
 import type { UserActivityStatus } from "@/types/auth";
-import { useAuthStore } from "@/stores";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 
@@ -22,7 +21,6 @@ const statusOrder: UserActivityStatus[] = [
  * Only shown to specialists, not regular users
  */
 export function ActivityStatusDropdown() {
-  const { user } = useAuthStore();
   const { has } = useCurrentPermissions();
   const { status, isLoading, isUpdating, updateStatus } = useUserStatusQuery();
 

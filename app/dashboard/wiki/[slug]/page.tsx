@@ -11,7 +11,6 @@ import {
   HStack,
   Spinner,
   Badge,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
 import {
   LuPencil,
@@ -124,7 +123,8 @@ export default function WikiArticlePage({ params }: PageProps) {
 
   const isAuthor = user?.id === article.createdBy.id;
   // Полный доступ — редактируют любые статьи; частичный — только свои
-  const canEdit = has(PERM.WIKI_EDIT_ALL) || (has(PERM.WIKI_EDIT_OWN) && isAuthor);
+  const canEdit =
+    has(PERM.WIKI_EDIT_ALL) || (has(PERM.WIKI_EDIT_OWN) && isAuthor);
 
   return (
     <Box maxW="900px" mx="auto">
@@ -254,7 +254,7 @@ export default function WikiArticlePage({ params }: PageProps) {
                         onClick={async () => {
                           try {
                             const { downloadUrl } = await attachmentApi.getUrl(
-                              attachment.id
+                              attachment.id,
                             );
                             window.open(downloadUrl, "_blank");
                           } catch (error) {

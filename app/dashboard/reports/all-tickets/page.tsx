@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Heading,
@@ -49,6 +50,7 @@ const priorityCollection = createListCollection({
 });
 
 export default function AllTicketsReportPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<PaginatedResponse<
     TicketReportListResponse
@@ -289,6 +291,11 @@ export default function AllTicketsReportPage() {
                       <Table.Row
                         key={row.id}
                         bg={row.deletedAt ? "red.subtle" : undefined}
+                        cursor="pointer"
+                        onClick={() =>
+                          router.push(`/dashboard/tickets/${row.id}`)
+                        }
+                        _hover={{ bg: row.deletedAt ? "red.muted" : "bg.muted" }}
                       >
                         <Table.Cell fontWeight="medium">#{row.id}</Table.Cell>
                         <Table.Cell maxW="200px" truncate>

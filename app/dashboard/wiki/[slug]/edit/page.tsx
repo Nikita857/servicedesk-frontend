@@ -48,7 +48,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const queryClient = useQueryClient();
 
   // Use TanStack Query for article data
-  const { article, isLoading, error, refetch } = useWikiArticleQuery(slug);
+  const { article, isLoading, error } = useWikiArticleQuery(slug);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMediaUploading, setIsMediaUploading] = useState(false);
@@ -83,7 +83,10 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         router.push(`/dashboard/wiki/${slug}`);
       }
       if (!isAuthor && !has(PERM.WIKI_EDIT_ALL)) {
-        toast.error("Доступ запрещён", "Нет прав на редактирование чужой статьи");
+        toast.error(
+          "Доступ запрещён",
+          "Нет прав на редактирование чужой статьи",
+        );
         router.push(`/dashboard/wiki/${slug}`);
       }
     }
