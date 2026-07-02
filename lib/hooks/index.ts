@@ -28,6 +28,7 @@ export { usePersistentPage } from "./shared/usePersistentPage";
 
 // File Upload
 export { useFileUpload } from "./shared/useFileUpload";
+export { useMultipartUpload } from "./shared/useMultipartUpload";
 
 // Assignments WebSocket
 export { useAssignmentsWebSocket } from "./shared/useAssignmentsWebSocket";

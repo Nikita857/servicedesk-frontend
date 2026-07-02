@@ -28,7 +28,7 @@ import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
+import { useWikiArticleQuery, useMultipartUpload } from "@/lib/hooks";
 import { BackButton, CategoryTreeSelect } from "@/components/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
@@ -44,7 +44,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const { user } = useAuthStore();
   const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload } = useFileUpload();
+  const { upload } = useMultipartUpload();
   const queryClient = useQueryClient();
 
   // Use TanStack Query for article data

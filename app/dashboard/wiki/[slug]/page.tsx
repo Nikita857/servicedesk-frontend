@@ -247,24 +247,26 @@ export default function WikiArticlePage({ params }: PageProps) {
                           ({formatFileSize(attachment.fileSize)})
                         </Text>
                       </HStack>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        flexShrink={0}
-                        onClick={async () => {
-                          try {
-                            const { downloadUrl } = await attachmentApi.getUrl(
-                              attachment.id,
-                            );
-                            window.open(downloadUrl, "_blank");
-                          } catch (error) {
-                            handleApiError(error);
-                          }
-                        }}
-                      >
-                        <LuDownload size={14} />
-                        Скачать
-                      </Button>
+                      <HStack gap={1} flexShrink={0}>
+                        {attachment.mimeType != undefined && (
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={async () => {
+                              try {
+                                const { viewUrl } =
+                                  await attachmentApi.getViewUrl(attachment.id);
+                                window.open(viewUrl, "_blank");
+                              } catch (error) {
+                                handleApiError(error);
+                              }
+                            }}
+                          >
+                            <LuEye size={14} />
+                            Открыть
+                          </Button>
+                        )}
+                      </HStack>
                     </Flex>
                   );
                 })}

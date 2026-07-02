@@ -9,3 +9,4 @@ export {
 export { validateFile } from "./fileValidation";
 export { fioToUsername } from "./transliterate";
 export { getFullNameInitials, getShortInitials } from "./fullnameToInitials";
+export { withRetry } from "./retry";
