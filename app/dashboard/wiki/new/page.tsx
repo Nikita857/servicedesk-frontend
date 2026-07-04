@@ -21,7 +21,7 @@ import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { useFileUpload } from "@/lib/hooks";
+import { useMultipartUpload } from "@/lib/hooks";
 import { BackButton, CategoryTreeSelect } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
@@ -30,7 +30,7 @@ export default function NewWikiArticlePage() {
   const router = useRouter();
   const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload } = useFileUpload();
+  const { upload } = useMultipartUpload();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMediaUploading, setIsMediaUploading] = useState(false);
