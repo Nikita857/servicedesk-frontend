@@ -22,4 +22,12 @@ export const searchAdminApi = {
   reindexTickets: async (): Promise<void> => {
     await api.post<ApiResponse<void>>("/admin/search/reindex/tickets");
   },
+
+  /**
+   * Переиндексация только опросов
+   */
+
+  reindexSurveys: async (): Promise<void> => {
+    await api.post<ApiResponse<void>>("/admin/search/reindex/surveys");
+  },
 };

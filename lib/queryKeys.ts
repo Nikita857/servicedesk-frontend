@@ -166,4 +166,13 @@ export const queryKeys = {
     status: () => [...queryKeys.maintenance.all, "status"] as const,
     settings: () => [...queryKeys.maintenance.all, "settings"] as const,
   },
+  surveys: {
+    all: ["surveys"] as const,
+    lists: () => [...queryKeys.surveys.all, "list"] as const,
+    list: (page: number, size: number) =>
+      [...queryKeys.surveys.lists(), page, size] as const,
+    my: () => [...queryKeys.surveys.all, "my"] as const,
+    details: () => [...queryKeys.surveys.all, "detail"] as const,
+    detail: (id: number) => [...queryKeys.surveys.details(), id] as const,
+  },
 } as const;

@@ -30,6 +30,7 @@ import {
   LuTicketPlus,
   LuShield,
   LuShieldOff,
+  LuClipboardList,
 } from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/lib/hooks/notification/useNotifications";
@@ -51,6 +52,7 @@ const typeConfig: Record<NotificationType, { icon: React.ElementType; color: str
   TICKET_CREATED: { icon: LuTicketPlus, color: "green.500" },
   SPECIALIST_ADDED_TO_LINE: { icon: LuShield, color: "green.500" },
   SPECIALIST_REMOVED_FROM_LINE: { icon: LuShieldOff, color: "red.500" },
+  SURVEY_SENT: { icon: LuClipboardList, color: "blue.500" },
 };
 
 function formatTimeAgo(dateStr: string): string {
@@ -84,7 +86,9 @@ export function NotificationBell() {
   const handleClick = (n: NotificationResponse) => {
     if (!n.read) markAsReadMutation.mutate(n.id);
     setOpen(false);
-    if (n.ticketId) {
+    if (n.surveyId) {
+      router.push(`/dashboard/surveys/${n.surveyId}`);
+    } else if (n.ticketId) {
       router.push(`/dashboard/tickets/${n.ticketId}`);
     }
   };

@@ -19,6 +19,8 @@ import {
   LuBuilding2,
   LuShieldCheck,
   LuWrench,
+  LuListChecks,
+  LuClipboardCheck,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -48,6 +50,7 @@ const navItems: NavItem[] = [
   //{ label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
   { label: "Статьи", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
+  { label: "Опросы", href: "/dashboard/surveys", icon: LuListChecks },
 ];
 
 const onboardingIds: Record<string, string> = {
@@ -67,6 +70,7 @@ const adminItems: AdminNavItem[] = [
   { label: "Линии поддержки", href: "/dashboard/admin/support-lines", icon: LuNetwork, perm: PERM.SUPPORT_LINE_MANAGE },
   { label: "Маршрутизация", href: "/dashboard/admin/forwarding-rules", icon: LuRoute, perm: PERM.FORWARDING_RULE_MANAGE },
   { label: "Планировщик задач", href: "/dashboard/admin/scheduled-tasks", icon: LuCalendarClock, perm: PERM.SCHEDULED_TASK_MANAGE },
+  { label: "Опросы", href: "/dashboard/admin/surveys", icon: LuClipboardCheck, perm: PERM.SURVEY_MANAGE },
   { label: "Категории заявок", href: "/dashboard/admin/categories", icon: LuTag, perm: PERM.CATEGORY_MANAGE },
   { label: "Категории статей", href: "/dashboard/admin/wiki-categories", icon: LuBook, perm: PERM.WIKI_CATEGORY_MANAGE },
   { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch, perm: PERM.ELASTICSEARCH_ADMIN },

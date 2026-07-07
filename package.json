@@ -30,6 +30,8 @@
     "react-dom": "19.2.0",
     "react-icons": "^5.5.0",
     "sockjs-client": "^1.6.1",
+    "survey-core": "^2.5.32",
+    "survey-react-ui": "^2.5.32",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

@@ -15,6 +15,7 @@ interface DataSelectProps<T> {
   size?: "sm" | "md" | "lg";
   renderItem?: (item: T) => ReactNode;
   portalled?: boolean;
+  multiple?: boolean;
 }
 
 export function DataSelect<T extends { label: string; value: string }>({
@@ -29,6 +30,7 @@ export function DataSelect<T extends { label: string; value: string }>({
   size = "md",
   renderItem,
   portalled = true,
+  multiple = false,
 }: DataSelectProps<T>) {
   const content = (
     <Select.Content>
@@ -48,6 +50,8 @@ export function DataSelect<T extends { label: string; value: string }>({
       disabled={disabled}
       size={size}
       width={width}
+      multiple={multiple}
+      closeOnSelect={!multiple}
     >
       {label && <Select.Label mb={1}>{label}</Select.Label>}
       <Select.Trigger>
