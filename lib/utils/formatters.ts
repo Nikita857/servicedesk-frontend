@@ -17,6 +17,19 @@ export function formatDate(dateStr: string): string {
 }
 
 /**
+ * Преобразует ISO-строку в формат HH:mm в локальном времени пользователя.
+ */
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+
+  // Вариант 1: Через toLocaleTimeString (чище)
+  return date.toLocaleTimeString("ru", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
  * Форматирование размера файла в читаемый формат
  */
 export function formatFileSize(bytes: number): string {

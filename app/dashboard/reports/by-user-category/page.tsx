@@ -15,7 +15,7 @@ import { Table } from "@chakra-ui/react";
 import { LuRefreshCw } from "react-icons/lu";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketStatsByCategory } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError } from "@/lib/utils";
 
 export default function ByUserCategoryReportPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -51,8 +51,7 @@ export default function ByUserCategoryReportPage() {
           По категориям пользователя
         </Heading>
         <Text color="fg.muted">
-          Статистика заявок по категориям, выбранным пользователями при
-          создании
+          Статистика заявок по категориям, выбранным пользователями при создании
         </Text>
       </Box>
 

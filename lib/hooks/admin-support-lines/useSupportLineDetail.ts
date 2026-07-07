@@ -1,25 +1,29 @@
-import { useState, useCallback, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supportLineApi } from "@/lib/api/supportLines";
-import { adminApi } from "@/lib/api/admin";
-import { handleApiError, toast } from "@/lib/utils";
-import { AssignmentMode } from "@/types/ticket";
+import {useCallback, useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useRouter} from "next/navigation";
+import {supportLineApi} from "@/lib/api/supportLines";
+import {adminApi} from "@/lib/api/admin";
+import {handleApiError, toast} from "@/lib/utils";
+import {AssignmentMode} from "@/types/ticket";
 
 /**
  * Hook for managing the detail and editing of a specific support line.
  */
 export function useSupportLineDetail(lineId: number) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   // Form state
   const [description, setDescription] = useState("");
   const [slaMinutes, setSlaMinutes] = useState(60);
   const [assignmentMode, setAssignmentMode] =
-    useState<AssignmentMode>("FIRST_AVAILABLE");
+      useState<AssignmentMode>("FIRST_AVAILABLE");
+  const [specialistTypeId, setSpecialistTypeId] = useState<number | null>(null);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [telegramChatId, setTelegramChatId] = useState<string>("");
+  const [vkChatId, setVkChatId] = useState<string>("");
+  const [maxChatId, setMaxChatId] = useState<string>("");
   const [isFormDirty, setIsFormDirty] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Specialist selection state
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -27,62 +31,60 @@ export function useSupportLineDetail(lineId: number) {
 
   // --- Queries ---
 
-  const { data: line, isLoading } = useQuery({
+  const {data: line, isLoading} = useQuery({
     queryKey: ["support-line", lineId],
     queryFn: () => supportLineApi.get(lineId),
     staleTime: 30 * 1000,
   });
 
-  const { data: availableUsers, isLoading: isLoadingUsers } = useQuery({
+  const {data: availableUsers, isLoading: isLoadingUsers} = useQuery({
     queryKey: ["admin-users-by-role", selectedRole],
     queryFn: () => adminApi.getUsersByRole(selectedRole!),
     enabled: !!selectedRole,
     staleTime: 60 * 1000,
   });
 
-  // Sync form state when data is loaded (initial sync)
-  useEffect(() => {
-    if (line && !isInitialized) {
-      setDescription(line.description || "");
-      setSlaMinutes(line.slaMinutes);
-      setAssignmentMode(line.assignmentMode);
-      setDisplayOrder(line.displayOrder);
-      setTelegramChatId(line.telegramChatId?.toString() || "");
-      setIsInitialized(true);
-    }
-  }, [line, isInitialized]);
-
-  // Reset initialization when lineId changes
-  useEffect(() => {
-    setIsInitialized(false);
+  // Синхронизация формы с данными (render-time): новый объект line (загрузка, смена lineId,
+  // обновление через setQueryData) = новая ссылка → ре-синк и сброс dirty.
+  const [syncedLine, setSyncedLine] = useState<object | null>(null);
+  if (line && line !== syncedLine) {
+    setSyncedLine(line);
+    setDescription(line.description || "");
+    setSlaMinutes(line.slaMinutes);
+    setAssignmentMode(line.assignmentMode);
+    setSpecialistTypeId(line.specialistType?.id ?? null);
+    setDisplayOrder(line.displayOrder);
+    setTelegramChatId(line.supportLineChatsResponse?.telegramChatId?.toString() || "");
+    setVkChatId(line.supportLineChatsResponse?.vkChatId?.toString() || "");
+    setMaxChatId(line.supportLineChatsResponse?.maxChatId?.toString() || "");
     setIsFormDirty(false);
-  }, [lineId]);
+  }
 
   // --- Mutations ---
 
   const updateMutation = useMutation({
-    mutationFn: () =>
-      supportLineApi.update(lineId, {
+    mutationFn: async () => {
+      const updated = await supportLineApi.update(lineId, {
         description,
         slaMinutes,
         assignmentMode,
+        specialistTypeId: specialistTypeId ?? undefined,
         displayOrder,
-      }),
-    onSuccess: async (data) => {
-      // Also link telegram if ID is provided/changed
-      if (telegramChatId) {
-        try {
-          await supportLineApi.linkTelegram(lineId, parseInt(telegramChatId));
-        } catch (e) {
-          console.error("Failed to link telegram", e);
-        }
-      }
+      });
+
+      await supportLineApi.updateChatIds(lineId, {
+        telegramChatId: telegramChatId ? parseInt(telegramChatId) : null,
+        vkChatId: vkChatId ? parseInt(vkChatId) : null,
+        maxChatId: maxChatId ? parseInt(maxChatId) : null,
+      });
+
+      return updated;
+    },
+    onSuccess: (data) => {
       queryClient.setQueryData(["support-line", lineId], data);
-      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
+      queryClient.invalidateQueries({queryKey: ["support-lines"]});
       toast.success("Линия обновлена");
       setIsFormDirty(false);
-      // Force re-sync with fresh data from server
-      setIsInitialized(false);
     },
     onError: (error) => {
       handleApiError(error);
@@ -91,10 +93,10 @@ export function useSupportLineDetail(lineId: number) {
 
   const addSpecialistMutation = useMutation({
     mutationFn: (userId: number) =>
-      supportLineApi.addSpecialist(lineId, userId),
+        supportLineApi.addSpecialist(lineId, userId),
     onSuccess: (data) => {
       queryClient.setQueryData(["support-line", lineId], data);
-      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
+      queryClient.invalidateQueries({queryKey: ["support-lines"]});
       toast.success("Специалист добавлен");
       setSelectedUserId(null);
     },
@@ -105,10 +107,10 @@ export function useSupportLineDetail(lineId: number) {
 
   const removeSpecialistMutation = useMutation({
     mutationFn: (userId: number) =>
-      supportLineApi.removeSpecialist(lineId, userId),
+        supportLineApi.removeSpecialist(lineId, userId),
     onSuccess: (data) => {
       queryClient.setQueryData(["support-line", lineId], data);
-      queryClient.invalidateQueries({ queryKey: ["support-lines"] });
+      queryClient.invalidateQueries({queryKey: ["support-lines"]});
       toast.success("Специалист удален");
     },
     onError: (error) => {
@@ -116,30 +118,48 @@ export function useSupportLineDetail(lineId: number) {
     },
   });
 
-  const linkTelegramMutation = useMutation({
-    mutationFn: (chatId: number) => supportLineApi.linkTelegram(lineId, chatId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["support-line", lineId], data);
-      toast.success("Telegram Chat ID привязан");
+  const deleteLineMutation = useMutation({
+    mutationFn: () => supportLineApi.deleteLine(lineId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["support-lines"]});
+      toast.success("Линия удалена");
+      router.push("/dashboard/admin/support-lines");
     },
     onError: (error) => {
-      handleApiError(error, { context: "привязать Telegram ID чата" });
+      handleApiError(error);
     },
+  });
+
+  // Query all lines to get specialist IDs across all lines
+  const {data: allLines} = useQuery({
+    queryKey: ["support-lines"],
+    queryFn: () => supportLineApi.getAll(),
+    staleTime: 30 * 1000,
   });
 
   // --- Derived State ---
 
+  // Collect specialist IDs from OTHER lines
+  const otherLinesSpecialistIds = new Set(
+      (allLines || [])
+          .filter((l) => l.id !== lineId)
+          .flatMap((l) => l.specialistIds || []),
+  );
+
   const availableSpecialists =
-    availableUsers?.content.filter(
-      (u) => u.active && !line?.specialists.some((s) => s.id === u.id),
-    ) || [];
+      availableUsers?.content.filter(
+          (u) =>
+              u.active &&
+              !line?.specialists.some((s) => s.id === u.id) &&
+              !otherLinesSpecialistIds.has(u.id),
+      ) || [];
 
   const handleFieldChange = useCallback(
-    (setter: (val: any) => void, val: any) => {
-      setter(val);
-      setIsFormDirty(true);
-    },
-    [],
+      <T>(setter: (val: T) => void, val: T) => {
+        setter(val);
+        setIsFormDirty(true);
+      },
+      [],
   );
 
   return {
@@ -154,16 +174,22 @@ export function useSupportLineDetail(lineId: number) {
       description,
       slaMinutes,
       assignmentMode,
+      specialistTypeId,
       displayOrder,
       isDirty: isFormDirty,
       setDescription: (val: string) => handleFieldChange(setDescription, val),
       setSlaMinutes: (val: number) => handleFieldChange(setSlaMinutes, val),
       setAssignmentMode: (val: AssignmentMode) =>
-        handleFieldChange(setAssignmentMode, val),
+          handleFieldChange(setAssignmentMode, val),
+      setSpecialistTypeId: (val: number | null) => handleFieldChange(setSpecialistTypeId, val),
       setDisplayOrder: (val: number) => handleFieldChange(setDisplayOrder, val),
       telegramChatId,
       setTelegramChatId: (val: string) =>
-        handleFieldChange(setTelegramChatId, val),
+          handleFieldChange(setTelegramChatId, val),
+      vkChatId,
+      setVkChatId: (val: string) => handleFieldChange(setVkChatId, val),
+      maxChatId,
+      setMaxChatId: (val: string) => handleFieldChange(setMaxChatId, val),
     },
 
     // Selection State
@@ -181,13 +207,13 @@ export function useSupportLineDetail(lineId: number) {
     updateLine: () => updateMutation.mutate(),
     addSpecialist: (userId: number) => addSpecialistMutation.mutate(userId),
     removeSpecialist: (userId: number) =>
-      removeSpecialistMutation.mutate(userId),
+        removeSpecialistMutation.mutate(userId),
+    deleteLine: () => deleteLineMutation.mutate(),
 
     // Loading States
     isUpdating: updateMutation.isPending,
     isAddingSpecialist: addSpecialistMutation.isPending,
     isRemovingSpecialist: removeSpecialistMutation.isPending,
-    isLinkingTelegram: linkTelegramMutation.isPending,
-    linkTelegram: (chatId: number) => linkTelegramMutation.mutate(chatId),
+    isDeletingLine: deleteLineMutation.isPending,
   };
 }

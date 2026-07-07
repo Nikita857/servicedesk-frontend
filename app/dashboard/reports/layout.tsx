@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { Box, Flex, Spinner } from "@chakra-ui/react";
 
 /**
@@ -15,17 +17,16 @@ export default function ReportsLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isHydrated } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
+  const { isHydrated } = useAuthStore();
+  const { has } = useCurrentPermissions();
+  const canViewReports = has(PERM.REPORT_VIEW);
 
   useEffect(() => {
-    // Дождёмся гидратации (загрузки пользователя из storage)
-    if (isHydrated && !isAdmin) {
+    if (isHydrated && !canViewReports) {
       router.replace("/dashboard");
     }
-  }, [isHydrated, isAdmin, router]);
+  }, [isHydrated, canViewReports, router]);
 
-  // Показываем спиннер пока идёт гидратация
   if (!isHydrated) {
     return (
       <Flex justify="center" align="center" h="400px">
@@ -34,8 +35,7 @@ export default function ReportsLayout({
     );
   }
 
-  // Если не админ — ничего не рендерим (будет редирект)
-  if (!isAdmin) {
+  if (!canViewReports) {
     return null;
   }
 

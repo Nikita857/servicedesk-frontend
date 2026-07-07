@@ -3,15 +3,22 @@ export interface ProfileResponse {
   username: string;
   fio: string | null;
   email: string | null;
-  telegramId: number | null;
+  socialNetwork: SocialNetworks;
   avatarUrl: string | null;
   roles: string[];
+  specialistType?: string | null;
   department: string | null;
   position: string | null;
   isSpecialist: boolean;
   averageRating: number | null;
   ratedTicketsCount: number | null;
   createdAt: string;
+}
+
+export interface SocialNetworks {
+  telegramId: number | null;
+  vkId: number | null;
+  maxId: number | null;
 }
 
 export interface UpdateProfileRequest {
@@ -26,4 +33,12 @@ export interface ChangePasswordRequest {
 
 export interface UpdateTelegramRequest {
   telegramId: number;
+}
+
+export interface UpdateVkRequest {
+  vkId: number;
+}
+
+export interface UpdateMaxRequest {
+  maxId: number;
 }

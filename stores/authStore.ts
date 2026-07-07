@@ -4,13 +4,13 @@ import type { User } from "@/types/auth";
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  expiresIn: number | null;
+  tokenExpiresAt: number | null; // абсолютный timestamp когда истекает токен (ms)
   isAuthenticated: boolean;
   isHydrated: boolean;
 
   // Actions
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User, expiresIn: number) => void;
   clearAuth: () => void;
   setHydrated: () => void;
   updateUserAvatar: (avatarUrl: string | null) => void;
@@ -20,36 +20,25 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
+      expiresIn: null,
+      tokenExpiresAt: null,
       isAuthenticated: false,
       isHydrated: false,
 
-      setAuth: (user, accessToken, refreshToken) => {
-        // Also store in localStorage for axios interceptor
-        if (typeof window !== "undefined") {
-          localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("refreshToken", refreshToken);
-        }
-
+      setAuth: (user, expiresIn) => {
         set({
           user,
-          accessToken,
-          refreshToken,
+          expiresIn,
+          tokenExpiresAt: Date.now() + expiresIn,
           isAuthenticated: true,
         });
       },
 
       clearAuth: () => {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-        }
-
         set({
           user: null,
-          accessToken: null,
-          refreshToken: null,
+          expiresIn: null,
+          tokenExpiresAt: null,
           isAuthenticated: false,
         });
       },
@@ -69,9 +58,8 @@ export const useAuthStore = create<AuthState>()(
       name: "auth-storage",
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
+        tokenExpiresAt: state.tokenExpiresAt,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

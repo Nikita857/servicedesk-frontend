@@ -7,10 +7,11 @@ import { suppressTicketToast } from "@/lib/hooks";
 import {
   statusTransitions,
   specialistStatusTransitions,
+  userStatusTransitions,
   Ticket,
-  ticketPriorityConfig,
   TicketStatus,
   ticketStatusConfig,
+  AssignmentResponse,
 } from "@/types";
 import {
   Badge,
@@ -34,6 +35,11 @@ import {
   LuX,
 } from "react-icons/lu";
 import type { User } from "@/types/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
+import { AssignmentDecisionDialog } from "./AssignmentDecisionDialog";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 interface TicketHeaderProps {
   ticket: Ticket;
@@ -46,6 +52,8 @@ interface TicketHeaderProps {
   isOnLastLine: boolean;
   hasPendingAssignment?: boolean;
   user?: User | null;
+  currentAssignment: AssignmentResponse | null;
+  onAssignmentDecision: () => void;
 }
 
 export default function TicketHeader({
@@ -59,18 +67,27 @@ export default function TicketHeader({
   isOnLastLine,
   hasPendingAssignment = false,
   user,
+  currentAssignment,
+  onAssignmentDecision,
 }: TicketHeaderProps) {
+  // STATE
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const [showDecisionDialog, setShowDecisionDialog] = useState<boolean>(false);
 
-  // Can cancel: ticket creator or admin, and ticket is not closed/cancelled
+  const queryClient = useQueryClient();
+
+  const { has } = useCurrentPermissions();
+  // Can cancel: ticket creator or admin/supervisor, and ticket is not closed/cancelled
   const isTicketCreator = user?.id === ticket.createdBy?.id;
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
   const canCancel =
-    (isTicketCreator || isAdmin) &&
+    (isTicketCreator || has(PERM.TICKET_UPDATE_ALL)) &&
     ticket.status !== "CLOSED" &&
     ticket.status !== "CANCELLED";
+  const isMyPendingAssignment =
+    currentAssignment?.status === "PENDING" &&
+    currentAssignment.toUser?.username === user?.username;
 
   // Can show escalation button: not closed/resolved and no pending assignment
   const canReassign = () => {
@@ -83,7 +100,6 @@ export default function TicketHeader({
     }
     // Hide if there's already a pending assignment
     return !hasPendingAssignment;
-
   };
 
   const handleStatusChange = async (newStatus: TicketStatus) => {
@@ -95,6 +111,9 @@ export default function TicketHeader({
         status: newStatus,
       });
       setTicket(updated);
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.scheduledTasks.all, "calendar"],
+      });
     } catch (error) {
       handleApiError(error, { context: "изменить статус тикета" });
     }
@@ -107,11 +126,14 @@ export default function TicketHeader({
     try {
       const updated = await ticketApi.cancelTicket(
         ticket.id,
-        cancelReason || undefined
+        cancelReason || undefined,
       );
       setTicket(updated);
       setShowCancelDialog(false);
       setCancelReason("");
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.scheduledTasks.all, "calendar"],
+      });
     } catch (error) {
       handleApiError(error, { context: "отменить тикет" });
     } finally {
@@ -123,15 +145,15 @@ export default function TicketHeader({
     <>
       <Flex
         mb={3}
+        direction={{ base: "column-reverse", md: "row" }}
         justify="space-between"
-        align="center"
-        wrap="wrap"
+        align={{ base: "stretch", md: "center" }}
         gap={2}
       >
-        {/* Left side: Back button, Title, Badges */}
-        <HStack flex={1} minW="0" gap={3} wrap="wrap">
+        {/* Left side: Back button, Title */}
+        <HStack flex={1} minW="0" gap={3}>
           <Link href="/dashboard/tickets">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" flexShrink={0}>
               <LuArrowLeft />
             </Button>
           </Link>
@@ -148,11 +170,27 @@ export default function TicketHeader({
         </HStack>
 
         {/* Right side: Action buttons */}
-        <HStack gap={2} wrap="wrap" justify="flex-end" flexShrink={0}>
-            {/* Take Ticket button - for specialists when ticket is unassigned */}
-            {isSpecialist && !ticket.assignedTo &&
-              (ticket.status === "NEW" || ticket.status === "ESCALATED") &&
-              !hasPendingAssignment && (
+        <HStack
+          gap={2}
+          wrap="wrap"
+          justify={{ base: "flex-end", md: "flex-end" }}
+          flexShrink={0}
+        >
+          {/* Take Ticket button - for specialists when ticket is unassigned */}
+          {isSpecialist && isMyPendingAssignment && (
+            <Button
+              size="sm"
+              colorPalette="green"
+              onClick={() => setShowDecisionDialog(true)}
+            >
+              <LuPlay />
+              Взять в работу
+            </Button>
+          )}
+          {isSpecialist &&
+            !ticket.assignedTo &&
+            (ticket.status === "NEW" || ticket.status === "ESCALATED") &&
+            !hasPendingAssignment && (
               <Button
                 size="sm"
                 colorPalette="green"
@@ -161,84 +199,88 @@ export default function TicketHeader({
                     const updated = await ticketApi.takeTicket(ticket.id);
                     setTicket(updated);
                   } catch (error) {
-                    handleApiError(error, { context: "взять тикет в работу" });
+                    handleApiError(error, { context: "взять заявку в работу" });
                   }
                 }}
               >
                 <LuPlay />
+                Взять в работу
               </Button>
             )}
 
-            {/* Escalation button - only for specialists */}
-            {canEscalate && canReassign() && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowEscalation(!showEscalation)}
-                disabled={isOnLastLine}
-                opacity={isOnLastLine ? 0.5 : 1}
-                title={
-                  isOnLastLine
-                    ? "Тикет уже на последней линии поддержки"
-                    : undefined
-                }
-              >
-                <LuForward />
-              </Button>
-            )}
+          {/* Escalation button - only for specialists */}
+          {canEscalate && canReassign() && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEscalation(!showEscalation)}
+              disabled={isOnLastLine}
+              opacity={isOnLastLine ? 0.5 : 1}
+              title={
+                isOnLastLine
+                  ? "Тикет уже на последней линии поддержки"
+                  : undefined
+              }
+            >
+              <LuForward />
+            </Button>
+          )}
 
-            {/* Status change menu - только если пользователь управляет тикетом */}
-            {canManageStatus &&
-              (() => {
-                // Admin can use all transitions, specialists use restricted list (no CANCELLED)
-                let availableTransitions = isAdmin
+          {/* Status change menu - только если пользователь управляет тикетом */}
+          {canManageStatus &&
+            (() => {
+              // Admin/Supervisor → full transitions, specialist → restricted, regular user → minimal
+              let availableTransitions =
+                has(PERM.TICKET_UPDATE_ALL)
                   ? statusTransitions[ticket.status]
-                  : specialistStatusTransitions[ticket.status];
+                  : has(PERM.TICKET_UPDATE_ASSIGNED)
+                    ? specialistStatusTransitions[ticket.status]
+                    : userStatusTransitions[ticket.status];
 
-                // OPEN требует назначенного исполнителя — скрываем если тикет никем не взят
-                if (!ticket.assignedTo) {
-                  availableTransitions = availableTransitions.filter((s) => s !== "OPEN");
-                }
-
-                if (availableTransitions.length === 0) return null;
-
-                return (
-                  <Menu.Root>
-                    <Menu.Trigger asChild>
-                      <Button size="sm" variant="outline">
-                        <LuChevronDown />
-                      </Button>
-                    </Menu.Trigger>
-                    <Portal>
-                      <Menu.Positioner>
-                        <Menu.Content>
-                          {availableTransitions.map((status) => {
-                            const conf = ticketStatusConfig[status];
-                            return (
-                              <Menu.Item
-                                key={status}
-                                value={status}
-                                onClick={() => handleStatusChange(status)}
-                              >
-                                <Badge
-                                  colorPalette={conf.color}
-                                  size="sm"
-                                  mr={2}
-                                >
-                                  {conf.label}
-                                </Badge>
-                              </Menu.Item>
-                            );
-                          })}
-                        </Menu.Content>
-                      </Menu.Positioner>
-                    </Portal>
-                  </Menu.Root>
+              // OPEN требует назначенного исполнителя — скрываем если тикет никем не взят
+              if (!ticket.assignedTo) {
+                availableTransitions = availableTransitions.filter(
+                  (s) => s !== "OPEN",
                 );
-              })()}
+              }
 
-            {/* Cancel button - только если тикет ещё не взят в работу */}
-            {canCancel && isTicketCreator && (!ticket.assignedTo || ticket.status === "NEW") && (
+              if (availableTransitions.length === 0) return null;
+
+              return (
+                <Menu.Root>
+                  <Menu.Trigger asChild>
+                    <Button size="sm" variant="outline">
+                      <LuChevronDown />
+                    </Button>
+                  </Menu.Trigger>
+                  <Portal>
+                    <Menu.Positioner>
+                      <Menu.Content>
+                        {availableTransitions.map((status) => {
+                          const conf = ticketStatusConfig[status];
+                          return (
+                            <Menu.Item
+                              key={status}
+                              value={status}
+                              onClick={() => handleStatusChange(status)}
+                            >
+                              <Badge colorPalette={conf.color} size="sm" mr={2}>
+                                {conf.label}
+                              </Badge>
+                            </Menu.Item>
+                          );
+                        })}
+                      </Menu.Content>
+                    </Menu.Positioner>
+                  </Portal>
+                </Menu.Root>
+              );
+            })()}
+
+          {/* Cancel button - только если тикет ещё не взят в работу */}
+          {canCancel &&
+            isTicketCreator &&
+            (!ticket.assignedTo || ticket.status === "NEW") && (
               <Button
                 size="sm"
                 variant="outline"
@@ -302,6 +344,13 @@ export default function TicketHeader({
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
+      <AssignmentDecisionDialog
+        assignment={showDecisionDialog ? (currentAssignment ?? null) : null}
+        onClose={() => {
+          setShowDecisionDialog(false);
+          onAssignmentDecision?.();
+        }}
+      />
     </>
   );
 }

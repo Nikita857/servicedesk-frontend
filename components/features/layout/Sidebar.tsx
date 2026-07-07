@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, VStack, Text, Flex, Icon } from "@chakra-ui/react";
+import { Box, VStack, Text, Flex, Icon, Separator } from "@chakra-ui/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -13,10 +13,21 @@ import {
   LuNetwork,
   LuSearch,
   LuClipboardList,
+  LuRoute,
+  LuTag,
+  LuCalendarClock,
+  LuBuilding2,
+  LuShieldCheck,
+  LuWrench,
+  LuListChecks,
+  LuClipboardCheck,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
 import { useAuthStore } from "@/stores";
+import { ProfileMenu } from "./ProfileMenu";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 interface NavItem {
   label: string;
@@ -31,10 +42,15 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   { label: "Дашборд", href: "/dashboard", icon: LuLayoutDashboard },
   { label: "Заявки", href: "/dashboard/tickets", icon: LuTicket },
-  { label: "Мои обращения", href: "/dashboard/my-tickets", icon: LuClipboardList },
+  {
+    label: "Мои обращения",
+    href: "/dashboard/my-tickets",
+    icon: LuClipboardList,
+  },
   //{ label: "Сообщения", href: "/dashboard/messages", icon: LuMessageSquare },
   { label: "Статьи", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
+  { label: "Опросы", href: "/dashboard/surveys", icon: LuListChecks },
 ];
 
 const onboardingIds: Record<string, string> = {
@@ -43,35 +59,42 @@ const onboardingIds: Record<string, string> = {
   "/dashboard/wiki": "onboarding-wiki",
 };
 
-const adminItems: NavItem[] = [
-  { label: "Пользователи", href: "/dashboard/users", icon: LuUsers },
-  {
-    label: "Линии поддержки",
-    href: "/dashboard/admin/support-lines",
-    icon: LuNetwork,
-  },
-  {
-    label: "Категории статей",
-    href: "/dashboard/admin/wiki-categories",
-    icon: LuBook,
-  },
-  { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch },
-  { label: "Настройки", href: "/dashboard/settings", icon: LuSettings },
+interface AdminNavItem extends NavItem {
+  perm: string;
+}
+
+const adminItems: AdminNavItem[] = [
+  { label: "Пользователи", href: "/dashboard/admin/users", icon: LuUsers, perm: PERM.USER_MANAGE },
+  { label: "Роли", href: "/dashboard/admin/roles", icon: LuShieldCheck, perm: PERM.ROLE_MANAGE },
+  { label: "Отделы", href: "/dashboard/admin/departments", icon: LuBuilding2, perm: PERM.DEPARTMENT_MANAGE },
+  { label: "Линии поддержки", href: "/dashboard/admin/support-lines", icon: LuNetwork, perm: PERM.SUPPORT_LINE_MANAGE },
+  { label: "Маршрутизация", href: "/dashboard/admin/forwarding-rules", icon: LuRoute, perm: PERM.FORWARDING_RULE_MANAGE },
+  { label: "Планировщик задач", href: "/dashboard/admin/scheduled-tasks", icon: LuCalendarClock, perm: PERM.SCHEDULED_TASK_MANAGE },
+  { label: "Опросы", href: "/dashboard/admin/surveys", icon: LuClipboardCheck, perm: PERM.SURVEY_MANAGE },
+  { label: "Категории заявок", href: "/dashboard/admin/categories", icon: LuTag, perm: PERM.CATEGORY_MANAGE },
+  { label: "Категории статей", href: "/dashboard/admin/wiki-categories", icon: LuBook, perm: PERM.WIKI_CATEGORY_MANAGE },
+  { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch, perm: PERM.ELASTICSEARCH_ADMIN },
+  { label: "Режим обслуживания", href: "/dashboard/admin/maintenance", icon: LuWrench, perm: PERM.MAINTENANCE_MANAGE },
+  { label: "Настройки", href: "/dashboard/settings", icon: LuSettings, perm: PERM.NOTIFICATION_SETTINGS_MANAGE },
 ];
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const { colorMode } = useColorMode();
   const { user } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
 
-  // Filter nav items based on role
   const filteredNavItems = navItems.filter((item) => {
-    if (item.href === "/dashboard/reports") return isAdmin;
-    if (item.href === "/dashboard/my-tickets") return isSpecialist && !isAdmin;
+    if (item.href === "/dashboard/tickets") return has(PERM.TICKET_READ_OWN);
+    if (item.href === "/dashboard/reports") return has(PERM.REPORT_VIEW);
+    // "Мои обращения" — для специалистов линии, у которых нет доступа ко всем тикетам
+    if (item.href === "/dashboard/my-tickets")
+      return has(PERM.TICKET_READ_LINE) && !has(PERM.TICKET_READ_ALL);
     return true;
   });
+
+  const visibleAdminItems = adminItems.filter((item) => has(item.perm));
+  const showAdminSection = visibleAdminItems.length > 0;
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -81,7 +104,6 @@ export function Sidebar({ onClose }: SidebarProps) {
   };
 
   const handleLinkClick = () => {
-    // Close mobile drawer when clicking a link
     onClose?.();
   };
 
@@ -112,93 +134,102 @@ export function Sidebar({ onClose }: SidebarProps) {
           </Text>
         </Box>
         <Text fontWeight="semibold" fontSize="lg" color="fg.default">
-          ServiceDesk
+          Service Desk
         </Text>
       </Flex>
 
       {/* Main Navigation */}
-      <VStack gap={1} px={3} align="stretch" flex={1}>
-        <Text
-          px={2}
-          py={2}
-          fontSize="xs"
-          fontWeight="medium"
-          color="fg.muted"
-          textTransform="uppercase"
-        >
-          Меню
-        </Text>
+      <Box flex={1} overflowY="auto">
+        <VStack gap={1} px={3} align="stretch">
+          <Text
+            px={2}
+            py={2}
+            fontSize="xs"
+            fontWeight="medium"
+            color="fg.muted"
+            textTransform="uppercase"
+          >
+            Меню
+          </Text>
 
-        {filteredNavItems.map((item) => (
-          <Link key={item.href} href={item.href} onClick={handleLinkClick}>
-            <Flex
-              px={3}
-              py={2.5}
-              borderRadius="lg"
-              align="center"
-              gap={3}
-              bg={isActive(item.href) ? "bg.subtle" : "transparent"}
-              color={
-                isActive(item.href)
-                  ? colorMode === "dark"
-                    ? "accent.100"
-                    : "accent.900"
-                  : "fg.muted"
-              }
-              fontWeight={isActive(item.href) ? "medium" : "normal"}
-              transition="all 0.2s"
-              _hover={{
-                bg: "bg.subtle",
-                color: "fg.default",
-              }}
-              data-onboarding-id={onboardingIds[item.href]}
-            >
-              <Icon as={item.icon} boxSize={5} />
-              <Text fontSize="sm">{item.label}</Text>
-            </Flex>
-          </Link>
-        ))}
+          {filteredNavItems.map((item) => (
+            <Link key={item.href} href={item.href} onClick={handleLinkClick}>
+              <Flex
+                px={3}
+                py={2.5}
+                borderRadius="lg"
+                align="center"
+                gap={3}
+                bg={isActive(item.href) ? "bg.subtle" : "transparent"}
+                color={
+                  isActive(item.href)
+                    ? colorMode === "dark"
+                      ? "accent.100"
+                      : "accent.900"
+                    : "fg.muted"
+                }
+                fontWeight={isActive(item.href) ? "medium" : "normal"}
+                transition="all 0.2s"
+                _hover={{
+                  bg: "bg.subtle",
+                  color: "fg.default",
+                }}
+                data-onboarding-id={onboardingIds[item.href]}
+              >
+                <Icon as={item.icon} boxSize={5} />
+                <Text fontSize="sm">{item.label}</Text>
+              </Flex>
+            </Link>
+          ))}
 
-        {/* Admin Section - only for admins */}
-        {isAdmin && (
-          <>
-            <Text
-              px={2}
-              py={2}
-              mt={4}
-              fontSize="xs"
-              fontWeight="medium"
-              color="fg.muted"
-              textTransform="uppercase"
-            >
-              Управление
-            </Text>
+          {showAdminSection && (
+            <>
+              <Text
+                px={2}
+                py={2}
+                mt={4}
+                fontSize="xs"
+                fontWeight="medium"
+                color="fg.muted"
+                textTransform="uppercase"
+              >
+                Управление
+              </Text>
 
-            {adminItems.map((item) => (
-              <Link key={item.href} href={item.href} onClick={handleLinkClick}>
-                <Flex
-                  px={3}
-                  py={2.5}
-                  borderRadius="lg"
-                  align="center"
-                  gap={3}
-                  bg={isActive(item.href) ? "bg.subtle" : "transparent"}
-                  color={isActive(item.href) ? "accent.600" : "fg.muted"}
-                  fontWeight={isActive(item.href) ? "medium" : "normal"}
-                  transition="all 0.2s"
-                  _hover={{
-                    bg: "bg.subtle",
-                    color: "fg.default",
-                  }}
+              {visibleAdminItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={handleLinkClick}
                 >
-                  <Icon as={item.icon} boxSize={5} />
-                  <Text fontSize="sm">{item.label}</Text>
-                </Flex>
-              </Link>
-            ))}
-          </>
-        )}
-      </VStack>
+                  <Flex
+                    px={3}
+                    py={2.5}
+                    borderRadius="lg"
+                    align="center"
+                    gap={3}
+                    bg={isActive(item.href) ? "bg.subtle" : "transparent"}
+                    color={isActive(item.href) ? "accent.600" : "fg.muted"}
+                    fontWeight={isActive(item.href) ? "medium" : "normal"}
+                    transition="all 0.2s"
+                    _hover={{
+                      bg: "bg.subtle",
+                      color: "fg.default",
+                    }}
+                  >
+                    <Icon as={item.icon} boxSize={5} />
+                    <Text fontSize="sm">{item.label}</Text>
+                  </Flex>
+                </Link>
+              ))}
+            </>
+          )}
+        </VStack>
+      </Box>
+      <Box px={3} pt={4}>
+        <Separator mb={4} />
+        <ProfileMenu user={user} />
+      </Box>
     </Box>
   );
 }

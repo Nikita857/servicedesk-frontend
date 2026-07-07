@@ -1,10 +1,13 @@
-import { SenderType } from "@/types";
 import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { TicketListResponse } from "@/types/ticket";
 import { handleApiError } from "../utils";
 import type { WikiCategoryTree } from "@/types/wiki";
-import type { AdminUserResponse, CreateUserRequest, DepartmentResponse, PositionResponse } from "@/types/admin";
+import type {
+  AdminUserResponse,
+  BackupResponse,
+  CreateUserRequest,
+} from "@/types/admin";
 
 // ==================== API ====================
 
@@ -52,29 +55,29 @@ export const adminApi = {
 
   // Create new user
   createUser: async (params: CreateUserRequest): Promise<AdminUserResponse> => {
+    const payload = {
+      username: params.username,
+      password: params.password,
+      fio: params.fio,
+      email: params.email ?? null,
+      roles: params.roles ?? [],
+      active: params.active,
+      departmentId: params.departmentId ?? null,
+      positionId: params.positionId ?? null,
+      specialistTypeCode: params.specialistType ?? null,
+    };
 
-  const payload: Partial<CreateUserRequest> = {
-    username: params.username,
-    password: params.password,
-    fio: params.fio,
-    email: params.email ?? null,
-    roles: params.roles ?? [],
-    active: params.active,
-    departmentId: params.departmentId ?? null,
-    positionId: params.positionId ?? null,
-  };
-
-  try {
-    const response = await api.post<ApiResponse<AdminUserResponse>>(
-      "/admin/users",           // без query-параметров
-      payload                   // ← JSON в теле
-    );
-    return response.data.data;
-  } catch (error) {
-    handleApiError(error, {context: "создать пользователя"})
-    throw error;
-  }
-},
+    try {
+      const response = await api.post<ApiResponse<AdminUserResponse>>(
+        "/admin/users",
+        payload,
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error, { context: "создать пользователя" });
+      throw error;
+    }
+  },
 
   // Delete user
   deleteUser: async (id: number): Promise<void> => {
@@ -91,7 +94,10 @@ export const adminApi = {
   },
 
   // Update user roles
-  updateRoles: async (id: number, roles: string[]): Promise<AdminUserResponse> => {
+  updateRoles: async (
+    id: number,
+    roles: string[],
+  ): Promise<AdminUserResponse> => {
     const queryParams = new URLSearchParams();
     roles.forEach((role) => queryParams.append("roles", role));
 
@@ -110,9 +116,25 @@ export const adminApi = {
   },
 
   // Toggle user active status
-  toggleActive: async (id: number, active: boolean): Promise<AdminUserResponse> => {
+  toggleActive: async (
+    id: number,
+    active: boolean,
+  ): Promise<AdminUserResponse> => {
     const response = await api.patch<ApiResponse<AdminUserResponse>>(
       `/admin/users/${id}/active?active=${active}`,
+    );
+    return response.data.data;
+  },
+
+  // Update user specialist type
+  updateSpecialistType: async (
+    id: number,
+    code: string | null,
+  ): Promise<AdminUserResponse> => {
+    const params = new URLSearchParams();
+    if (code) params.append("code", code);
+    const response = await api.patch<ApiResponse<AdminUserResponse>>(
+      `/admin/users/${id}/specialist-type?${params.toString()}`,
     );
     return response.data.data;
   },
@@ -165,36 +187,16 @@ export const adminApi = {
     return response.data.data;
   },
 
-  // ==================== Departments ====================
-
-  getDepartments: async (): Promise<DepartmentResponse[]> => {
-    const response =
-      await api.get<ApiResponse<DepartmentResponse[]>>("/admin/departments");
-    return response.data.data;
-  },
-
-  // Get all positions
-  getAllPositions: async (): Promise<PositionResponse[]> => {
-    const response = await api.get<ApiResponse<PositionResponse[]>>(
-      "/admin/departments/positions",
-    );
-    return response.data.data;
-  },
-
-  // Get positions by department
-  getPositionsByDepartment: async (
-    departmentId: number,
-  ): Promise<PositionResponse[]> => {
-    const response = await api.get<ApiResponse<PositionResponse[]>>(
-      `/admin/departments/${departmentId}/positions`,
-    );
-    return response.data.data;
-  },
-
   getCategoriesTree: async (): Promise<WikiCategoryTree[]> => {
     const response = await api.get<ApiResponse<WikiCategoryTree[]>>(
-      `/wiki/categories/tree`
+      `/wiki/categories/tree`,
     );
     return response.data.data;
-  }
+  },
+
+  runBackup: async (): Promise<BackupResponse> => {
+    const response =
+      await api.post<ApiResponse<BackupResponse>>("/admin/backup/run");
+    return response.data.data;
+  },
 };

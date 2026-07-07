@@ -46,8 +46,8 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
   }, []);
 
   const handleEscalate = useCallback(async () => {
-    if (!ticket || !selectedLineId || !escalationComment.trim()) {
-      toast.error("Ошибка", "Выберите линию поддержки и укажите комментарий");
+    if (!ticket || !selectedLineId) {
+      toast.error("Ошибка", "Выберите линию поддержки");
       return;
     }
 

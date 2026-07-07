@@ -1,5 +1,6 @@
 import api from "./client";
-import type { ApiResponse } from "@/types/api";
+import { type ApiResponse, type PaginatedResponse } from "@/types/api";
+import type { TicketStatus, TicketPriority } from "@/types/ticket";
 import type {
   TimeReportBySpecialist,
   TimeReportByLine,
@@ -8,10 +9,24 @@ import type {
   ResolutionTimeStats,
   TicketStatsByCategory,
   TicketStatsByStatus,
-  TicketReportItem,
-  PagedTicketReport,
   SpecialistWorkload,
+  TicketReportListResponse,
 } from "@/types/stats";
+
+/**
+ * Фильтр отчёта «Все заявки» (включая удалённые).
+ * Поля соответствуют backend `TicketFilter` (@ModelAttribute).
+ */
+export interface AllTicketsFilter {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  creatorName?: string;
+  executorName?: string;
+  /** Дата создания «от», ISO-формат YYYY-MM-DD (backend LocalDate) */
+  from?: string;
+  /** Дата создания «до», ISO-формат YYYY-MM-DD (backend LocalDate) */
+  to?: string;
+}
 
 /**
  * Reports API
@@ -26,11 +41,11 @@ export const reportsApi = {
    */
   getTimeBySpecialist: async (
     from: string,
-    to: string
+    to: string,
   ): Promise<TimeReportBySpecialist[]> => {
     const response = await api.get<ApiResponse<TimeReportBySpecialist[]>>(
       "/reports/time/by-specialist",
-      { params: { from, to } }
+      { params: { from, to } },
     );
     return response.data.data;
   },
@@ -40,11 +55,11 @@ export const reportsApi = {
    */
   getTimeByLine: async (
     from: string,
-    to: string
+    to: string,
   ): Promise<TimeReportByLine[]> => {
     const response = await api.get<ApiResponse<TimeReportByLine[]>>(
       "/reports/time/by-line",
-      { params: { from, to } }
+      { params: { from, to } },
     );
     return response.data.data;
   },
@@ -54,7 +69,7 @@ export const reportsApi = {
    */
   getTicketHistory: async (ticketId: number): Promise<TicketHistory> => {
     const response = await api.get<ApiResponse<TicketHistory>>(
-      `/reports/tickets/${ticketId}/history`
+      `/reports/tickets/${ticketId}/history`,
     );
     return response.data.data;
   },
@@ -63,10 +78,10 @@ export const reportsApi = {
    * История переназначений тикета
    */
   getReassignmentHistory: async (
-    ticketId: number
+    ticketId: number,
   ): Promise<ReassignmentHistory[]> => {
     const response = await api.get<ApiResponse<ReassignmentHistory[]>>(
-      `/reports/tickets/${ticketId}/assignments`
+      `/reports/tickets/${ticketId}/assignments`,
     );
     return response.data.data;
   },
@@ -76,7 +91,7 @@ export const reportsApi = {
    */
   getResolutionTimeStats: async (): Promise<ResolutionTimeStats> => {
     const response = await api.get<ApiResponse<ResolutionTimeStats>>(
-      "/reports/tickets/resolution-time"
+      "/reports/tickets/resolution-time",
     );
     return response.data.data;
   },
@@ -86,7 +101,7 @@ export const reportsApi = {
    */
   getStatsByUserCategory: async (): Promise<TicketStatsByCategory[]> => {
     const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      "/reports/tickets/by-user-category"
+      "/reports/tickets/by-user-category",
     );
     return response.data.data;
   },
@@ -96,7 +111,7 @@ export const reportsApi = {
    */
   getStatsBySupportCategory: async (): Promise<TicketStatsByCategory[]> => {
     const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      "/reports/tickets/by-support-category"
+      "/reports/tickets/by-support-category",
     );
     return response.data.data;
   },
@@ -106,7 +121,7 @@ export const reportsApi = {
    */
   getStatsByStatus: async (): Promise<TicketStatsByStatus[]> => {
     const response = await api.get<ApiResponse<TicketStatsByStatus[]>>(
-      "/reports/tickets/by-status"
+      "/reports/tickets/by-status",
     );
     return response.data.data;
   },
@@ -114,11 +129,14 @@ export const reportsApi = {
   /**
    * Все тикеты (включая удалённые) — пагинация
    */
-  getAllTickets: async (page = 0, size = 20): Promise<PagedTicketReport> => {
-    const response = await api.get<ApiResponse<PagedTicketReport>>(
-      "/reports/tickets/all",
-      { params: { page, size } }
-    );
+  getAllTickets: async (
+    page = 0,
+    size = 20,
+    filter: AllTicketsFilter = {},
+  ): Promise<PaginatedResponse<TicketReportListResponse>> => {
+    const response = await api.get<
+      ApiResponse<PaginatedResponse<TicketReportListResponse>>
+    >("/reports/tickets/all", { params: { page, size, ...filter } });
     return response.data.data;
   },
 
@@ -127,9 +145,25 @@ export const reportsApi = {
    */
   getSpecialistWorkload: async (): Promise<SpecialistWorkload[]> => {
     const response = await api.get<ApiResponse<SpecialistWorkload[]>>(
-      "/reports/specialists/workload"
+      "/reports/specialists/workload",
     );
     return response.data.data;
+  },
+
+  /**
+   * Апи получения XLSX отчета по задачам отдела
+   */
+
+  downloadScheduledTaskReport: async (
+    departmentId: number,
+    year: number,
+    month: number,
+  ): Promise<Blob> => {
+    const response = await api.get("/scheduled-tasks/report/export", {
+      params: { departmentId, year, month },
+      responseType: "blob",
+    });
+    return response.data;
   },
 };
 
@@ -141,6 +175,5 @@ export type {
   ResolutionTimeStats,
   TicketStatsByCategory,
   TicketStatsByStatus,
-  PagedTicketReport,
   SpecialistWorkload,
 };

@@ -25,7 +25,9 @@ import {
   LuPlus,
   LuUserCheck,
 } from "react-icons/lu";
-import { useAuth, useSpecialistTicketsByStatus } from "@/lib/hooks";
+import { useSpecialistTicketsByStatus } from "@/lib/hooks";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { TicketCompactCard } from "./TicketCompactCard";
 import { AssignmentCompactCard } from "./AssignmentCompactCard";
@@ -39,7 +41,7 @@ import { Page } from "@/types";
 
 export function SpecialistTicketsView() {
   const { NEW, OPEN, PENDING, ESCALATED, CLOSED } = useSpecialistTicketsByStatus(5);
-  const { user } = useAuth();
+  const { has } = useCurrentPermissions();
 
   // Pending assignments query
   const [assignmentsPage, setAssignmentsPage] = useState(0);
@@ -71,17 +73,19 @@ export function SpecialistTicketsView() {
 
           <HStack gap={3}>
             <TicketStatusHelpModal />
-            <Link href="/dashboard/tickets/new">
-              <Button
-                size="sm"
-                bg="gray.900"
-                color="white"
-                _hover={{ bg: "gray.800" }}
-              >
-                <LuPlus />
-                Новый тикет
-              </Button>
-            </Link>
+            {has(PERM.TICKET_CREATE) && (
+              <Link href="/dashboard/tickets/new">
+                <Button
+                  size="sm"
+                  bg="gray.900"
+                  color="white"
+                  _hover={{ bg: "gray.800" }}
+                >
+                  <LuPlus />
+                  Новый тикет
+                </Button>
+              </Link>
+            )}
           </HStack>
         </Flex>
 
@@ -95,7 +99,6 @@ export function SpecialistTicketsView() {
             isLoading={NEW.meta.isLoading}
             page={NEW.data?.page}
             onPageChange={NEW.actions.setPage}
-            currentUser={user?.username}
           />
 
           {/* ESCALATED TICKETS */}
@@ -107,7 +110,6 @@ export function SpecialistTicketsView() {
             isLoading={ESCALATED.meta.isLoading}
             page={ESCALATED.data?.page}
             onPageChange={ESCALATED.actions.setPage}
-            currentUser={user?.username}
           />
 
           {/* OPEN TICKETS */}
@@ -119,7 +121,6 @@ export function SpecialistTicketsView() {
             isLoading={OPEN.meta.isLoading}
             page={OPEN.data?.page}
             onPageChange={OPEN.actions.setPage}
-            currentUser={user?.username}
           />
 
           {/* PENDING TICKETS */}
@@ -131,7 +132,6 @@ export function SpecialistTicketsView() {
             isLoading={PENDING.meta.isLoading}
             page={PENDING.data?.page}
             onPageChange={PENDING.actions.setPage}
-            currentUser={user?.username}
           />
 
           {/* ASSIGNMENTS (pending for me) */}
@@ -152,7 +152,6 @@ export function SpecialistTicketsView() {
             isLoading={CLOSED.meta.isLoading}
             page={CLOSED.data?.page}
             onPageChange={CLOSED.actions.setPage}
-            currentUser={user?.username}
           />
         </SimpleGrid>
       </Box>
@@ -174,7 +173,6 @@ interface TicketTileProps {
   isLoading: boolean;
   page: Page | undefined;
   onPageChange: (page: number) => void;
-  currentUser: string | undefined;
 }
 
 function TicketTile({
@@ -185,7 +183,6 @@ function TicketTile({
   isLoading,
   page,
   onPageChange,
-  currentUser,
 }: TicketTileProps) {
   return (
     <Box
@@ -236,11 +233,7 @@ function TicketTile({
         ) : (
           <VStack gap={1.5} align="stretch">
             {tickets.map((ticket) => (
-              <TicketCompactCard
-                key={ticket.id}
-                ticket={ticket}
-                currentUserName={currentUser}
-              />
+              <TicketCompactCard key={ticket.id} ticket={ticket} />
             ))}
           </VStack>
         )}

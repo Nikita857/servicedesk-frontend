@@ -24,12 +24,15 @@ import {
 } from "@/lib/api/wiki";
 import { attachmentApi } from "@/lib/api/attachments";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { useWikiArticleQuery, useFileUpload } from "@/lib/hooks";
+import { useWikiArticleQuery, useMultipartUpload } from "@/lib/hooks";
 import { BackButton, CategoryTreeSelect } from "@/components/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -39,12 +42,13 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload } = useFileUpload();
+  const { upload } = useMultipartUpload();
+  const queryClient = useQueryClient();
 
   // Use TanStack Query for article data
-  const { article, isLoading, error, refetch } = useWikiArticleQuery(slug);
+  const { article, isLoading, error } = useWikiArticleQuery(slug);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMediaUploading, setIsMediaUploading] = useState(false);
@@ -71,20 +75,22 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   useEffect(() => {
     if (!isLoading && article) {
       const isAuthor = user?.id === article.createdBy.id;
-      const isAdmin = user?.roles.every((role) => role === "ADMIN");
-      if (!isSpecialist) {
+      if (!has(PERM.WIKI_CREATE) && !has(PERM.WIKI_EDIT_ALL)) {
         toast.error(
           "Доступ запрещён",
           "Вы можете редактировать только свои статьи",
         );
         router.push(`/dashboard/wiki/${slug}`);
       }
-      if (!isAuthor && !isAdmin) {
-        toast.error("Доступ запрещён", "Вы не являетесь специалистом");
+      if (!isAuthor && !has(PERM.WIKI_EDIT_ALL)) {
+        toast.error(
+          "Доступ запрещён",
+          "Нет прав на редактирование чужой статьи",
+        );
         router.push(`/dashboard/wiki/${slug}`);
       }
     }
-  }, [isLoading, article, isSpecialist, user?.id, router, slug, user?.roles]);
+  }, [isLoading, article, has, user?.id, router, slug]);
 
   // Fetch category tree
   const { data: categoryTree = [], isLoading: loadingCategories } = useQuery({
@@ -164,16 +170,7 @@ export default function EditWikiArticlePage({ params }: PageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!article) return;
-
-    if (!formData.title?.trim()) {
-      toast.error("Ошибка", "Введите заголовок статьи");
-      return;
-    }
-
-    if (!formData.content?.trim()) {
-      toast.error("Ошибка", "Введите содержимое статьи");
-      return;
-    }
+    // ... валидация
 
     setIsSubmitting(true);
     try {
@@ -192,7 +189,6 @@ export default function EditWikiArticlePage({ params }: PageProps) {
         const uploadPromises = selectedFiles.map((file) =>
           upload(file, "WIKI_ARTICLE", article.id),
         );
-
         try {
           await Promise.all(uploadPromises);
           toast.success(
@@ -204,10 +200,16 @@ export default function EditWikiArticlePage({ params }: PageProps) {
             "Статья обновлена",
             "Некоторые файлы не удалось загрузить",
           );
+          console.error(`Ошибка. Не удалось обновить статью: ${uploadError}`);
         }
       } else {
         toast.success("Статья обновлена!");
       }
+
+      // Инвалидируем всё wiki сразу — списки, детали, категории
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.wiki.all,
+      });
 
       router.push(`/dashboard/wiki/${updated.slug}`);
     } catch (error) {

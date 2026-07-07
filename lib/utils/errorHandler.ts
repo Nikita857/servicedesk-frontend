@@ -69,7 +69,7 @@ function getErrorStatus(error: unknown): number | null {
  */
 export function handleApiError(
   error: unknown,
-  options: HandleApiErrorOptions = {}
+  options: HandleApiErrorOptions = {},
 ): void {
   const { context, silent = false, handlers = {} } = options;
   const status = getErrorStatus(error);
@@ -90,12 +90,12 @@ export function handleApiError(
       toast.warning("Ошибка валидации", message);
       break;
     case 401:
-      toast.error("Не авторизован", "Пожалуйста, войдите в систему");
+      toast.warning("Не авторизован", "Пожалуйста, войдите в систему");
       break;
     case 403:
-      toast.error(
+      toast.warning(
         "Доступ запрещён",
-        message || "Недостаточно прав для выполнения операции"
+        message || "Недостаточно прав для выполнения операции",
       );
       break;
     case 404:
@@ -112,11 +112,15 @@ export function handleApiError(
     case 503:
       toast.error(
         "Ошибка сервера",
-        message || "На сервере произошла ошибка. Сообщите администратору о проблеме"
+        message ||
+          "На сервере произошла ошибка. Сообщите администратору о проблеме",
       );
       break;
     default:
       // Показываем реальное сообщение от бэкенда; context — только если сообщения нет
-      toast.error("Ошибка", message || (context ? `Не удалось ${context}` : "Неизвестная ошибка"));
+      toast.error(
+        "Ошибка",
+        message || (context ? `Не удалось ${context}` : "Неизвестная ошибка"),
+      );
   }
 }

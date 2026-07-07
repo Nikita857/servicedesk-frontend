@@ -106,7 +106,6 @@ export default function NewTicketPage() {
         categoryUserId: formData.categoryUserId,
       });
 
-      toast.success("Заявка создан", `Заявка #${ticket.id} успешно создан`);
       router.push(`/dashboard/tickets/${ticket.id}`);
     } catch (error) {
       handleApiError(error, { context: "создать заявку" });
@@ -201,31 +200,31 @@ export default function NewTicketPage() {
             {/* Support Line Selection */}
             <Box data-onboarding-id="t-line">
               <DataSelect
-              label="Линия поддержки"
-              collection={supportLineCollection}
-              placeholder="Выберите линию поддержки (опционально)"
-              value={
-                formData.supportLineId ? [String(formData.supportLineId)] : []
-              }
-              onValueChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  supportLineId: Number(e.value[0]) || undefined,
-                }))
-              }
-              disabled={isLoadingLines}
-              helperText="Выберите линию поддержки в зависимости от типа проблемы"
-              renderItem={(item) => (
-                <VStack align="start" gap={0}>
-                  <Text>{item.label}</Text>
-                  {item.description && (
-                    <Text fontSize="xs" color="fg.muted">
-                      {item.description}
-                    </Text>
-                  )}
-                </VStack>
-              )}
-            />
+                label="Линия поддержки"
+                collection={supportLineCollection}
+                placeholder="Выберите линию поддержки (опционально)"
+                value={
+                  formData.supportLineId ? [String(formData.supportLineId)] : []
+                }
+                onValueChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    supportLineId: Number(e.value[0]) || undefined,
+                  }))
+                }
+                disabled={isLoadingLines}
+                helperText="Выберите линию поддержки в зависимости от типа проблемы"
+                renderItem={(item) => (
+                  <VStack align="start" gap={0}>
+                    <Text>{item.label}</Text>
+                    {item.description && (
+                      <Text fontSize="xs" color="fg.muted">
+                        {item.description}
+                      </Text>
+                    )}
+                  </VStack>
+                )}
+              />
             </Box>
 
             {/* Link 1C */}

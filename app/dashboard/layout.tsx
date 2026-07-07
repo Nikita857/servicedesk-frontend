@@ -12,12 +12,17 @@ import {
   CloseButton,
 } from "@chakra-ui/react";
 import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { Sidebar } from "@/components/features/layout/Sidebar";
 import { Header } from "@/components/features/layout/Header";
 import { WebSocketProvider } from "@/lib/providers";
 import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
 import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
-import { OnboardingOverlay, USER_ONBOARDING_STEPS } from "@/components/features/onboarding";
+import {
+  OnboardingOverlay,
+  USER_ONBOARDING_STEPS,
+} from "@/components/features/onboarding";
 import { useOnboarding } from "@/lib/hooks/shared/useOnboarding";
 import { useHeartbeat } from "@/lib/hooks";
 import { useTabTitle } from "@/lib/hooks/shared/useTabTitle";
@@ -29,20 +34,21 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { isAuthenticated, isHydrated, user } = useAuthStore();
+  const { has } = useCurrentPermissions();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Онбординг только для обычных пользователей (не специалистов и не админов)
+  // Онбординг только для базовых пользователей без специальных прав
   const isOnlyUser = !!(
     user &&
-    !user.specialist &&
-    user.roles?.length === 1 &&
-    user.roles[0] === "USER"
+    !has(PERM.TICKET_READ_LINE) &&
+    !has(PERM.TICKET_READ_ALL) &&
+    !has(PERM.USER_MANAGE)
   );
   const onboarding = useOnboarding(isOnlyUser);
   useHeartbeat();
   useTabTitle({
-    isAdmin: !!(user?.roles?.includes("ADMIN")),
-    isSpecialist: !!(user?.specialist),
+    isAdmin: has(PERM.REPORT_VIEW),
+    isSpecialist: has(PERM.TICKET_READ_LINE) && !has(PERM.REPORT_VIEW),
   });
 
   useEffect(() => {
@@ -53,7 +59,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!isHydrated) {
     return (
-      <Center h="100vh" bg="bg.canvas">
+      <Center h="100vh" bg="bg.canvas" suppressHydrationWarning>
         <Spinner size="xl" color="accent.500" />
       </Center>
     );
@@ -74,7 +80,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Онбординг — рендерится поверх всего интерфейса */}
       <OnboardingOverlay steps={USER_ONBOARDING_STEPS} controls={onboarding} />
 
-      <Flex h="100vh" bg="bg.canvas">
+      <Flex h="100vh" bg="bg.canvas" suppressHydrationWarning>
         {/* Desktop Sidebar - hidden on mobile */}
         <Box display={{ base: "none", lg: "block" }}>
           <Sidebar />

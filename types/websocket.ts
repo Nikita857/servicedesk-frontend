@@ -3,7 +3,36 @@
  * Используются в WebSocketProvider и всех WebSocket хуках
  */
 
-import type { UserShortResponse } from "./ticket";
+import type {
+  AssignmentMode,
+  AssignmentStatus,
+  TicketStatus,
+  UserShortResponse,
+} from "./ticket";
+
+export type TicketEventType =
+  | "CREATED"
+  | "UPDATED"
+  | "STATUS_CHANGED"
+  | "ASSIGNED"
+  | "ASSIGNMENT_CREATED"
+  | "ASSIGNMENT_REJECTED"
+  | "MESSAGE_SENT"
+  | "MESSAGE_UPDATED"
+  | "RATED"
+  | "DELETED"
+  | "ATTACHMENT_ADDED"
+  | "INTERNAL_COMMENT"
+  | "ESTIMATED_DATE_SET";
+
+export interface TicketListEventWS {
+  id: number;
+  eventType: TicketEventType;
+  status: TicketStatus | null; // null для DELETED
+  assigneeId: number | null;
+  supportLineId: number | null;
+  timestamp: string; // ISO
+}
 
 // ==================== Chat Types ====================
 
@@ -91,13 +120,20 @@ export interface AssignmentWS {
     username: string;
     fio: string | null;
   } | null;
-  mode: "DIRECT" | "LINE";
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  mode: AssignmentMode;
+  status: AssignmentStatus;
   note: string | null;
   createdAt: string;
 }
 
 // ==================== Status Types ====================
+
+export type UserActivityStatus =
+  | "AVAILABLE"
+  | "BUSY"
+  | "TECHNICAL_ISSUE"
+  | "UNAVAILABLE"
+  | "OFFLINE";
 
 /**
  * Информация об изменении статуса пользователя через WebSocket
@@ -106,7 +142,20 @@ export interface UserStatusWS {
   userId: number;
   username: string;
   fio: string;
-  status: string;
-  oldStatus: string;
+  status: UserActivityStatus;
+  oldStatus: UserActivityStatus;
   lineIds: number[];
 }
+
+interface StatusOption {
+  label: string;
+  color: string;
+}
+
+export const statusConfig: Record<UserActivityStatus, StatusOption> = {
+  AVAILABLE: { label: "Онлайн", color: "green.400" },
+  BUSY: { label: "Занят", color: "red.400" },
+  UNAVAILABLE: { label: "Недоступен", color: "orange.400" },
+  OFFLINE: { label: "Не в сети", color: "gray.400" },
+  TECHNICAL_ISSUE: { label: "Техн. Проблемы", color: "orange.400" },
+};

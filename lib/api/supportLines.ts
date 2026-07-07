@@ -1,6 +1,6 @@
 import api from "./client";
 import type { ApiResponse } from "@/types/api";
-import type { SupportLineListResponse, SupportLineDetail, Specialist, UpdateSupportLineRequest } from "@/types/support-line";
+import type { SupportLineListResponse, SupportLineDetail, Specialist, CreateSupportLineRequest, UpdateSupportLineRequest, UpdateSupportLineChatId } from "@/types/support-line";
 
 // ==================== API ====================
 
@@ -54,6 +54,20 @@ export const supportLineApi = {
 
   // ==================== Admin Methods ====================
 
+  // Create support line (admin only)
+  create: async (data: CreateSupportLineRequest): Promise<SupportLineDetail> => {
+    const response = await api.post<ApiResponse<SupportLineDetail>>(
+      "/admin/support-line",
+      data
+    );
+    return response.data.data;
+  },
+
+  // Delete support line (admin only)
+  deleteLine: async (id: number): Promise<void> => {
+    await api.delete(`/admin/support-line/${id}`);
+  },
+
   // Update support line (admin only)
   update: async (
     id: number,
@@ -88,13 +102,14 @@ export const supportLineApi = {
     return response.data.data;
   },
 
-  // Link Telegram chat to line (admin only)
-  linkTelegram: async (
+  // Update chat IDs for all messengers (admin only)
+  updateChatIds: async (
     lineId: number,
-    telegramChatId: number
+    data: UpdateSupportLineChatId
   ): Promise<SupportLineDetail> => {
     const response = await api.patch<ApiResponse<SupportLineDetail>>(
-      `/admin/support-line/${lineId}/telegram-chat?telegramChatId=${telegramChatId}`
+      `/admin/support-line/${lineId}/chat`,
+      data
     );
     return response.data.data;
   },

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Specialist, SupportLineListResponse } from "@/types/support-line";
 import {
   Badge,
@@ -56,13 +57,13 @@ export default function EscalationPanel({
           value: String(l.id),
         })),
       }),
-    [supportLines]
+    [supportLines],
   );
 
   // Get selected specialist for warning
   const selectedSpecialist = useMemo(
     () => specialists.find((s) => s.id === selectedSpecialistId),
-    [specialists, selectedSpecialistId]
+    [specialists, selectedSpecialistId],
   );
 
   const isSelectedBusy = selectedSpecialist?.activityStatus === "BUSY";
@@ -86,7 +87,7 @@ export default function EscalationPanel({
           };
         }),
       }),
-    [specialists]
+    [specialists],
   );
 
   return (
@@ -156,8 +157,8 @@ export default function EscalationPanel({
                     isLoadingSpecialists
                       ? "Загрузка..."
                       : specialists.length === 0
-                      ? "Нет специалистов"
-                      : "Любой специалист линии"
+                        ? "Нет специалистов"
+                        : "Любой специалист линии"
                   }
                 />
               </Select.Trigger>
@@ -177,7 +178,7 @@ export default function EscalationPanel({
                           variant="subtle"
                           ml={2}
                         >
-                          {item.isOnline ? "Online" : "Offline"}
+                          {item.isOnline ? "Онлайн" : "Офлайн"}
                         </Badge>
                       </Select.Item>
                     ))}
@@ -231,12 +232,12 @@ export default function EscalationPanel({
         {/* Comment - REQUIRED */}
         <Box>
           <Text mb={1} fontSize="sm" fontWeight="medium">
-            Комментарий *
+            Комментарий (опционально)
           </Text>
           <Textarea
             value={escalationComment}
             onChange={(e) => setEscalationComment(e.target.value)}
-            placeholder="Причина переадресации (обязательно)..."
+            placeholder="Причина переадресации..."
             minH="80px"
             bg="bg.surface"
           />
@@ -253,7 +254,7 @@ export default function EscalationPanel({
             _hover={{ bg: "orange.600" }}
             onClick={handleEscalate}
             loading={isEscalating}
-            disabled={!selectedLineId || !escalationComment.trim()}
+            disabled={!selectedLineId}
           >
             <LuUserPlus />
             Переадресовать

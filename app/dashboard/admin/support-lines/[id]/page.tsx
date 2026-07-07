@@ -1,42 +1,44 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import {
+  Badge,
   Box,
+  Button,
+  createListCollection,
+  Dialog,
   Flex,
   Heading,
-  Text,
-  Spinner,
-  VStack,
   HStack,
-  Button,
-  Input,
-  Textarea,
-  Badge,
   IconButton,
+  Input,
   Portal,
-  createListCollection,
+  Select,
+  Spinner,
+  Text,
+  Textarea,
+  VStack,
 } from "@chakra-ui/react";
-import { Select } from "@chakra-ui/react";
-import { LuSave, LuUsers, LuTrash2, LuPlus, LuCheck } from "react-icons/lu";
+import { LuCheck, LuPlus, LuSave, LuTrash2, LuUsers } from "react-icons/lu";
+import { useQuery } from "@tanstack/react-query";
 import { BackButton } from "@/components/ui";
 import { Specialist } from "@/lib/api/supportLines";
 import { useSupportLineDetail } from "@/lib/hooks/admin-support-lines";
-import { userRolesBadges, activityStatusConfig } from "@/types/auth";
+import { activityStatusConfig, userRolesBadges } from "@/types/auth";
 import { AssignmentMode, assignmentModeConfig } from "@/types/ticket";
 import { Tooltip } from "@/components/ui/tooltip";
+import { specialistTypeApi } from "@/lib/api/specialistTypes";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Get available roles for selection (excluding USER and ADMIN)
-const availableRoles = Object.entries(userRolesBadges)
-  .filter(([role]) => role !== "USER" && role !== "ADMIN")
-  .map(([role, info]) => ({ value: role, label: info.name }));
-
+// Роли для фильтрации пользователей при добавлении специалиста
 const roleCollection = createListCollection({
-  items: availableRoles,
+  items: [
+    { value: "SPECIALIST", label: "Специалист" },
+    { value: "SUPERVISOR", label: "Супервизор" },
+  ],
 });
 
 const assignmentModeCollection = createListCollection({
@@ -46,9 +48,32 @@ const assignmentModeCollection = createListCollection({
   })),
 });
 
+function formatSla(minutes: number): string {
+  if (minutes < 60) return `${minutes} мин`;
+  if (minutes % (60 * 24) === 0) return `${minutes / (60 * 24)} д`;
+  if (minutes % 60 === 0) return `${minutes / 60} ч`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h} ч ${m} мин`;
+}
+
 export default function SupportLineDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const lineId = parseInt(id);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const { data: specialistTypes = [] } = useQuery({
+    queryKey: ["specialist-types"],
+    queryFn: specialistTypeApi.getAll,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const lineRoleCollection = createListCollection({
+    items: specialistTypes.map((t) => ({
+      value: t.id.toString(),
+      label: t.name,
+    })),
+  });
 
   const {
     line,
@@ -60,9 +85,11 @@ export default function SupportLineDetailPage({ params }: PageProps) {
     updateLine,
     addSpecialist,
     removeSpecialist,
+    deleteLine,
     isUpdating,
     isAddingSpecialist,
     isRemovingSpecialist,
+    isDeletingLine,
   } = useSupportLineDetail(lineId);
 
   const specialistCollection = createListCollection({
@@ -104,17 +131,64 @@ export default function SupportLineDetailPage({ params }: PageProps) {
           </Text>
         </Box>
 
-        <Button
-          bg="gray.900"
-          color="white"
-          _hover={{ bg: "gray.800" }}
-          onClick={() => updateLine()}
-          loading={isUpdating}
-          disabled={!form.isDirty}
-        >
-          <LuSave />
-          Сохранить
-        </Button>
+        <HStack gap={2}>
+          <Button
+            bg="gray.900"
+            color="white"
+            _hover={{ bg: "gray.800" }}
+            onClick={() => updateLine()}
+            loading={isUpdating}
+            disabled={!form.isDirty}
+          >
+            <LuSave />
+            Сохранить
+          </Button>
+
+          <Dialog.Root
+            open={isDeleteDialogOpen}
+            onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}
+            lazyMount
+            unmountOnExit
+          >
+            <Dialog.Trigger asChild>
+              <Button colorPalette="red" variant="outline">
+                <LuTrash2 />
+                Удалить
+              </Button>
+            </Dialog.Trigger>
+            <Portal>
+              <Dialog.Backdrop />
+              <Dialog.Positioner>
+                <Dialog.Content maxW="400px">
+                  <Dialog.Header>
+                    <Dialog.Title>Удалить линию?</Dialog.Title>
+                  </Dialog.Header>
+                  <Dialog.Body>
+                    <Text>
+                      Линия <Text as="strong">«{line.name}»</Text> будет
+                      деактивирована. Данные сохранятся в базе.
+                    </Text>
+                  </Dialog.Body>
+                  <Dialog.Footer>
+                    <Dialog.ActionTrigger asChild>
+                      <Button variant="outline">Отмена</Button>
+                    </Dialog.ActionTrigger>
+                    <Button
+                      colorPalette="red"
+                      onClick={() => {
+                        deleteLine();
+                        setIsDeleteDialogOpen(false);
+                      }}
+                      loading={isDeletingLine}
+                    >
+                      Удалить
+                    </Button>
+                  </Dialog.Footer>
+                </Dialog.Content>
+              </Dialog.Positioner>
+            </Portal>
+          </Dialog.Root>
+        </HStack>
       </Flex>
 
       <VStack gap={6} align="stretch">
@@ -143,6 +217,41 @@ export default function SupportLineDetailPage({ params }: PageProps) {
               />
             </Box>
 
+            <Box>
+              <Text fontWeight="medium" mb={2}>
+                Тип специалистов
+              </Text>
+              <Select.Root
+                collection={lineRoleCollection}
+                value={
+                  form.specialistTypeId
+                    ? [form.specialistTypeId.toString()]
+                    : []
+                }
+                onValueChange={(e) =>
+                  form.setSpecialistTypeId(
+                    e.value[0] ? parseInt(e.value[0]) : null,
+                  )
+                }
+              >
+                <Select.Trigger>
+                  <Select.ValueText placeholder="Не задана" />
+                </Select.Trigger>
+                <Select.Positioner>
+                  <Select.Content>
+                    {lineRoleCollection.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                Определяет, в каких сценариях маршрутизации участвует линия
+              </Text>
+            </Box>
+
             <HStack gap={4}>
               <Box flex={1}>
                 <Text fontWeight="medium" mb={2}>
@@ -156,6 +265,9 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   }
                   min={1}
                 />
+                <Text fontSize="xs" color="fg.muted" mt={1}>
+                  {formatSla(form.slaMinutes)}
+                </Text>
               </Box>
 
               <Box flex={1}>
@@ -181,13 +293,11 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   </Badge>
                 )}
               </Text>
-              <HStack gap={2}>
-                <Input
-                  placeholder="-100123456789"
-                  value={form.telegramChatId}
-                  onChange={(e) => form.setTelegramChatId(e.target.value)}
-                />
-              </HStack>
+              <Input
+                placeholder="-100123456789"
+                value={form.telegramChatId}
+                onChange={(e) => form.setTelegramChatId(e.target.value)}
+              />
               <Text fontSize="xs" color="fg.muted" mt={1}>
                 ID чата или группы для отправки уведомлений о новых заявках
               </Text>
@@ -195,9 +305,47 @@ export default function SupportLineDetailPage({ params }: PageProps) {
 
             <Box>
               <Text fontWeight="medium" mb={2}>
+                ID чата поддержки ВКонтакте{" "}
+                {form.vkChatId && (
+                  <Badge variant="subtle" colorPalette="green">
+                    Привязан <LuCheck />
+                  </Badge>
+                )}
+              </Text>
+              <Input
+                placeholder="123456789"
+                value={form.vkChatId}
+                onChange={(e) => form.setVkChatId(e.target.value)}
+              />
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                peer_id беседы ВК для отправки уведомлений о новых заявках
+              </Text>
+            </Box>
+
+            <Box>
+              <Text fontWeight="medium" mb={2}>
+                ID чата поддержки в MAX{" "}
+                {form.maxChatId && (
+                  <Badge variant="subtle" colorPalette="green">
+                    Привязан <LuCheck />
+                  </Badge>
+                )}
+              </Text>
+              <Input
+                placeholder="123456789"
+                value={form.maxChatId}
+                onChange={(e) => form.setMaxChatId(e.target.value)}
+              />
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                chat_id беседы MAX для отправки уведомлений о новых заявках
+              </Text>
+            </Box>
+
+            <Box>
+              <Text fontWeight="medium" mb={2}>
                 Режим назначения
               </Text>
-              <Tooltip content="Экспериментальная функция пока не протестирована">
+              <Tooltip content="Экспериментальная функция, пока не протестирована">
                 <Box>
                   <Select.Root
                     collection={assignmentModeCollection}
@@ -247,7 +395,11 @@ export default function SupportLineDetailPage({ params }: PageProps) {
 
           {/* Add specialist */}
           <VStack gap={3} mb={4} align="stretch">
-            <Flex gap={2} direction={{ base: "column", md: "row" }} align={{ base: "stretch", md: "flex-end" }}>
+            <Flex
+              gap={2}
+              direction={{ base: "column", md: "row" }}
+              align={{ base: "stretch", md: "flex-end" }}
+            >
               <Box flex={1}>
                 <Text fontSize="sm" fontWeight="medium" mb={1}>
                   Роль
@@ -265,11 +417,13 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   <Portal>
                     <Select.Positioner>
                       <Select.Content>
-                        {roleCollection.items.map((item: any) => (
-                          <Select.Item key={item.value} item={item}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
+                        {roleCollection.items.map(
+                          (item: Record<string, string>) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ),
+                        )}
                       </Select.Content>
                     </Select.Positioner>
                   </Portal>
@@ -310,11 +464,13 @@ export default function SupportLineDetailPage({ params }: PageProps) {
                   <Portal>
                     <Select.Positioner>
                       <Select.Content>
-                        {specialistCollection.items.map((item: any) => (
-                          <Select.Item key={item.value} item={item}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
+                        {specialistCollection.items.map(
+                          (item: Record<string, string>) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ),
+                        )}
                       </Select.Content>
                     </Select.Positioner>
                   </Portal>
@@ -360,6 +516,14 @@ export default function SupportLineDetailPage({ params }: PageProps) {
   );
 }
 
+const statusDotColor: Record<string, string> = {
+  AVAILABLE: "green.500",
+  UNAVAILABLE: "gray.400",
+  BUSY: "red.500",
+  TECHNICAL_ISSUE: "orange.500",
+  OFFLINE: "gray.300",
+};
+
 function SpecialistRow({
   specialist,
   onRemove,
@@ -369,66 +533,57 @@ function SpecialistRow({
   onRemove: () => void;
   isRemoving: boolean;
 }) {
-  const statusColors: Record<string, string> = {
-    AVAILABLE: "green",
-    BUSY: "yellow",
-    OFFLINE: "gray",
-    ON_BREAK: "orange",
-    UNAVAILABLE: "red",
-    TECHNICAL_ISSUE: "red",
-  };
-
-  const statusLabels: Record<string, string> = {
-    AVAILABLE: "Доступен",
-    BUSY: "Занят",
-    OFFLINE: "Не в сети",
-    ON_BREAK: "Перерыв",
-    UNAVAILABLE: "Недоступен",
-    TECHNICAL_ISSUE: "Тех. проблема",
-  };
+  const statusCfg = specialist.activityStatus
+    ? activityStatusConfig[specialist.activityStatus]
+    : null;
 
   return (
-    <Flex
-      p={3}
-      bg="bg.subtle"
-      borderRadius="lg"
-      justify="space-between"
-      align="flex-start"
-      gap={2}
-    >
-      <HStack gap={2} flexWrap="wrap" align="flex-start" flex={1} minW={0}>
-        <Box minW="120px">
-          <Text fontWeight="medium">
-            {specialist.fio || specialist.username}
-          </Text>
-          <Text fontSize="sm" color="fg.muted">
-            @{specialist.username}
-          </Text>
-        </Box>
-        {specialist.roles?.map((role) => {
-          const roleInfo =
-            userRolesBadges[role as keyof typeof userRolesBadges];
-          return (
-            <Badge
-              key={role}
-              colorPalette={roleInfo?.color || "gray"}
-              variant="subtle"
-            >
-              {roleInfo?.name || role}
-            </Badge>
-          );
-        })}
-        {specialist.activityStatus && (
+    <Flex p={3} bg="bg.subtle" borderRadius="lg" align="center" gap={3}>
+      {statusCfg ? (
+        <Tooltip
+          content={`${statusCfg.label}`}
+          positioning={{ placement: "top" }}
+        >
+          <Box
+            as="span"
+            display="inline-block"
+            boxSize="10px"
+            borderRadius="full"
+            bg={statusDotColor[specialist.activityStatus!] ?? "gray.300"}
+            flexShrink={0}
+            cursor="default"
+          />
+        </Tooltip>
+      ) : (
+        <Box boxSize="10px" flexShrink={0} />
+      )}
+
+      <Box minW="130px">
+        <Text fontWeight="medium" lineClamp={1}>
+          {specialist.fio || specialist.username}
+        </Text>
+        <Text fontSize="sm" color="fg.muted">
+          @{specialist.username}
+        </Text>
+      </Box>
+
+      <HStack gap={2} flexWrap="wrap" flex={1}>
+        {specialist.specialistType && (
           <Badge
-            colorPalette={
-              activityStatusConfig[specialist.activityStatus]?.color || "gray"
-            }
+            colorPalette={specialist.specialistType.color}
             variant="subtle"
           >
-            {activityStatusConfig[specialist.activityStatus]?.label ||
-              specialist.activityStatus}
+            {specialist.specialistType.name}
           </Badge>
         )}
+        {specialist.roles.map((role) => {
+          const roleCfg = userRolesBadges[role];
+          return roleCfg ? (
+            <Badge key={role} colorPalette={roleCfg.color} variant="outline">
+              {roleCfg.name}
+            </Badge>
+          ) : null;
+        })}
         {!specialist.active && (
           <Badge colorPalette="red" variant="subtle">
             Неактивен

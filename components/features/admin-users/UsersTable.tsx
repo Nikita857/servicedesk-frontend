@@ -9,7 +9,6 @@ import {
   Switch,
   Icon,
   IconButton,
-  Button,
   Text,
   Menu,
   Portal,
@@ -24,13 +23,17 @@ import {
   LuKey,
   LuTrash,
   LuBuilding2,
-  LuChevronLeft,
-  LuChevronRight,
   LuChevronDown,
+  LuBriefcase,
 } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { userRolesBadges as userRolesConfig } from "@/types/auth";
+import { useRoles } from "@/lib/hooks/rbac/userRoles";
+import { useSpecialistTypes } from "@/lib/hooks/admin-specialistTypes/useSpecialistTypes";
 import type { AdminUserResponse } from "@/types/admin";
+import type { SpecialistTypeResponse } from "@/types/support-line";
+import { getRoleBadge } from "@/lib/utils/roleColors";
+import { SDPagination } from "@/components/ui/SDPagination";
+import { Page } from "@/types";
 
 interface UsersTableProps {
   isLoading: boolean;
@@ -41,29 +44,27 @@ interface UsersTableProps {
   openEditRoles: (arg: AdminUserResponse) => void;
   openChangePassword: (arg: AdminUserResponse) => void;
   openDelete: (arg: AdminUserResponse) => void;
-  totalPages: number;
-  page: number;
+  page: Page | undefined;
   setPage: (arg: number) => void;
   user: AdminUserResponse | null;
   openEditOrg: (arg: AdminUserResponse) => void;
+  openEditSpecialistType: (arg: AdminUserResponse) => void;
 }
-const getRoleBadge = (role: string) => {
-  const roleData = userRolesConfig[role] || {
-    name: role,
-    description: "",
-    color: "gray",
-  };
+
+const getSpecialistBadge = (
+  code: string,
+  specialistTypes: SpecialistTypeResponse[],
+) => {
+  const found = specialistTypes.find((st) => st.code === code);
   return (
-    <Tooltip content={roleData.description}>
-      <Badge
-        key={role}
-        colorPalette={roleData?.color || "gray"}
-        size="sm"
-        variant="subtle"
-      >
-        {roleData?.name || role}
-      </Badge>
-    </Tooltip>
+    <Badge
+      key="st"
+      colorPalette={found?.color ?? "gray"}
+      size="sm"
+      variant="outline"
+    >
+      {found?.name ?? code}
+    </Badge>
   );
 };
 
@@ -76,12 +77,15 @@ const UsersTable = memo(function UsersTable({
   openEditRoles,
   openChangePassword,
   openDelete,
-  totalPages,
   page,
   setPage,
   user,
   openEditOrg,
+  openEditSpecialistType,
 }: UsersTableProps) {
+  const { data: allRoles = [] } = useRoles();
+  const { specialistTypes } = useSpecialistTypes();
+
   return (
     <>
       {/* Users Table */}
@@ -111,6 +115,7 @@ const UsersTable = memo(function UsersTable({
             borderWidth="1px"
             borderColor="border.default"
             overflow="hidden"
+            mb={3}
           >
             <Table.Root size="sm">
               <Table.Header>
@@ -154,7 +159,9 @@ const UsersTable = memo(function UsersTable({
                     </Table.Cell>
                     <Table.Cell>
                       <HStack gap={1} flexWrap="wrap">
-                        {u.roles.map((role) => getRoleBadge(role))}
+                        {u.roles.map((role) => getRoleBadge(role, allRoles))}
+                        {u.specialistType &&
+                          getSpecialistBadge(u.specialistType, specialistTypes)}
                       </HStack>
                     </Table.Cell>
                     <Table.Cell>
@@ -186,23 +193,45 @@ const UsersTable = memo(function UsersTable({
                     <Table.Cell textAlign="right">
                       <Menu.Root>
                         <Menu.Trigger asChild>
-                          <IconButton variant="ghost" size="sm" aria-label="Действия">
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Действия"
+                          >
                             <LuChevronDown />
                           </IconButton>
                         </Menu.Trigger>
                         <Portal>
                           <Menu.Positioner>
                             <Menu.Content minW="200px">
-                              <Menu.Item value="edit-fio" onClick={() => openEditFio(u)}>
+                              <Menu.Item
+                                value="edit-fio"
+                                onClick={() => openEditFio(u)}
+                              >
                                 <LuPencil /> Редактировать ФИО
                               </Menu.Item>
-                              <Menu.Item value="edit-org" onClick={() => openEditOrg(u)}>
+                              <Menu.Item
+                                value="edit-org"
+                                onClick={() => openEditOrg(u)}
+                              >
                                 <LuBuilding2 /> Организация
                               </Menu.Item>
-                              <Menu.Item value="edit-roles" onClick={() => openEditRoles(u)}>
+                              <Menu.Item
+                                value="edit-roles"
+                                onClick={() => openEditRoles(u)}
+                              >
                                 <LuShield /> Управление ролями
                               </Menu.Item>
-                              <Menu.Item value="change-password" onClick={() => openChangePassword(u)}>
+                              <Menu.Item
+                                value="edit-specialist-type"
+                                onClick={() => openEditSpecialistType(u)}
+                              >
+                                <LuBriefcase /> Тип специалиста
+                              </Menu.Item>
+                              <Menu.Item
+                                value="change-password"
+                                onClick={() => openChangePassword(u)}
+                              >
                                 <LuKey /> Сменить пароль
                               </Menu.Item>
                               <Menu.Separator />
@@ -226,30 +255,8 @@ const UsersTable = memo(function UsersTable({
           </Box>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <Flex justify="center" mt={6} gap={2}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-              >
-                <LuChevronLeft />
-                Назад
-              </Button>
-              <Text alignSelf="center" fontSize="sm" color="fg.muted">
-                {page + 1} / {totalPages}
-              </Text>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page >= totalPages - 1}
-              >
-                Вперёд
-                <LuChevronRight />
-              </Button>
-            </Flex>
+          {page && page.totalPages > 1 && (
+            <SDPagination page={page} action={setPage} size="sm" />
           )}
         </>
       )}

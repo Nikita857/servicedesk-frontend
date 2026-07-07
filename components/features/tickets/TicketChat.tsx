@@ -1,29 +1,16 @@
-import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  VStack,
-  HStack,
-  Dialog,
-  Portal,
-  CloseButton,
-} from "@chakra-ui/react";
-import {
-  LuWifi,
-  LuWifiOff,
-  LuPaperclip,
-  LuX,
-  LuDownload,
-} from "react-icons/lu";
+import { Box, Flex, Text, VStack, HStack, Avatar } from "@chakra-ui/react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores";
-import type { TicketStatus } from "@/types";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
+import { type TicketStatus } from "@/types";
 import { useChatWebSocket } from "@/lib/hooks/ticket-chat/useChatWebSocket";
 import { ChatMessageList } from "../ticket-chat/ChatMessageList";
 import ChatInput from "../ticket-chat/ChatInput";
-import { useChatActions } from "@/lib/hooks";
-import { formatFileSize } from "@/lib/utils";
+import { useChatActions, useTicketQuery } from "@/lib/hooks";
+import { useInterlocutorStatus } from "@/lib/hooks/ticket-chat/useInterlocutorStatus";
+import { getFullNameInitials, getShortInitials } from "@/lib/utils";
+import { ImageLightbox } from "@/components/ui";
 
 interface TicketChatProps {
   ticketId: number;
@@ -37,8 +24,18 @@ export function TicketChat({
   isCreator = false,
 }: TicketChatProps) {
   const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
+  const isSpecialist = has(PERM.TICKET_ASSIGN);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  const { ticket } = useTicketQuery(ticketId);
+
+  const interlocutorId =
+    ticket?.createdBy.id === user?.id
+      ? ticket?.assignedTo?.id
+      : ticket?.createdBy?.id;
+
+  const { statusConf } = useInterlocutorStatus(interlocutorId);
 
   // Use custom hook for WebSocket and messages
   const {
@@ -102,7 +99,7 @@ export function TicketChat({
         overflow="hidden"
         display="flex"
         flexDirection="column"
-        h="500px"
+        h="650px"
       >
         {/* Header */}
         <Flex
@@ -114,35 +111,77 @@ export function TicketChat({
           align="center"
           bg="bg.subtle"
         >
-          <Text fontWeight="medium" color="fg.default">
-            Сообщения ({messages.length})
-          </Text>
-          <HStack gap={2}>
-            {isConnected ? (
-              <HStack color="green.500" fontSize="xs">
-                <LuWifi size={14} />
-                <Text>Live</Text>
-              </HStack>
-            ) : (
-              <HStack color="fg.muted" fontSize="xs">
-                <LuWifiOff size={14} />
-                <Text>Offline</Text>
-              </HStack>
-            )}
+          <HStack gap={3}>
+            {/* Аватар собеседника */}
+            <Avatar.Root size="sm" flexShrink={0}>
+              <Avatar.Fallback>
+                {ticket?.createdBy.id === user?.id
+                  ? ticket?.assignedTo
+                    ? getShortInitials(ticket.assignedTo.fio)
+                    : `#${ticketId}`
+                  : ticket?.createdBy
+                    ? getShortInitials(ticket.createdBy.fio)
+                    : `#${ticketId}`}
+              </Avatar.Fallback>
+
+              <Avatar.Image
+                src={
+                  ticket?.createdBy.id === user?.id
+                    ? (ticket?.assignedTo?.avatarUrl ?? undefined)
+                    : (ticket?.createdBy?.avatarUrl ?? undefined)
+                }
+              />
+            </Avatar.Root>
+
+            <Box>
+              <Text fontWeight="semibold" fontSize="sm" color="fg.default">
+                {ticket?.createdBy.id === user?.id
+                  ? ticket?.assignedTo
+                    ? getFullNameInitials(ticket.assignedTo.fio)
+                    : `Чат заявки #${ticketId}`
+                  : ticket?.createdBy
+                    ? getFullNameInitials(ticket.createdBy.fio)
+                    : `Чат заявки #${ticketId}`}
+              </Text>
+
+              {!!ticket?.assignedTo && (
+                <HStack gap={1.5}>
+                  <Box
+                    w={1.5}
+                    h={1.5}
+                    borderRadius="full"
+                    bg={statusConf.color}
+                  />
+                  <Text
+                    fontSize="xs"
+                    color={statusConf.color}
+                    fontWeight="medium"
+                  >
+                    {statusConf.label}
+                  </Text>
+                </HStack>
+              )}
+            </Box>
           </HStack>
+
+          <Text fontSize="xs" color="fg.muted">
+            {messages.length} сообщений
+          </Text>
         </Flex>
 
         {/* Messages */}
-        <Box flex={1} overflowY="auto" p={4}>
-          <ChatMessageList
-            messages={messages}
-            currentUserId={user?.id}
-            isSpecialist={isSpecialist}
-            isLoading={isLoading}
-            onDeleteMessage={handleDeleteMessage}
-            onImageClick={setLightboxImage}
-          />
-        </Box>
+        <Flex flex={1} overflowY="auto" p={4} w="100%">
+          <Box w="90%" maxW="900px" mx="auto">
+            <ChatMessageList
+              messages={messages}
+              currentUserId={user?.id}
+              isSpecialist={isSpecialist}
+              isLoading={isLoading}
+              onDeleteMessage={handleDeleteMessage}
+              onImageClick={setLightboxImage}
+            />
+          </Box>
+        </Flex>
 
         {/* Input Section */}
         <Box
@@ -151,58 +190,44 @@ export function TicketChat({
           borderColor="border.default"
           bg="bg.subtle"
         >
-          {/* Selected File Preview */}
-          {selectedFile && (
-            <Flex
-              mb={2}
-              p={2}
-              bg="bg.muted"
-              borderRadius="md"
-              align="center"
-              gap={2}
-            >
-              <LuPaperclip size={14} />
-              <Text fontSize="sm" flex={1} truncate>
-                {selectedFile.name}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {formatFileSize(selectedFile.size)}
-              </Text>
-              <Button size="xs" variant="ghost" onClick={handleRemoveFile}>
-                <LuX size={14} />
-              </Button>
-            </Flex>
-          )}
-
           {/* Typing Indicator */}
           {typingUser && (
-            <Flex px={3} py={1} align="center" gap={2}>
-              <Box className="typing-dots" display="flex" gap={1}>
-                <Box
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="blue.500"
-                  animation="pulse 1.4s infinite"
-                />
-                <Box
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="blue.500"
-                  animation="pulse 1.4s infinite 0.2s"
-                />
-                <Box
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="blue.500"
-                  animation="pulse 1.4s infinite 0.4s"
-                />
-              </Box>
-              <Text fontSize="xs" color="fg.muted" fontStyle="italic">
-                {typingUser.fio || typingUser.username} печатает...
+            <Flex px={4} py={2} align="center" gap={2}>
+              <Text fontSize="xs" color="fg.subtle">
+                {typingUser.fio || typingUser.username} печатает
               </Text>
+
+              {/* Бабл с точками */}
+              <Flex
+                align="center"
+                gap="5px"
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderColor="border.default"
+                borderRadius="12px 12px 12px 3px"
+                px={3}
+                py={2}
+              >
+                <style>{`
+        @keyframes typingBlink {
+          0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+        .typing-dot { animation: typingBlink 1.4s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+      `}</style>
+                {[0, 1, 2].map((i) => (
+                  <Box
+                    key={i}
+                    className="typing-dot"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="fg.muted"
+                  />
+                ))}
+              </Flex>
             </Flex>
           )}
 
@@ -219,6 +244,7 @@ export function TicketChat({
               selectedFile={selectedFile}
               isChatInactive={false}
               onPasteFile={handlePasteFile}
+              onClearFile={handleRemoveFile}
             />
           ) : (
             <ChatInput
@@ -236,77 +262,11 @@ export function TicketChat({
         </Box>
       </Box>
 
-      {/* Image Lightbox */}
-      <Dialog.Root
-        open={!!lightboxImage}
-        onOpenChange={(details) => !details.open && setLightboxImage(null)}
-        size="cover"
-      >
-        <Portal>
-          <Dialog.Backdrop
-            bg="blackAlpha.800"
-            onClick={() => setLightboxImage(null)}
-          />
-          <Dialog.Positioner>
-            <Dialog.Content
-              bg="transparent"
-              shadow="none"
-              maxW="95vw"
-              maxH="95vh"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              onClick={() => setLightboxImage(null)}
-            >
-              {/* Lightbox Controls */}
-              <HStack position="absolute" top={4} right={4} zIndex={10} gap={2}>
-                {/* Download Button */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  color="white"
-                  _hover={{ bg: "whiteAlpha.200" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (lightboxImage) {
-                      // Create a temporary link to download
-                      const link = document.createElement("a");
-                      link.href = lightboxImage;
-                      link.download = `image-${Date.now()}.png`;
-                      link.target = "_blank";
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }
-                  }}
-                >
-                  <LuDownload size={20} />
-                </Button>
-                {/* Close Button */}
-                <CloseButton
-                  color="white"
-                  size="lg"
-                  onClick={() => setLightboxImage(null)}
-                  _hover={{ bg: "whiteAlpha.200" }}
-                />
-              </HStack>
-              {lightboxImage && (
-                <img
-                  src={lightboxImage}
-                  alt="Enlarged view"
-                  style={{
-                    maxWidth: "90vw",
-                    maxHeight: "90vh",
-                    objectFit: "contain",
-                    borderRadius: "8px",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
+      <ImageLightbox
+        src={lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        downloadable
+      />
     </VStack>
   );
 }

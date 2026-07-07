@@ -9,3 +9,5 @@ export * from "./wiki";
 export * from "./stats";
 export * from "./profile";
 export * from "./categories";
+export * from "./rbac";
+export * from "./maintenance";

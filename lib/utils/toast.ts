@@ -1,4 +1,4 @@
-import { toaster } from "@/components/ui/toaster";
+import {toaster} from "@/components/ui/toaster";
 
 /**
  * Централизованные хелперы для toast уведомлений
@@ -13,7 +13,7 @@ export const toast = {
       title,
       description,
       duration: 4000,
-      meta: { closable: true },
+      closable: true,
     });
   },
 
@@ -25,7 +25,7 @@ export const toast = {
       title,
       description,
       duration: 6000,
-      meta: { closable: true },
+      closable: true,
     });
   },
 
@@ -37,7 +37,7 @@ export const toast = {
       title,
       description,
       duration: 4000,
-      meta: { closable: true },
+      closable: true,
     });
   },
 
@@ -49,30 +49,30 @@ export const toast = {
       title,
       description,
       duration: 5000,
-      meta: { closable: true },
+      closable: true,
     });
   },
 
   /**
    * Тост для загрузки (с промисом)
    */
-  promise: <T,>(
-    promise: Promise<T>,
-    options: {
-      loading: string;
-      success: string | ((data: T) => string);
-      error: string | ((error: unknown) => string);
-    }
+  promise: <T, >(
+      promise: Promise<T>,
+      options: {
+        loading: string;
+        success: string | ((data: T) => string);
+        error: string | ((error: unknown) => string);
+      }
   ): Promise<T> => {
     toaster.promise(promise, {
-      loading: { title: options.loading },
+      loading: {title: options.loading},
       success: (data) => ({
         title: typeof options.success === "function" ? options.success(data) : options.success,
-        meta: { closable: true },
+        closable: true,
       }),
       error: (err) => ({
         title: typeof options.error === "function" ? options.error(err) : options.error,
-        meta: { closable: true },
+        closable: true,
       }),
     });
     return promise;

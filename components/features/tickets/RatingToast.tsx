@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  Textarea,
-  VStack,
-  HStack,
-  RatingGroup,
-} from "@chakra-ui/react";
+import { Box, Text, Button, Textarea, VStack, HStack } from "@chakra-ui/react";
 import { LuX, LuSend, LuStar } from "react-icons/lu";
 import { ticketApi } from "@/lib/api/tickets";
 import { handleApiError, toast } from "@/lib/utils";
@@ -44,7 +35,7 @@ export function RatingToast({ ticketId, onClose }: RatingToastProps) {
       });
       toast.success(
         "Спасибо за отзыв!",
-        "Ваша оценка помогает нам улучшать качество обслуживания"
+        "Ваша оценка помогает нам улучшать качество обслуживания",
       );
       onClose();
     } catch (error) {

@@ -2,11 +2,11 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useState,
-  useCallback,
   useRef,
+  useState,
 } from "react";
 import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -16,18 +16,25 @@ import { refreshAccessToken } from "@/lib/api/client";
 import { Ticket } from "@/types/ticket";
 import { Notification } from "@/types/notification";
 import type {
-  ChatMessageWS,
-  TypingIndicator,
-  AttachmentWS,
   AssignmentWS,
-  UserStatusWS,
+  AttachmentWS,
+  ChatMessageWS,
   ReadReceiptWS,
+  TicketListEventWS,
+  TypingIndicator,
+  UserStatusWS,
 } from "@/types/websocket";
 
 interface WebSocketContextValue {
   isConnected: boolean;
-  // Ticket subscriptions
-  subscribeToNewTickets: (callback: (ticket: Ticket) => void) => () => void;
+  /**
+   * Агрегированный поток событий тикетов (/topic/tickets).
+   * Несёт компактный payload — подходит для списочных вьюх,
+   * фронт фильтрует события локально без N подписок на каждый тикет.
+   */
+  subscribeToTickets: (
+    callback: (event: TicketListEventWS) => void,
+  ) => () => void;
   subscribeToTicketUpdates: (
     ticketId: number,
     callback: (ticket: Ticket) => void,
@@ -36,7 +43,6 @@ interface WebSocketContextValue {
     ticketId: number,
     callback: (data: { id: number }) => void,
   ) => () => void;
-  subscribeToSlaBreach: (callback: (ticket: Ticket) => void) => () => void;
   // Chat (for tickets)
   sendMessage: (
     ticketId: number,
@@ -92,20 +98,29 @@ interface WebSocketContextValue {
 
 // ==================== Context ====================
 
-
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 // ==================== Provider ====================
 
+type StompCallback = (message: IMessage) => void;
+
+interface SubscriptionEntry {
+  sub: StompSubscription;
+  callbacks: Set<StompCallback>;
+}
+
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { accessToken, user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [isConnected, setIsConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
-  const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
+  // destination -> { общая STOMP-подписка + набор колбэков для fan-out }
+  // Fan-out даёт нескольким независимым компонентам слушать один и тот же
+  // топик (например, /topic/ticket/new) без взаимного вытеснения.
+  const subscriptionsRef = useRef<Map<string, SubscriptionEntry>>(new Map());
 
   // Connect to WebSocket
   useEffect(() => {
-    if (!accessToken || !user) {
+    if (!isAuthenticated) {
       if (clientRef.current?.connected) {
         clientRef.current.deactivate();
       }
@@ -122,9 +137,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
                 transports: ["websocket", "xhr-streaming", "xhr-polling"],
               }) as WebSocket,
           }),
-      connectHeaders: {
-        Authorization: `Bearer ${accessToken}`,
-      },
       debug: (str) => {
         if (process.env.NODE_ENV === "development") {
           // Log only important STOMP messages or all in verbose mode
@@ -182,18 +194,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       // Clean up all subscriptions
-      subscriptionsRef.current.forEach((sub) => sub.unsubscribe());
+      subscriptionsRef.current.forEach((entry) => entry.sub.unsubscribe());
       subscriptionsRef.current.clear();
       client.deactivate();
     };
-  }, [accessToken, user]);
+  }, [user, isAuthenticated]);
 
-  // Helper to subscribe with tracking
+  // Helper to subscribe with tracking.
+  // Поддерживает множественных независимых подписчиков на один и тот же
+  // destination: STOMP-подписка создаётся один раз, входящие сообщения
+  // фаноутятся всем зарегистрированным колбэкам. При отписке последнего
+  // подписчика STOMP-подписка закрывается.
   const subscribe = useCallback(
-    (
-      destination: string,
-      callback: (message: IMessage) => void,
-    ): (() => void) => {
+    (destination: string, callback: StompCallback): (() => void) => {
       const client = clientRef.current;
 
       // Check both ref and actual connection state
@@ -205,18 +218,32 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         return () => {};
       }
 
-      // Avoid duplicate subscriptions
-      const existingKey = `${destination}`;
-      if (subscriptionsRef.current.has(existingKey)) {
-        subscriptionsRef.current.get(existingKey)?.unsubscribe();
+      let entry = subscriptionsRef.current.get(destination);
+      if (!entry) {
+        const callbacks = new Set<StompCallback>();
+        const sub = client.subscribe(destination, (message) => {
+          // Важно: ошибка одного подписчика не должна ронять остальных
+          callbacks.forEach((cb) => {
+            try {
+              cb(message);
+            } catch (e) {
+              console.error("[WS] Ошибка в подписчике на", destination, e);
+            }
+          });
+        });
+        entry = { sub, callbacks };
+        subscriptionsRef.current.set(destination, entry);
       }
-
-      const subscription = client.subscribe(destination, callback);
-      subscriptionsRef.current.set(existingKey, subscription);
+      entry.callbacks.add(callback);
 
       return () => {
-        subscription.unsubscribe();
-        subscriptionsRef.current.delete(existingKey);
+        const current = subscriptionsRef.current.get(destination);
+        if (!current) return;
+        current.callbacks.delete(callback);
+        if (current.callbacks.size === 0) {
+          current.sub.unsubscribe();
+          subscriptionsRef.current.delete(destination);
+        }
       };
     },
     [],
@@ -224,14 +251,17 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   // ==================== Ticket Subscriptions ====================
 
-  const subscribeToNewTickets = useCallback(
-    (callback: (ticket: Ticket) => void) => {
-      return subscribe("/topic/ticket/new", (message) => {
+  const subscribeToTickets = useCallback(
+    (callback: (event: TicketListEventWS) => void) => {
+      return subscribe("/topic/tickets", (message) => {
         try {
-          const ticket: Ticket = JSON.parse(message.body);
-          callback(ticket);
+          const event: TicketListEventWS = JSON.parse(message.body);
+          callback(event);
         } catch (e) {
-          console.error("[WS] Ошибка подписки на новые тикеты: ", e);
+          console.error(
+            "[WS] Ошибка подписки на агрегированный поток тикетов: ",
+            e,
+          );
         }
       });
     },
@@ -260,20 +290,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           callback(data);
         } catch (e) {
           console.error("[WS] Ошибка подписки на событие удаления тикета: ", e);
-        }
-      });
-    },
-    [subscribe],
-  );
-
-  const subscribeToSlaBreach = useCallback(
-    (callback: (ticket: Ticket) => void) => {
-      return subscribe("/topic/sla/breach", (message) => {
-        try {
-          const ticket: Ticket = JSON.parse(message.body);
-          callback(ticket);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на SLA breach: ", e);
         }
       });
     },
@@ -476,10 +492,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   const value: WebSocketContextValue = {
     isConnected,
-    subscribeToNewTickets,
+    subscribeToTickets,
     subscribeToTicketUpdates,
     subscribeToTicketDeleted,
-    subscribeToSlaBreach,
     subscribeToUserNotifications,
     subscribeToAssignments,
     subscribeToAssignmentRejected,

@@ -29,6 +29,19 @@ export interface ConfirmUploadRequest {
   targetId: number;
 }
 
+// ===== Multipart Upload (файлы > 5 ГБ) =====
+
+export interface InitiateMultipartResponse {
+  uploadId: string;
+  fileKey: string;
+  bucket: string;
+}
+
+export interface MultipartPartInfo {
+  partNumber: number;
+  etag: string;
+}
+
 export interface WikiMediaUploadUrlResponse {
   uploadUrl: string;
   fileKey: string;

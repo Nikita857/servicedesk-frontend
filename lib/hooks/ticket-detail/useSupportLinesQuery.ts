@@ -4,7 +4,8 @@ import { supportLineApi } from "@/lib/api/supportLines";
 import { assignmentApi } from "@/lib/api/assignments";
 import type { SupportLineListResponse, Specialist } from "@/types/support-line";
 import { queryKeys } from "@/lib/queryKeys";
-import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import type { Ticket } from "@/types/ticket";
 
 interface UseSupportLinesQueryOptions {
@@ -25,9 +26,9 @@ export function useSupportLinesQuery(
   options: UseSupportLinesQueryOptions
 ): UseSupportLinesQueryReturn {
   const { ticket } = options;
-  const { user } = useAuthStore();
-  const isAdmin = user?.roles?.includes("ADMIN") || false;
-  const isSpecialist = user?.specialist || false;
+  const { hasAny } = useCurrentPermissions();
+  const canForward = hasAny([PERM.TICKET_FORWARD, PERM.TICKET_FORWARD_ANY]);
+  const canForwardAny = hasAny([PERM.TICKET_FORWARD_ANY, PERM.TICKET_UPDATE_ALL]);
   const [selectedLineId, setSelectedLineId] = useState<number | undefined>();
 
   // Try available-lines first (role-based filtering) - ONLY for specialists
@@ -35,17 +36,15 @@ export function useSupportLinesQuery(
     queryKey: [...queryKeys.supportLines.list(), "available-for-forwarding"],
     queryFn: () => assignmentApi.getAvailableForwardingLines(),
     staleTime: 5 * 60 * 1000,
-    enabled: !!ticket && isSpecialist,
+    enabled: !!ticket && canForward,
   });
 
-  // Fallback to all lines (for admin or if available-lines returns empty)
-  // Also only relevant if user is specialist/admin, regular users don't see escalation panel
+  // Fallback to all lines (for users who can forward to any line, or if available-lines returns empty)
   const allLinesQuery = useQuery({
     queryKey: queryKeys.supportLines.list(),
     queryFn: () => supportLineApi.getAll(),
     staleTime: 5 * 60 * 1000,
-    // Only run if available-lines returned empty or we're admin
-    enabled: !!ticket && isSpecialist && (isAdmin || (availableLinesQuery.isSuccess && availableLinesQuery.data?.length === 0)),
+    enabled: !!ticket && canForward && (canForwardAny || (availableLinesQuery.isSuccess && availableLinesQuery.data?.length === 0)),
   });
 
   // Use available lines if they exist, otherwise fall back to all lines

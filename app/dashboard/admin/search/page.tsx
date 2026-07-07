@@ -13,14 +13,22 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { LuSearch, LuBook, LuTicket, LuRefreshCw } from "react-icons/lu";
+import {
+  LuSearch,
+  LuBook,
+  LuTicket,
+  LuRefreshCw,
+  LuFileText,
+} from "react-icons/lu";
 import { searchAdminApi } from "@/lib/api/search";
 import { handleApiError, toast } from "@/lib/utils";
 
 export default function SearchAdminPage() {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleReindex = async (type: "all" | "wiki" | "tickets") => {
+  const handleReindex = async (
+    type: "all" | "wiki" | "tickets" | "surveys",
+  ) => {
     setLoading(type);
     try {
       if (type === "all") {
@@ -29,10 +37,10 @@ export default function SearchAdminPage() {
         await searchAdminApi.reindexWiki();
       } else if (type === "tickets") {
         await searchAdminApi.reindexTickets();
+      } else if (type === "surveys") {
+        await searchAdminApi.reindexSurveys();
       }
-      toast.success(
-        "Переиндексация завершена",
-      );
+      toast.success("Переиндексация завершена");
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -92,8 +100,8 @@ export default function SearchAdminPage() {
             </Card.Header>
             <Card.Body>
               <Text fontSize="sm" color="fg.muted">
-                Обновление индекса статей. Используйте, если новые статьи
-                не появляются в поиске или отображаются некорректно.
+                Обновление индекса статей. Используйте, если новые статьи не
+                появляются в поиске или отображаются некорректно.
               </Text>
             </Card.Body>
             <Card.Footer>
@@ -132,6 +140,31 @@ export default function SearchAdminPage() {
               >
                 <Icon as={LuRefreshCw} />
                 Обновить заявки
+              </Button>
+            </Card.Footer>
+          </Card.Root>
+          <Card.Root variant="outline">
+            <Card.Header>
+              <Stack direction="row" align="center" gap={3}>
+                <Icon as={LuFileText} boxSize={6} color="purple.600" />
+                <Heading size="md">Опросы</Heading>
+              </Stack>
+            </Card.Header>
+            <Card.Body>
+              <Text fontSize="sm" color="fg.muted">
+                Обновление индекса опросов. Позволяет актуализировать визуальные
+                представления в Kibana.
+              </Text>
+            </Card.Body>
+            <Card.Footer>
+              <Button
+                w="full"
+                variant="outline"
+                loading={loading === "surveys"}
+                onClick={() => handleReindex("surveys")}
+              >
+                <Icon as={LuRefreshCw} />
+                Обновить опросы
               </Button>
             </Card.Footer>
           </Card.Root>

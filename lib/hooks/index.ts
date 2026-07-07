@@ -1,5 +1,6 @@
 // Auth
 export { useAuth } from "./shared/useAuth";
+export { useCurrentPermissions } from "./shared/usePermissions";
 
 // Dashboard
 export { useDashboardQuery } from "./shared/useDashboardQuery";
@@ -27,6 +28,7 @@ export { usePersistentPage } from "./shared/usePersistentPage";
 
 // File Upload
 export { useFileUpload } from "./shared/useFileUpload";
+export { useMultipartUpload } from "./shared/useMultipartUpload";
 
 // Assignments WebSocket
 export { useAssignmentsWebSocket } from "./shared/useAssignmentsWebSocket";

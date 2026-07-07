@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import { startTransition, useEffect, useState } from "react";
 import {
   Toaster as ChakraToaster,
   Portal,
@@ -7,14 +8,24 @@ import {
   Stack,
   Toast,
   createToaster,
-} from "@chakra-ui/react"
+} from "@chakra-ui/react";
 
 export const toaster = createToaster({
   placement: "bottom-end",
   pauseOnPageIdle: true,
-})
+});
 
 export const Toaster = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    startTransition(() => {
+      setMounted(true);
+    });
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <Portal>
       <ChakraToaster toaster={toaster} insetInline={{ mdDown: "4" }}>
@@ -39,5 +50,5 @@ export const Toaster = () => {
         )}
       </ChakraToaster>
     </Portal>
-  )
-}
+  );
+};

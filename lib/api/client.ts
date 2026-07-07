@@ -1,9 +1,23 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "../config";
 import { useAuthStore } from "@/stores/authStore";
+import { toast } from "@/lib/utils";
+
+interface AuthError {
+  success: boolean;
+  errorCode:
+    | "TOKEN_EXPIRED"
+    | "TOKEN_INVALID"
+    | "USER_NOT_FOUND"
+    | "AUTH_FAILED"
+    | "CSRF_ERROR"
+    | "ACCESS_DENIED";
+  message: string;
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -13,92 +27,82 @@ const api = axios.create({
 // ==================== Token Refresh Logic ====================
 
 let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+let lastRefreshTimestamp = 0; // timestamp последнего успешного рефреша
+let refreshSubscribers: Array<(success: boolean) => void> = [];
 
-// Subscribe to token refresh
-function subscribeToTokenRefresh(callback: (token: string) => void) {
+function subscribeToTokenRefresh(callback: (success: boolean) => void) {
   refreshSubscribers.push(callback);
 }
 
-// Notify all subscribers with new token
-function onTokenRefreshed(newToken: string) {
-  refreshSubscribers.forEach((callback) => callback(newToken));
+function onTokenRefreshed() {
+  refreshSubscribers.forEach((cb) => cb(true));
   refreshSubscribers = [];
 }
 
-// Decode JWT to get expiration time (without library)
-function getTokenExpiration(token: string): number | null {
-  try {
-    const payload = token.split(".")[1];
-    const decoded = JSON.parse(atob(payload));
-    if (!decoded.exp) return null;
+function onRefreshFailed() {
+  refreshSubscribers.forEach((cb) => cb(false));
+  refreshSubscribers = [];
+}
 
-    // Check if timestamp is in milliseconds (usually > 10^12)
-    // or in seconds (usually around 1.7*10^9)
-    const exp = decoded.exp;
-    return exp > 1000000000000 ? exp : exp * 1000;
-  } catch {
-    return null;
+function getCookie(name: string): string | null {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(
+      new RegExp("(^| )" + name + "=([^;]+)"),
+    );
+    return match ? decodeURIComponent(match[2]) : null;
   }
+  return null;
 }
 
-// Check if token is expired or will expire soon (within 60 seconds)
-function isTokenExpiringSoon(
-  token: string,
-  thresholdMs = 60 * 1000,
-): boolean {
-  const expiration = getTokenExpiration(token);
-  if (!expiration) return true; // If can't decode, assume expired
-  return Date.now() + thresholdMs >= expiration;
-}
+// Подставлем в во все запросы кроме ('GET', 'HEAD', 'OPTIONS', 'TRACE') X-XSRF-TOKEN
+api.interceptors.request.use(async (config) => {
+  const method = config.method?.toUpperCase();
+  if (method && !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method)) {
+    let csrfToken = getCookie("XSRF-TOKEN");
+    // Фикс проблемы исчезающего CSRF токена
+    // Если не задать куки lifetime то браузер считает ее сесионной, и в случайный момент
+    // сбрасывает ее, из за этого в случайный момент запрос на бэк будет отклонен CSRF фильтром в Spring Security
+    //Перехватчик видит куки посколько она HttpOnly: false, еси ее нет - сначала делаем запрос на легковесный эндпоинт
+    // получаем куку и уже с ней обращаемся на нужный эндпоинт
+    if (!csrfToken) {
+      await axios.get(`${API_BASE_URL}/auth/me`, { withCredentials: true });
+      csrfToken = getCookie("XSRF-TOKEN");
+    }
+    if (csrfToken) {
+      config.headers["X-XSRF-TOKEN"] = csrfToken;
+    }
+  }
+  return config;
+});
 
 // Refresh the token
-export async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem("refreshToken");
-  if (!refreshToken) return null;
-
+export async function refreshAccessToken(): Promise<boolean> {
   try {
     // Use separate axios instance with its own timeout for refresh
     const response = await axios.post(
       `${API_BASE_URL}/auth/refresh`,
-      {
-        refreshToken,
-      },
-      {
-        timeout: 15000, // 15 second timeout for refresh
-      },
+      {},
+      { withCredentials: true, timeout: 15000 },
     );
 
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      userAuthResponse,
-    } = response.data.data;
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", newRefreshToken);
+    const { userAuthResponse, expiresIn } = response.data.data;
 
-    // Sync with Zustand store
     try {
-      useAuthStore
-        .getState()
-        .setAuth(userAuthResponse, accessToken, newRefreshToken);
+      useAuthStore.getState().setAuth(userAuthResponse, expiresIn);
     } catch (e) {
-      console.error("[Auth] Failed to sync store after refresh:", e);
+      console.error("[Auth] failed to sync store after refresh ", e);
     }
-
-    return accessToken;
+    lastRefreshTimestamp = Date.now();
+    return true;
   } catch (error) {
-    // Only clear tokens on auth errors, not on network/timeout errors
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      try {
-        useAuthStore.getState().clearAuth();
-      } catch (e) {
-        // ignore
-      }
+    console.log(error);
+    try {
+      useAuthStore.getState().clearAuth();
+      toast.warning("Ваша сессия истекла, войдите снова.");
+    } catch (e) {
+      console.error(e);
     }
-    return null;
+    return false;
   }
 }
 
@@ -106,104 +110,43 @@ export async function refreshAccessToken(): Promise<string | null> {
  * Checks if the current token is about to expire and refreshes it if necessary.
  * Useful for background periodic checks.
  */
-export async function checkAndRefreshToken(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
-  const token = localStorage.getItem("accessToken");
-  if (!token) return null;
+export async function checkAndRefreshToken(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (!useAuthStore.getState().isAuthenticated) return false;
 
-  if (isTokenExpiringSoon(token)) {
-    if (isRefreshing) {
-      return new Promise((resolve) => subscribeToTokenRefresh(resolve));
-    }
+  const tokenExpiresAt = useAuthStore.getState().tokenExpiresAt;
 
-    isRefreshing = true;
-    try {
-      const newToken = await refreshAccessToken();
-      isRefreshing = false;
-      if (newToken) {
-        onTokenRefreshed(newToken);
-        return newToken;
-      }
-    } catch (error) {
-      isRefreshing = false;
-      console.error("[Auth] Background check refresh failed:", error);
-    }
+  // Рефрешим только если токен истекает через 30 секунд или уже истёк
+  const shouldRefresh =
+    !tokenExpiresAt || tokenExpiresAt - 30_000 <= Date.now();
+  if (!shouldRefresh) return true;
+
+  if (isRefreshing) {
+    return new Promise((resolve) =>
+      subscribeToTokenRefresh((success) => resolve(success)),
+    );
   }
-  return token;
+
+  isRefreshing = true;
+  try {
+    const success = await refreshAccessToken();
+    isRefreshing = false;
+    if (success) {
+      onTokenRefreshed();
+    } else {
+      onRefreshFailed();
+    }
+    return success;
+  } catch (error) {
+    isRefreshing = false;
+    onRefreshFailed();
+    console.error("[Auth] Background check refresh failed:", error);
+    return false;
+  }
 }
 
 // ==================== Interceptors ====================
 
-// Request interceptor - add auth token and preventively refresh if needed
-api.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
-    if (typeof window === "undefined") return config;
-
-    let token = localStorage.getItem("accessToken");
-
-    // Skip token check for auth endpoints
-    const isAuthEndpoint = config.url?.includes("/auth/");
-    if (isAuthEndpoint) {
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    }
-
-    // Check if token exists and is expiring soon
-    if (token && isTokenExpiringSoon(token)) {
-      // If already refreshing, wait for it
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          subscribeToTokenRefresh((newToken) => {
-            if (config.headers) {
-              config.headers.Authorization = `Bearer ${newToken}`;
-            }
-            resolve(config);
-          });
-        });
-      }
-
-      // Start refreshing
-      isRefreshing = true;
-
-      try {
-        const newToken = await refreshAccessToken();
-        isRefreshing = false;
-
-        if (newToken) {
-          onTokenRefreshed(newToken);
-          token = newToken;
-        } else {
-          // Refresh returned null - could be network error or auth error
-          // Only redirect to login if we have no valid tokens at all
-          const hasTokens =
-            localStorage.getItem("accessToken") ||
-            localStorage.getItem("refreshToken");
-          if (!hasTokens && typeof window !== "undefined") {
-            window.location.href = "/login";
-          }
-          // If we still have tokens, let the request proceed and fail naturally
-          // This allows retry on network issues
-        }
-      } catch (error) {
-        isRefreshing = false;
-        // Don't redirect on network errors - let the request fail and show error
-        console.error("[Auth] Token refresh failed:", error);
-      }
-    }
-
-    // Add token to request
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
-
-// Response interceptor - handle 401 as fallback
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -211,66 +154,114 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // If no response from server (network error), just reject
-    if (!error.response) {
+    if (!error.response) return Promise.reject(error);
+
+    const data = error.response.data as AuthError;
+    const errorCode = data?.errorCode;
+    const status = error.response.status;
+    const isAuthEndpoint = originalRequest?.url?.includes("/auth/");
+
+    if (
+      status === 403 &&
+      errorCode === "CSRF_ERROR" &&
+      !originalRequest?._retry
+    ) {
+      originalRequest._retry = true;
+
+      if (Date.now() - lastRefreshTimestamp < 5000) {
+        return api(originalRequest);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeToTokenRefresh((success) => {
+            if (success) resolve(api(originalRequest));
+            else reject(error);
+          });
+        });
+      }
+
+      isRefreshing = true;
+      try {
+        const success = await refreshAccessToken();
+        isRefreshing = false;
+        if (success) {
+          onTokenRefreshed();
+          return api(originalRequest);
+        } else {
+          onRefreshFailed();
+        }
+      } catch (refreshError) {
+        isRefreshing = false;
+        onRefreshFailed();
+        console.warn(refreshError);
+      }
+
+      if (
+        typeof window !== "undefined" &&
+        window.location.pathname !== "/login"
+      ) {
+        try {
+          useAuthStore.getState().clearAuth();
+        } catch (e) {
+          console.error(e);
+        }
+        window.location.href = "/login";
+      }
       return Promise.reject(error);
     }
 
-    const data = error.response.data as any;
-    const errorCode = data?.errorCode;
-    const status = error.response.status;
-
-    // Skip handling for auth endpoints to prevent loops
-    const isAuthEndpoint = originalRequest?.url?.includes("/auth/");
-
-    // Handle 401 Unauthorized
     if (status === 401 && !isAuthEndpoint) {
-      // If token is expired, try to refresh
       if (errorCode === "TOKEN_EXPIRED" && !originalRequest?._retry) {
         originalRequest._retry = true;
 
-        // If already refreshing, wait for it
+        // Если рефреш уже прошёл < 5 секунд назад — токен свежий, просто ретраим запрос
+        if (Date.now() - lastRefreshTimestamp < 5000) {
+          return api(originalRequest);
+        }
+
         if (isRefreshing) {
-          return new Promise((resolve) => {
-            subscribeToTokenRefresh((newToken) => {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return new Promise((resolve, reject) => {
+            subscribeToTokenRefresh((success) => {
+              if (success) {
+                resolve(api(originalRequest));
+              } else {
+                if (
+                  typeof window !== "undefined" &&
+                  window.location.pathname !== "/login"
+                ) {
+                  useAuthStore.getState().clearAuth();
+                  window.location.href = "/login";
+                }
+                reject(error);
               }
-              resolve(api(originalRequest));
             });
           });
         }
 
         isRefreshing = true;
-
         try {
-          const newToken = await refreshAccessToken();
+          const success = await refreshAccessToken();
           isRefreshing = false;
-
-          if (newToken) {
-            onTokenRefreshed(newToken);
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            }
-            return api(originalRequest);
+          if (success) {
+            onTokenRefreshed();
+            return api(originalRequest); // retry — cookie обновлена
+          } else {
+            onRefreshFailed();
           }
         } catch (refreshError) {
           isRefreshing = false;
+          onRefreshFailed();
         }
       }
 
-      // If refresh failed OR error is something else (TOKEN_INVALID, USER_DISABLED, etc.)
-      // Clear auth and redirect to login
+      // Refresh не помог или другая ошибка
       if (typeof window !== "undefined") {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
         try {
           useAuthStore.getState().clearAuth();
         } catch (e) {
-          // ignore
+          /* ignore */
         }
-
-        // Don't redirect if we're already on login page
         if (window.location.pathname !== "/login") {
           window.location.href = "/login";
         }

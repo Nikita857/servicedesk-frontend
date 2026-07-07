@@ -14,10 +14,9 @@ import {
 } from "@chakra-ui/react";
 import { Table } from "@chakra-ui/react";
 import { LuRefreshCw } from "react-icons/lu";
-import Link from "next/link";
 import { BackButton } from "@/components/ui";
 import { reportsApi, type TicketStatsByCategory } from "@/lib/api/reports";
-import { handleApiError, toast } from "@/lib/utils";
+import { handleApiError } from "@/lib/utils";
 
 // Маппинг типов категорий
 const categoryTypeColors: Record<string, string> = {

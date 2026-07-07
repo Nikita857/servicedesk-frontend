@@ -1,14 +1,19 @@
 import api from "./client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
-import type { AssignmentResponse, CreateAssignmentRequest, RejectAssignmentRequest } from "@/types/assignment";
+import type {
+  AssignmentResponse,
+  CreateAssignmentRequest,
+} from "@/types/assignment";
 import type { SupportLineListResponse } from "@/types/support-line";
 
 export const assignmentApi = {
   // Create new assignment (escalate ticket)
-  create: async (data: CreateAssignmentRequest): Promise<AssignmentResponse> => {
+  create: async (
+    data: CreateAssignmentRequest,
+  ): Promise<AssignmentResponse> => {
     const response = await api.post<ApiResponse<AssignmentResponse>>(
       "/assignments",
-      data
+      data,
     );
     return response.data.data;
   },
@@ -16,16 +21,18 @@ export const assignmentApi = {
   // Get assignment by ID
   get: async (id: number): Promise<AssignmentResponse> => {
     const response = await api.get<ApiResponse<AssignmentResponse>>(
-      `/assignments/${id}`
+      `/assignments/${id}`,
     );
     return response.data.data;
   },
 
   // Get current active assignment for ticket
-  getCurrentForTicket: async (ticketId: number): Promise<AssignmentResponse | null> => {
+  getCurrentForTicket: async (
+    ticketId: number,
+  ): Promise<AssignmentResponse | null> => {
     try {
       const response = await api.get<ApiResponse<AssignmentResponse>>(
-        `/tickets/${ticketId}/current-assignment`
+        `/tickets/${ticketId}/current-assignment`,
       );
       return response.data.data;
     } catch {
@@ -36,26 +43,28 @@ export const assignmentApi = {
   // Get assignment history for ticket
   getTicketHistory: async (ticketId: number): Promise<AssignmentResponse[]> => {
     const response = await api.get<ApiResponse<AssignmentResponse[]>>(
-      `/tickets/${ticketId}/assignments`
+      `/tickets/${ticketId}/assignments`,
     );
     return response.data.data;
   },
 
   // Get my pending assignments
-  getMyPending: async (page = 0, size = 20): Promise<PaginatedResponse<AssignmentResponse>> => {
-    const response = await api.get<ApiResponse<PaginatedResponse<AssignmentResponse>>>(
-      "/assignments/pending",
-      {
-        params: { page, size },
-      }
-    );
+  getMyPending: async (
+    page = 0,
+    size = 20,
+  ): Promise<PaginatedResponse<AssignmentResponse>> => {
+    const response = await api.get<
+      ApiResponse<PaginatedResponse<AssignmentResponse>>
+    >("/assignments/pending", {
+      params: { page, size },
+    });
     return response.data.data;
   },
 
   // Get pending count
   getPendingCount: async (): Promise<number> => {
     const response = await api.get<ApiResponse<number>>(
-      "/assignments/pending-count"
+      "/assignments/pending-count",
     );
     return response.data.data;
   },
@@ -63,7 +72,7 @@ export const assignmentApi = {
   // Accept assignment
   accept: async (id: number): Promise<AssignmentResponse> => {
     const response = await api.post<ApiResponse<AssignmentResponse>>(
-      `/assignments/${id}/accept`
+      `/assignments/${id}/accept`,
     );
     return response.data.data;
   },
@@ -72,7 +81,15 @@ export const assignmentApi = {
   reject: async (id: number, reason: string): Promise<AssignmentResponse> => {
     const response = await api.post<ApiResponse<AssignmentResponse>>(
       `/assignments/${id}/reject`,
-      { reason }
+      { reason },
+    );
+    return response.data.data;
+  },
+
+  // Get ticket IDs where current user is co-executor
+  getMyCoExecutorTicketIds: async (): Promise<number[]> => {
+    const response = await api.get<ApiResponse<number[]>>(
+      "/tickets/co-executor/my",
     );
     return response.data.data;
   },
@@ -83,7 +100,7 @@ export const assignmentApi = {
    */
   getAvailableForwardingLines: async (): Promise<SupportLineListResponse[]> => {
     const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
-      "/assignments/available-lines"
+      "/assignments/available-lines",
     );
     return response.data.data;
   },

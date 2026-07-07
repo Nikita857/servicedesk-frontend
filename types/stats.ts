@@ -1,4 +1,9 @@
-import type { TicketStatus, TicketStatusHistory } from "./ticket";
+import { PaginatedResponse } from "./api";
+import type {
+  TicketPriority,
+  TicketStatus,
+  TicketStatusHistory,
+} from "./ticket";
 
 export interface UserTicketStatsResponse {
   userId: number;
@@ -109,11 +114,11 @@ export interface TicketStatsByStatus {
   percentage: number;
 }
 
-export interface TicketReportItem {
+export interface TicketReportListResponse {
   id: number;
   title: string;
-  status: string;
-  priority: string;
+  status: TicketStatus;
+  priority: TicketPriority;
   createdByFio: string;
   assignedToFio: string | null;
   supportLineName: string | null;
@@ -121,17 +126,6 @@ export interface TicketReportItem {
   resolvedAt: string | null;
   closedAt: string | null;
   deletedAt: string | null;
-}
-
-export interface PagedTicketReport {
-  content: TicketReportItem[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
 }
 
 export interface SpecialistWorkload {

@@ -16,6 +16,8 @@ import { TicketCard } from "./TicketCard";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { useTicketsQuery, useTicketsWebSocket } from "@/lib/hooks";
 import type { TicketStatus } from "@/types/ticket";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 
 interface UserTicketsViewProps {
   status?: TicketStatus;
@@ -31,17 +33,13 @@ export const UserTicketsView = ({
   pageSize,
   initialFilter,
 }: UserTicketsViewProps) => {
-  const { data, meta, optimistic, actions } = useTicketsQuery({
+  const { data, meta, actions } = useTicketsQuery({
     pageSize,
     initialFilter,
   });
+  const { has } = useCurrentPermissions();
 
-  useTicketsWebSocket({
-    onNewTicket: (ticket) => {
-      optimistic.addTicket(ticket);
-    },
-    enabled: true,
-  });
+  useTicketsWebSocket();
 
   const content = data?.content ?? [];
   const tickets = status ? content.filter((t) => t.status === status) : content;
@@ -64,17 +62,19 @@ export const UserTicketsView = ({
 
           <HStack gap={3}>
             <TicketStatusHelpModal />
-            <Link href="/dashboard/tickets/new">
-              <Button
-                size="sm"
-                bg="gray.900"
-                color="white"
-                _hover={{ bg: "gray.800" }}
-              >
-                <LuPlus />
-                Новый тикет
-              </Button>
-            </Link>
+            {has(PERM.TICKET_CREATE) && (
+              <Link href="/dashboard/tickets/new">
+                <Button
+                  size="sm"
+                  bg="gray.900"
+                  color="white"
+                  _hover={{ bg: "gray.800" }}
+                >
+                  <LuPlus />
+                  Новый тикет
+                </Button>
+              </Link>
+            )}
           </HStack>
         </Flex>
       )}
@@ -95,7 +95,7 @@ export const UserTicketsView = ({
           borderColor="border.default"
         >
           <Text color="fg.muted">Заявки не найдены</Text>
-          {!hideHeader && (
+          {!hideHeader && has(PERM.TICKET_CREATE) && (
             <Link href="/dashboard/tickets/new">
               <Button mt={4} size="sm" variant="outline">
                 Создать первую заявку

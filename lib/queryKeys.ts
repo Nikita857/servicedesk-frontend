@@ -3,6 +3,8 @@
  * Используются для кэширования и инвалидации запросов
  */
 
+import { DateWindow } from "@/types/scheduler";
+
 export const queryKeys = {
   // Tickets
   tickets: {
@@ -28,6 +30,8 @@ export const queryKeys = {
       [...queryKeys.assignments.all, "history", ticketId] as const,
     coExecutors: (ticketId: number) =>
       [...queryKeys.assignments.all, "co-executors", ticketId] as const,
+    myCoExecutorTicketIds: () =>
+      [...queryKeys.assignments.all, "my-co-executor-ticket-ids"] as const,
   },
 
   // Support Lines
@@ -55,6 +59,7 @@ export const queryKeys = {
       search?: string;
       showAll?: boolean;
       filter?: string;
+      pageSize?: number;
     }) => [...queryKeys.wiki.all, "categories-with-articles", params] as const,
     details: () => [...queryKeys.wiki.all, "detail"] as const,
     detail: (slug: string) => [...queryKeys.wiki.details(), slug] as const,
@@ -92,5 +97,82 @@ export const queryKeys = {
     byLine: (lineId: number) =>
       [...queryKeys.stats.all, "by-line", lineId] as const,
     global: () => [...queryKeys.stats.all, "global"] as const,
+  },
+
+  //   Notifications
+  notifications: {
+    all: ["notifications"] as const,
+    list: () => [...queryKeys.notifications.all, "list"] as const,
+    unreadCount: () =>
+      [...queryKeys.notifications.all, "unread-count"] as const,
+    settings: () => [...queryKeys.notifications.all, "settings"] as const,
+  },
+
+  // Scheduled Tasks
+  scheduledTasks: {
+    all: ["scheduledTasks"] as const,
+    lists: () => [...queryKeys.scheduledTasks.all, "list"] as const,
+    list: (filter: Record<string, unknown>) =>
+      [...queryKeys.scheduledTasks.lists(), filter] as const,
+    details: () => [...queryKeys.scheduledTasks.all, "detail"] as const,
+    detail: (id: number) =>
+      [...queryKeys.scheduledTasks.details(), id] as const,
+    executions: (id: number) =>
+      [...queryKeys.scheduledTasks.all, "executions", id] as const,
+    calendar: (window: DateWindow) => [
+      ...queryKeys.scheduledTasks.all,
+      "calendar",
+      window,
+    ],
+  },
+
+  departments: {
+    // Корень — всё что связано с departments
+    all: ["departments"] as const,
+
+    // Списки
+    lists: () => [...queryKeys.departments.all, "list"] as const,
+    list: () => [...queryKeys.departments.lists()] as const,
+
+    // Конкретный элемент
+    details: () => [...queryKeys.departments.all, "detail"] as const,
+    detail: (id: number) => [...queryKeys.departments.details(), id] as const,
+
+    // Positions — вложены в departments концептуально
+    positions: () => [...queryKeys.departments.all, "positions"] as const,
+    positionsList: () =>
+      [...queryKeys.departments.positions(), "list"] as const,
+    positionsByDepartment: (departmentId: number) =>
+      [
+        ...queryKeys.departments.positions(),
+        "byDepartment",
+        departmentId,
+      ] as const,
+  },
+  rbac: {
+    all: ["rbac"] as const,
+    roles: () => [...queryKeys.rbac.all, "roles"] as const,
+    roleDetail: (id: number) => [...queryKeys.rbac.roles(), id] as const,
+    permissions: () => [...queryKeys.rbac.all, "permissions"] as const,
+    userRoles: (userId: number) =>
+      [...queryKeys.rbac.all, "user-roles", userId] as const,
+  },
+  specialistTypes: {
+    all: ["specialist-types"] as const,
+    list: () => [...queryKeys.specialistTypes.all, "list"] as const,
+  },
+  maintenance: {
+    all: ["maintenance"] as const,
+    status: () => [...queryKeys.maintenance.all, "status"] as const,
+    settings: () => [...queryKeys.maintenance.all, "settings"] as const,
+  },
+  surveys: {
+    all: ["surveys"] as const,
+    lists: () => [...queryKeys.surveys.all, "list"] as const,
+    list: (page: number, size: number) =>
+      [...queryKeys.surveys.lists(), page, size] as const,
+    my: () => [...queryKeys.surveys.all, "my"] as const,
+    details: () => [...queryKeys.surveys.all, "detail"] as const,
+    detail: (id: number) => [...queryKeys.surveys.details(), id] as const,
   },
 } as const;

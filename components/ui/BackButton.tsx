@@ -15,11 +15,11 @@ export function BackButton({
   ...props
 }: BackButtonProps) {
   return (
-    <Link href={href} passHref>
-      <Button variant="ghost" size="sm" as="a" {...props}>
+    <Button variant="ghost" size="sm" asChild {...props}>
+      <Link href={href}>
         <LuArrowLeft />
         {label}
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   );
 }

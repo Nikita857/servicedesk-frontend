@@ -10,11 +10,19 @@ const FRAME_INTERVAL = 2000;
 
 // Статусы, которые показываем в заголовке (исключаем NEW и финальные)
 const ACTIVE_STATUSES = new Set([
-  "OPEN", "PENDING", "ESCALATED", "RESOLVED", "PENDING_CLOSURE", "REOPENED",
+  "OPEN",
+  "PENDING",
+  "ESCALATED",
+  "RESOLVED",
+  "PENDING_CLOSURE",
+  "REOPENED",
 ]);
 
 function statusLabel(status: string): string {
-  return ticketStatusConfig[status as keyof typeof ticketStatusConfig]?.label ?? status;
+  return (
+    ticketStatusConfig[status as keyof typeof ticketStatusConfig]?.label ??
+    status
+  );
 }
 
 function truncate(text: string, max: number): string {
@@ -35,18 +43,20 @@ export function useTabTitle({ isAdmin, isSpecialist }: TabTitleOptions) {
   // Профессиональная статистика (admin → global, specialist → my line)
   const { data: proStats } = useQuery({
     queryKey: isAdmin ? queryKeys.stats.global() : queryKeys.stats.my(),
-    queryFn: isAdmin ? () => statsApi.getGlobalStats() : () => statsApi.getMyStats(),
+    queryFn: isAdmin
+      ? () => statsApi.getGlobalStats()
+      : () => statsApi.getMyStats(),
     enabled,
-    refetchInterval: 30 * 1000,
-    staleTime: 30 * 1000,
+    refetchInterval: 300 * 1000,
+    staleTime: 300 * 1000,
   });
 
   // Тикеты, созданные лично (admin/specialist как автор + user)
   const { data: myTicketsPage } = useQuery({
     queryKey: [...queryKeys.tickets.all, "my-tab-title"],
     queryFn: () => ticketApi.listMy(0, 10),
-    refetchInterval: 30 * 1000,
-    staleTime: 30 * 1000,
+    refetchInterval: 300 * 1000,
+    staleTime: 300 * 1000,
   });
 
   useEffect(() => {
@@ -76,7 +86,9 @@ export function useTabTitle({ isAdmin, isSpecialist }: TabTitleOptions) {
       // Обычный пользователь — последний тикет в активном статусе
       const latest = myTickets.find((t) => ACTIVE_STATUSES.has(t.status));
       if (latest) {
-        frames.push(`#${latest.id}: ${truncate(latest.title, 25)} · ${statusLabel(latest.status)}`);
+        frames.push(
+          `#${latest.id}: ${truncate(latest.title, 25)} · ${statusLabel(latest.status)}`,
+        );
       }
     }
 

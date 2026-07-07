@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
 import {
   Box,
   Flex,
@@ -18,20 +17,20 @@ import { LuSave, LuPaperclip, LuX, LuFile } from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { wikiApi, type CreateWikiArticleRequest } from "@/lib/api/wiki";
-import { useAuthStore } from "@/stores";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import { toast, formatFileSize, handleApiError } from "@/lib/utils";
 import { WikiEditor } from "@/components/features/wiki";
-import { useFileUpload } from "@/lib/hooks";
+import { useMultipartUpload } from "@/lib/hooks";
 import { BackButton, CategoryTreeSelect } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 
 export default function NewWikiArticlePage() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isSpecialist = user?.specialist || false;
+  const { has } = useCurrentPermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload } = useFileUpload();
+  const { upload } = useMultipartUpload();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMediaUploading, setIsMediaUploading] = useState(false);
@@ -53,14 +52,14 @@ export default function NewWikiArticlePage() {
 
   // Redirect non-specialists
   useEffect(() => {
-    if (!isSpecialist) {
+    if (!has(PERM.WIKI_CREATE)) {
       toast.error(
         "Доступ запрещён",
         "Только специалисты могут создавать статьи",
       );
       router.push("/dashboard/wiki");
     }
-  }, [isSpecialist, router]);
+  }, [has, router]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -122,6 +121,7 @@ export default function NewWikiArticlePage() {
             "Статья создана",
             "Некоторые файлы не удалось загрузить",
           );
+          console.error(`Ошибка загрзки вложений к статье: ${uploadError}`);
         }
       } else {
         toast.success("Статья опубликована!");
@@ -135,7 +135,7 @@ export default function NewWikiArticlePage() {
     }
   };
 
-  if (!isSpecialist) {
+  if (!has(PERM.WIKI_CREATE)) {
     return null;
   }
 

@@ -23,7 +23,10 @@ import { ProfileSidebar } from "./components/ProfileSidebar";
 import { PersonalInfoCard } from "./components/PersonalInfoCard";
 import { OrganizationCard } from "./components/OrganizationCard";
 import { TelegramCard } from "./components/TelegramCard";
+import { VkCard } from "./components/VkCard";
+import { MaxCard } from "./components/MaxCard";
 import { PasswordCard } from "./components/PasswordCard";
+import { departmentApi } from "@/lib/api/departments";
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
@@ -34,6 +37,8 @@ export default function ProfilePage() {
   const [fio, setFio] = useState("");
   const [email, setEmail] = useState("");
   const [telegramId, setTelegramId] = useState("");
+  const [vkId, setVkId] = useState("");
+  const [maxId, setMaxId] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -52,13 +57,13 @@ export default function ProfilePage() {
   // Fetch departments
   const { data: departments = [], isLoading: isLoadingDepts } = useQuery({
     queryKey: ["admin", "departments"],
-    queryFn: () => adminApi.getDepartments(),
+    queryFn: () => departmentApi.getDepartments(),
   });
 
   // Fetch positions for selected department
   const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
     queryKey: ["admin", "positions", departmentId],
-    queryFn: () => adminApi.getPositionsByDepartment(departmentId!),
+    queryFn: () => departmentApi.getPositionsByDepartment(departmentId!),
     enabled: !!departmentId,
   });
 
@@ -85,7 +90,12 @@ export default function ProfilePage() {
   );
 
   // Initialize org IDs from profile (during render, not in effect)
-  if (!orgInitialized && profile && departments.length > 0 && departmentId === null) {
+  if (
+    !orgInitialized &&
+    profile &&
+    departments.length > 0 &&
+    departmentId === null
+  ) {
     const dept = departments.find((d) => d.name === profile.department);
     if (dept) {
       setDepartmentId(dept.id);
@@ -94,7 +104,13 @@ export default function ProfilePage() {
     }
   }
 
-  if (!orgInitialized && profile && positions.length > 0 && positionId === null && departmentId !== null) {
+  if (
+    !orgInitialized &&
+    profile &&
+    positions.length > 0 &&
+    positionId === null &&
+    departmentId !== null
+  ) {
     const pos = positions.find((p) => p.name === profile.position);
     if (pos) {
       setPositionId(pos.id);
@@ -107,7 +123,9 @@ export default function ProfilePage() {
   if (!formInitialized && profile) {
     setFio(profile.fio || "");
     setEmail(profile.email || "");
-    setTelegramId(profile.telegramId?.toString() || "");
+    setTelegramId(profile.socialNetwork.telegramId?.toString() || "");
+    setVkId(profile.socialNetwork.vkId?.toString() || "");
+    setMaxId(profile.socialNetwork.maxId?.toString() || "");
     setFormInitialized(true);
   }
 
@@ -138,6 +156,24 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Telegram привязан");
+    },
+    onError: (error) => handleApiError(error),
+  });
+
+  const updateVkMutation = useMutation({
+    mutationFn: profileApi.updateVk,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("ВКонтакте привязан");
+    },
+    onError: (error) => handleApiError(error),
+  });
+
+  const updateMaxMutation = useMutation({
+    mutationFn: profileApi.updateMax,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("MAX привязан");
     },
     onError: (error) => handleApiError(error),
   });
@@ -206,6 +242,24 @@ export default function ProfilePage() {
       return;
     }
     updateTelegramMutation.mutate({ telegramId: id });
+  };
+
+  const handleUpdateVk = () => {
+    const id = parseInt(vkId, 10);
+    if (isNaN(id)) {
+      toast.error("Введите корректный VK ID");
+      return;
+    }
+    updateVkMutation.mutate({ vkId: id });
+  };
+
+  const handleUpdateMax = () => {
+    const id = parseInt(maxId, 10);
+    if (isNaN(id)) {
+      toast.error("Введите корректный MAX ID");
+      return;
+    }
+    updateMaxMutation.mutate({ maxId: id });
   };
 
   const handleAvatarClick = () => {
@@ -294,6 +348,22 @@ export default function ProfilePage() {
               setTelegramId={setTelegramId}
               onUpdate={handleUpdateTelegram}
               isPending={updateTelegramMutation.isPending}
+            />
+
+            <VkCard
+              profile={profile}
+              vkId={vkId}
+              setVkId={setVkId}
+              onUpdate={handleUpdateVk}
+              isPending={updateVkMutation.isPending}
+            />
+
+            <MaxCard
+              profile={profile}
+              maxId={maxId}
+              setMaxId={setMaxId}
+              onUpdate={handleUpdateMax}
+              isPending={updateMaxMutation.isPending}
             />
 
             <PasswordCard

@@ -48,11 +48,11 @@ export function AssignmentCompactCard({
           </Text>
         </HStack>
 
-        {assignment.fromLineName && (
+        {assignment.fromLine?.name && (
           <HStack gap={1} flexShrink={0}>
             <LuArrowRight size={10} color="gray" />
             <Badge variant="subtle" colorPalette="blue" size="xs">
-              {assignment.fromLineName}
+              {assignment.fromLine?.name}
             </Badge>
           </HStack>
         )}

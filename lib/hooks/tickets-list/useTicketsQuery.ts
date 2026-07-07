@@ -4,8 +4,9 @@ import { ticketApi } from "@/lib/api/tickets";
 import { assignmentApi } from "@/lib/api/assignments";
 import type { AssignmentResponse } from "@/types/assignment";
 import { queryKeys } from "@/lib/queryKeys";
-import { useAuthStore } from "@/stores";
 import { usePersistentPage } from "@/lib/hooks/shared/usePersistentPage";
+import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
+import { PERM } from "@/lib/constants/permissions";
 import type { TicketListResponse, PagedTicketList } from "@/types/ticket";
 
 const FILTER_STORAGE_KEY = "servicedesk-tickets-filter";
@@ -50,8 +51,8 @@ export function useTicketsQuery(
   options: UseTicketsQueryOptions = {},
 ): TicketsPageResult {
   const { pageSize = 5, initialFilter } = options;
-  const { user } = useAuthStore();
-  const isSpecialist = user?.specialist ?? false;
+  const { hasAny } = useCurrentPermissions();
+  const canSeeLineTickets = hasAny([PERM.TICKET_READ_LINE, PERM.TICKET_READ_ALL]);
 
   const queryClient = useQueryClient();
   const [page, setPage] = usePersistentPage("tickets");
@@ -72,10 +73,10 @@ export function useTicketsQuery(
       }
     }
 
-    return isSpecialist ? "unprocessed" : "my";
+    return canSeeLineTickets ? "unprocessed" : "my";
   });
 
-  const filter: FilterType = isSpecialist ? rawFilter : "my";
+  const filter: FilterType = canSeeLineTickets ? rawFilter : "my";
 
   // -------------------------------
   // Tickets query
@@ -185,7 +186,7 @@ export function useTicketsQuery(
   // -------------------------------
   const setFilter = useCallback(
     (next: FilterType) => {
-      if (!isSpecialist) return;
+      if (!canSeeLineTickets) return;
 
       setRawFilter(next);
       setPage(0);
@@ -194,7 +195,7 @@ export function useTicketsQuery(
         localStorage.setItem(FILTER_STORAGE_KEY, next);
       }
     },
-    [isSpecialist, setPage],
+    [canSeeLineTickets, setPage],
   );
 
   const refetch = useCallback(() => {

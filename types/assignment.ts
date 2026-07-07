@@ -1,22 +1,26 @@
-import type { AssignmentStatus, AssignmentMode } from "./ticket";
+import type {
+  AssignmentStatus,
+  AssignmentMode,
+  UserShortResponse,
+} from "./ticket";
+
+export interface SupportLineShortResponse {
+  id: number;
+  name: string;
+}
 
 export interface AssignmentResponse {
   id: number;
   ticketId: number;
   ticketTitle: string;
-  fromLineId: number | null;
-  fromLineName: string | null;
-  fromUserId: number | null;
-  fromUsername: string | null;
-  fromFio: string | null;
-  toLineId: number;
-  toLineName: string;
-  toUserId: number | null;
-  toUsername: string | null;
-  toFio: string | null;
+  fromLine: SupportLineShortResponse | null;
+  fromUser: UserShortResponse | null;
+  toLine: SupportLineShortResponse;
+  toUser: UserShortResponse | null;
   note: string | null;
   mode: AssignmentMode;
   status: AssignmentStatus;
+  type: "PRIMARY" | "CO_EXECUTOR";
   createdAt: string;
   acceptedAt: string | null;
   rejectedAt: string | null;
@@ -29,7 +33,7 @@ export interface CreateAssignmentRequest {
   toUserId?: number;
   fromLineId?: number | null;
   fromUserId?: number | null;
-  note: string;
+  note: string | null;
   mode?: AssignmentMode;
 }
 
@@ -45,4 +49,13 @@ export interface CoExecutorResponse {
   addedById: number | null;
   addedByUsername: string | null;
   addedAt: string;
+}
+
+export interface AssignmentShortResponse {
+  id: number;
+  toUser: UserShortResponse;
+  status: AssignmentStatus;
+  createdAt: string;
+  acceptedAt: string;
+  mode: string;
 }

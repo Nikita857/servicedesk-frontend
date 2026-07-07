@@ -14,7 +14,6 @@ import type {
   UpdateWikiCategoryRequest,
   PagedWikiArticleList,
   PagedWikiCategoryList,
-  DepartmentRef,
 } from "@/types/wiki";
 
 export const wikiApi = {
@@ -26,9 +25,12 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
-    const response = await api.get<ApiResponse<PagedWikiCategoryList>>("/wiki/tree", {
-      params: { page, size, showAll, onlyMyDepartment, onlyPublic },
-    });
+    const response = await api.get<ApiResponse<PagedWikiCategoryList>>(
+      "/wiki/tree",
+      {
+        params: { page, size, showAll, onlyMyDepartment, onlyPublic },
+      },
+    );
     return response.data.data;
   },
 
@@ -41,9 +43,12 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
-    const response = await api.get<ApiResponse<WikiCategoryWithArticles[]>>("/wiki/search", {
-      params: { q: query, page, size, showAll, onlyMyDepartment, onlyPublic },
-    });
+    const response = await api.get<ApiResponse<WikiCategoryWithArticles[]>>(
+      "/wiki/search",
+      {
+        params: { q: query, page, size, showAll, onlyMyDepartment, onlyPublic },
+      },
+    );
 
     // API returns array directly, wrap it in paged structure
     const categories = response.data.data;

@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
     "http://sd.bormash.ru:2007",
     "https://sd.bormash.ru:2007",
     "192.168.0.111", //Для работы Hot module replpacement (HMR) by websocket connection
+    "192.168.0.71",
+    "http://192.168.0.71:3000",
   ],
 };
 
