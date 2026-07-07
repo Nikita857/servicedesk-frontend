@@ -31,6 +31,7 @@ const TOAST_LEVEL_BY_TYPE: Record<NotificationType, ToastLevel | null> = {
   TICKET_TAKEN: "info",
   SPECIALIST_ADDED_TO_LINE: "info",
   SPECIALIST_REMOVED_FROM_LINE: "warning",
+  SURVEY_SENT: "info",
 };
 
 /**

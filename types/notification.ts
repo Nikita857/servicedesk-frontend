@@ -13,12 +13,15 @@ export type NotificationType =
   | "TICKET_CREATED"
   | "TICKET_TAKEN"
   | "SPECIALIST_ADDED_TO_LINE"
-  | "SPECIALIST_REMOVED_FROM_LINE";
+  | "SPECIALIST_REMOVED_FROM_LINE"
+  | "SURVEY_SENT";
 
 export interface Notification {
   type: NotificationType;
   ticketId: number | null;
   ticketTitle: string | null;
+  surveyId: number | null;
+  surveyTitle: string | null;
   title: string;
   body: string;
   senderId: number | null;
@@ -31,6 +34,8 @@ export interface NotificationResponse {
   type: NotificationType;
   ticketId: number | null;
   ticketTitle: string | null;
+  surveyId: number | null;
+  surveyTitle: string | null;
   title: string | null;
   body: string | null;
   senderId: number | null;
