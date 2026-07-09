@@ -14,7 +14,6 @@ import {
   LuPaperclip,
 } from "react-icons/lu";
 import { DateTimePicker } from "@/components/features/layout/DateTimePicker";
-import CoExecutorPanel from "./CoExecutorPanel";
 import { useMemo } from "react";
 import { useCategoriesQuery } from "@/lib/hooks";
 import { DataSelect } from "@/components/ui";
@@ -77,7 +76,7 @@ export default function TicketSidebar({
   );
 
   return (
-    <VStack gap={3} align="stretch">
+    <VStack gap={3} mb={3} align="stretch">
       {/* Rejection Alert */}
       {isSpecialist && ticket.lastAssignment?.status === "REJECTED" && (
         <Box
@@ -221,9 +220,6 @@ export default function TicketSidebar({
           </HStack>
         </VStack>
       </Box>
-
-      {/* Co-executors: specialists see full panel with add/remove, users see read-only list */}
-      <CoExecutorPanel ticket={ticket} canEdit={isSpecialist} />
     </VStack>
   );
 }

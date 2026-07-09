@@ -208,6 +208,16 @@ export const ticketApi = {
   },
 
   /**
+   * Get closure rejection history for a ticket (newest first)
+   */
+  getClosureRejections: async (id: number): Promise<TicketStatusHistory[]> => {
+    const response = await api.get<ApiResponse<TicketStatusHistory[]>>(
+      `/tickets/${id}/closure-rejections`,
+    );
+    return response.data.data;
+  },
+
+  /**
    * Rate a closed ticket (only ticket creator can rate, once)
    */
   rateTicket: async (
