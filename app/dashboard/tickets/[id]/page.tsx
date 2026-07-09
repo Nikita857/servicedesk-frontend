@@ -31,12 +31,14 @@ import {
 import { useCoExecutors } from "@/lib/hooks/ticket-detail/useCoExecutors";
 import {
   ClosureConfirmationDialog,
+  ClosureRejectionBanner,
   TicketChat,
 } from "@/components/features/tickets";
 import AssignmentPanel from "@/components/features/tickets/AssignmentPanel";
 import { Tooltip } from "@/components/ui";
 import { ticketPriorityConfig, ticketStatusConfig } from "@/types";
 import DeadlineBanner from "@/components/ui/ticket/DeadlineBanner";
+import CoExecutorPanel from "@/components/features/tickets/CoExecutorPanel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -253,22 +255,27 @@ export default function TicketDetailPage({ params }: PageProps) {
               ticketStatus={ticket.status}
               isCreator={user?.id === ticket.createdBy?.id}
             />
+            {/* Assignment Panel - under chat */}
+            <AssignmentPanel
+              currentAssignment={currentAssignment}
+              assignmentHistory={assignmentHistory}
+              isSpecialist={has(PERM.TICKET_ASSIGN)}
+              currentUsername={user?.username}
+              onDecision={refetch}
+            />
           </Box>
-
-          {/* Assignment Panel - under chat */}
-          <AssignmentPanel
-            currentAssignment={currentAssignment}
-            assignmentHistory={assignmentHistory}
-            isSpecialist={has(PERM.TICKET_ASSIGN)}
-            currentUsername={user?.username}
-            onDecision={refetch}
-          />
         </GridItem>
 
         {/* Sidebar */}
         <GridItem>
           <Box mb={2}>
-            <TicketSidebar ticket={ticket} isSpecialist={has(PERM.TICKET_ASSIGN)} />
+            <ClosureRejectionBanner ticketId={ticket.id} />
+            <TicketSidebar
+              ticket={ticket}
+              isSpecialist={has(PERM.TICKET_ASSIGN)}
+            />
+            {/* Co-executors: specialists see full panel with add/remove, users see read-only list */}
+            <CoExecutorPanel ticket={ticket} canEdit={user?.specialist} />
           </Box>
           <DeadlineBanner ticketId={ticketId} />
         </GridItem>

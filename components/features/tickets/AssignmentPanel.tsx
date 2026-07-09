@@ -131,7 +131,7 @@ export default function AssignmentPanel({
   }
 
   const historyCount = assignmentHistory.length;
-  const totalEvents = historyCount + (currentAssignment ? 1 : 0);
+  const totalEvents = historyCount;
 
   return (
     <Box
@@ -455,6 +455,12 @@ function AssignmentCard({ a }: { a: AssignmentResponse }) {
             </Text>
           )}
         </HStack>
+
+        {a.note && (
+          <Text fontSize="xs" color="fg.muted" mt={1} lineClamp={2}>
+            «{a.note}»
+          </Text>
+        )}
 
         {a.rejectedReason && (
           <Text fontSize="xs" color="red.600" mt={1} lineClamp={2}>
