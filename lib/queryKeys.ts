@@ -177,4 +177,15 @@ export const queryKeys = {
     details: () => [...queryKeys.surveys.all, "detail"] as const,
     detail: (id: number) => [...queryKeys.surveys.details(), id] as const,
   },
+  announcements: {
+    all: ["announcements"] as const,
+    lists: () => [...queryKeys.announcements.all, "list"] as const,
+    list: (page: number, size: number) =>
+      [...queryKeys.announcements.lists(), page, size] as const,
+    my: (page: number, size?: number) =>
+      [...queryKeys.announcements.all, "my", page, size] as const,
+    gate: () => [...queryKeys.announcements.all, "gate"] as const,
+    details: () => [...queryKeys.announcements.all, "detail"] as const,
+    detail: (id: number) => [...queryKeys.announcements.details(), id] as const,
+  },
 } as const;

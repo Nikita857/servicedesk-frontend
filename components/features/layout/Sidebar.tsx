@@ -21,6 +21,8 @@ import {
   LuWrench,
   LuListChecks,
   LuClipboardCheck,
+  LuMegaphone,
+  LuBot,
 } from "react-icons/lu";
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
@@ -28,6 +30,7 @@ import { useAuthStore } from "@/stores";
 import { ProfileMenu } from "./ProfileMenu";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
+import { useMyAnnouncementsGateQuery } from "@/lib/hooks/announcements/useMyAnnouncementGateQuery";
 
 interface NavItem {
   label: string;
@@ -51,6 +54,8 @@ const navItems: NavItem[] = [
   { label: "Статьи", href: "/dashboard/wiki", icon: LuBook },
   { label: "Отчеты", href: "/dashboard/reports", icon: LuBarcode },
   { label: "Опросы", href: "/dashboard/surveys", icon: LuListChecks },
+  { label: "Объявления", href: "/dashboard/announcements", icon: LuMegaphone },
+  { label: "ИИ-агент", href: "/dashboard/agent", icon: LuBot },
 ];
 
 const onboardingIds: Record<string, string> = {
@@ -71,6 +76,7 @@ const adminItems: AdminNavItem[] = [
   { label: "Маршрутизация", href: "/dashboard/admin/forwarding-rules", icon: LuRoute, perm: PERM.FORWARDING_RULE_MANAGE },
   { label: "Планировщик задач", href: "/dashboard/admin/scheduled-tasks", icon: LuCalendarClock, perm: PERM.SCHEDULED_TASK_MANAGE },
   { label: "Опросы", href: "/dashboard/admin/surveys", icon: LuClipboardCheck, perm: PERM.SURVEY_MANAGE },
+  { label: "Объявления", href: "/dashboard/admin/announcements", icon: LuMegaphone, perm: PERM.ANNOUNCEMENT_MANAGE },
   { label: "Категории заявок", href: "/dashboard/admin/categories", icon: LuTag, perm: PERM.CATEGORY_MANAGE },
   { label: "Категории статей", href: "/dashboard/admin/wiki-categories", icon: LuBook, perm: PERM.WIKI_CATEGORY_MANAGE },
   { label: "Поиск", href: "/dashboard/admin/search", icon: LuSearch, perm: PERM.ELASTICSEARCH_ADMIN },
@@ -83,6 +89,9 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { colorMode } = useColorMode();
   const { user } = useAuthStore();
   const { has } = useCurrentPermissions();
+  const { data: myAnnouncements } = useMyAnnouncementsGateQuery();
+
+  const unreadAnnouncementsCount = myAnnouncements?.page?.totalElements ?? 0;
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.href === "/dashboard/tickets") return has(PERM.TICKET_READ_OWN);
@@ -90,6 +99,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     // "Мои обращения" — для специалистов линии, у которых нет доступа ко всем тикетам
     if (item.href === "/dashboard/my-tickets")
       return has(PERM.TICKET_READ_LINE) && !has(PERM.TICKET_READ_ALL);
+    if (item.href === "/dashboard/agent") return has(PERM.AI_AGENT_USE);
     return true;
   });
 
@@ -176,7 +186,34 @@ export function Sidebar({ onClose }: SidebarProps) {
                 }}
                 data-onboarding-id={onboardingIds[item.href]}
               >
-                <Icon as={item.icon} boxSize={5} />
+                <Box position="relative" display="inline-flex">
+                  <Icon as={item.icon} boxSize={5} />
+                  {item.href === "/dashboard/announcements" &&
+                    unreadAnnouncementsCount > 0 && (
+                      <Box
+                        position="absolute"
+                        top="-4px"
+                        right="-6px"
+                        bg="red.500"
+                        color="white"
+                        borderRadius="full"
+                        fontSize="2xs"
+                        fontWeight="bold"
+                        minW="16px"
+                        h="16px"
+                        px="3px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        lineHeight="1"
+                        pointerEvents="none"
+                      >
+                        {unreadAnnouncementsCount > 9
+                          ? "9+"
+                          : unreadAnnouncementsCount}
+                      </Box>
+                    )}
+                </Box>
                 <Text fontSize="sm">{item.label}</Text>
               </Flex>
             </Link>

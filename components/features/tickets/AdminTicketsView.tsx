@@ -13,6 +13,7 @@ import {
   Center,
   NativeSelect,
   Badge,
+  Input,
 } from "@chakra-ui/react";
 import { LuPlus } from "react-icons/lu";
 import Link from "next/link";
@@ -39,6 +40,7 @@ const PAGE_SIZE = 6;
 const ASSIGNED_PAGE_SIZE = 6;
 const STORAGE_KEY_STATUS = "sd_filter_admin_status";
 const STORAGE_KEY_LINE = "sd_filter_admin_line";
+const STORAGE_KEY_TICKET_ID = "sd_filter_admin_ticket_id";
 const STORAGE_KEY_TAB = "sd_admin_tab";
 const STORAGE_KEY_ASSIGNED_STATUS = "sd_filter_assigned_status";
 
@@ -67,6 +69,11 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     const v = readStorage(STORAGE_KEY_LINE);
     return v ? Number(v) : "";
   });
+
+  const [ticketIdFilter, setTicketIdFilter] = useState<string>(() =>
+    readStorage(STORAGE_KEY_TICKET_ID),
+  );
+  const [ticketIdInput, setTicketIdInput] = useState<string>(ticketIdFilter);
 
   const [assignedStatusFilter, setAssignedStatusFilter] = useState<
     TicketStatus | ""
@@ -110,6 +117,16 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     [setPage],
   );
 
+  const commitTicketIdFilter = useCallback(
+    (value: string) => {
+      const normalized = value.trim();
+      setTicketIdFilter(normalized);
+      sessionStorage.setItem(STORAGE_KEY_TICKET_ID, normalized);
+      setPage(0);
+    },
+    [setPage],
+  );
+
   useTicketListSubscription({
     queryKey: queryKeys.tickets.lists(),
     enabled,
@@ -128,6 +145,7 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
       page,
       status: statusFilter || undefined,
       lineId: lineFilter || undefined,
+      ticketId: ticketIdFilter ? Number(ticketIdFilter) : undefined,
     }),
     queryFn: () =>
       ticketApi.listFiltered(
@@ -135,6 +153,7 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
         PAGE_SIZE,
         statusFilter || undefined,
         lineFilter || undefined,
+        ticketIdFilter ? Number(ticketIdFilter) : undefined,
       ),
     staleTime: 300 * 1000,
     refetchInterval: 300 * 1000,
@@ -279,6 +298,21 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
             </NativeSelect.Field>
             <NativeSelect.Indicator />
           </NativeSelect.Root>
+
+          <Input
+            size="sm"
+            type="number"
+            placeholder="№ заявки"
+            maxW="140px"
+            value={ticketIdInput}
+            onChange={(e) => setTicketIdInput(e.target.value)}
+            onBlur={() => commitTicketIdFilter(ticketIdInput)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commitTicketIdFilter(ticketIdInput);
+              }
+            }}
+          />
         </Flex>
       )}
 

@@ -1,17 +1,24 @@
-"use client"
+"use client";
 
-import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react"
-import { ChakraProvider } from "@chakra-ui/react"
-import {
-  ColorModeProvider,
-  type ColorModeProviderProps,
-} from "./color-mode"
-import { Toaster } from "./toaster"
+import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react";
+import { ChakraProvider } from "@chakra-ui/react";
+import { ColorModeProvider, type ColorModeProviderProps } from "./color-mode";
+import { Toaster } from "./toaster";
 
 // Black & White theme - clean, minimal, professional
 const config = defineConfig({
   theme: {
     tokens: {
+      // Manrope подключается в app/layout.tsx через next/font (--font-manrope).
+      // Фолбэк на системный стек оставлен: если шрифт не загрузился, вёрстка не съедет.
+      fonts: {
+        heading: {
+          value: "var(--font-manrope), system-ui, -apple-system, sans-serif",
+        },
+        body: {
+          value: "var(--font-manrope), system-ui, -apple-system, sans-serif",
+        },
+      },
       colors: {
         // Grayscale only
         gray: {
@@ -52,7 +59,7 @@ const config = defineConfig({
         error: {
           500: { value: "#dc2626" },
           600: { value: "#b91c1c" },
-        }
+        },
       },
     },
     semanticTokens: {
@@ -87,12 +94,16 @@ const config = defineConfig({
         "border.muted": {
           value: { _light: "#f5f5f5", _dark: "#171717" },
         },
+        // Рамка поля ввода в покое: заметнее border.default, но не такая тяжёлая, как fg
+        "border.emphasized": {
+          value: { _light: "#d4d4d4", _dark: "#404040" },
+        },
       },
     },
   },
-})
+});
 
-const system = createSystem(defaultConfig, config)
+const system = createSystem(defaultConfig, config);
 
 export function Provider(props: ColorModeProviderProps) {
   return (
