@@ -21,16 +21,18 @@ export const ticketApi = {
     return response.data.data;
   },
 
-  // List tickets with optional admin filters (status + lineId) and/or ticket number (ticketId)
+  // List tickets with optional admin filters (status, lineId, assigneeId, authorId) and/or ticket number (ticketId)
   listFiltered: async (
     page = 0,
     size = 20,
     status?: TicketStatus,
     lineId?: number,
     ticketId?: number,
+    assigneeId?: number,
+    authorId?: number,
   ): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
-      params: { page, size, status, lineId, ticketId },
+      params: { page, size, status, lineId, ticketId, assigneeId, authorId },
     });
     return response.data.data;
   },

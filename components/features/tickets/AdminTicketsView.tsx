@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Box,
   Flex,
+  Grid,
   Heading,
   Text,
   Spinner,
@@ -14,8 +15,10 @@ import {
   NativeSelect,
   Badge,
   Input,
+  Field,
+  Collapsible,
 } from "@chakra-ui/react";
-import { LuPlus } from "react-icons/lu";
+import { LuPlus, LuX, LuChevronDown, LuChevronUp, LuFilter } from "react-icons/lu";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ticketApi } from "@/lib/api/tickets";
@@ -25,12 +28,15 @@ import { TicketCard } from "./TicketCard";
 import { TicketCompactCard } from "./TicketCompactCard";
 import { TicketStatusHelpModal } from "./TicketStatusHelpModal";
 import { SDPagination } from "@/components/ui/SDPagination";
+import { UserSearchSelect } from "@/components/ui/UserSearchSelect";
 import { usePersistentPage, useTicketListSubscription } from "@/lib/hooks";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
 import { useWebSocket } from "@/lib/providers";
 import { useQueryClient } from "@tanstack/react-query";
+
+type UserFilterValue = { id: number; label: string } | null;
 
 interface AdminTicketsViewProps {
   enabled?: boolean;
@@ -43,10 +49,27 @@ const STORAGE_KEY_LINE = "sd_filter_admin_line";
 const STORAGE_KEY_TICKET_ID = "sd_filter_admin_ticket_id";
 const STORAGE_KEY_TAB = "sd_admin_tab";
 const STORAGE_KEY_ASSIGNED_STATUS = "sd_filter_assigned_status";
+const STORAGE_KEY_ASSIGNEE = "sd_filter_admin_assignee";
+const STORAGE_KEY_AUTHOR = "sd_filter_admin_author";
+const STORAGE_KEY_FILTERS_OPEN = "sd_filter_admin_open";
 
 function readStorage(key: string): string {
   if (typeof window === "undefined") return "";
   return sessionStorage.getItem(key) ?? "";
+}
+
+function readUserFilterStorage(key: string): UserFilterValue {
+  const raw = readStorage(key);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.id === "number" && typeof parsed?.label === "string") {
+      return parsed;
+    }
+  } catch {
+    // ignore malformed value, treat as no selection
+  }
+  return null;
 }
 
 export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
@@ -74,6 +97,23 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     readStorage(STORAGE_KEY_TICKET_ID),
   );
   const [ticketIdInput, setTicketIdInput] = useState<string>(ticketIdFilter);
+
+  const [assigneeFilter, setAssigneeFilter] = useState<UserFilterValue>(() =>
+    readUserFilterStorage(STORAGE_KEY_ASSIGNEE),
+  );
+  const [authorFilter, setAuthorFilter] = useState<UserFilterValue>(() =>
+    readUserFilterStorage(STORAGE_KEY_AUTHOR),
+  );
+
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(() => {
+    const stored = readStorage(STORAGE_KEY_FILTERS_OPEN);
+    return stored === "" ? true : stored === "1";
+  });
+
+  const handleFiltersOpenChange = useCallback((open: boolean) => {
+    setFiltersOpen(open);
+    sessionStorage.setItem(STORAGE_KEY_FILTERS_OPEN, open ? "1" : "0");
+  }, []);
 
   const [assignedStatusFilter, setAssignedStatusFilter] = useState<
     TicketStatus | ""
@@ -127,6 +167,56 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     [setPage],
   );
 
+  const handleAssigneeChange = useCallback(
+    (value: UserFilterValue) => {
+      setAssigneeFilter(value);
+      if (value) {
+        sessionStorage.setItem(STORAGE_KEY_ASSIGNEE, JSON.stringify(value));
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY_ASSIGNEE);
+      }
+      setPage(0);
+    },
+    [setPage],
+  );
+
+  const handleAuthorChange = useCallback(
+    (value: UserFilterValue) => {
+      setAuthorFilter(value);
+      if (value) {
+        sessionStorage.setItem(STORAGE_KEY_AUTHOR, JSON.stringify(value));
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY_AUTHOR);
+      }
+      setPage(0);
+    },
+    [setPage],
+  );
+
+  const activeFilterCount = [
+    statusFilter !== "",
+    lineFilter !== "",
+    ticketIdFilter !== "",
+    assigneeFilter !== null,
+    authorFilter !== null,
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
+
+  const resetFilters = useCallback(() => {
+    handleStatusChange("");
+    handleLineChange("");
+    commitTicketIdFilter("");
+    setTicketIdInput("");
+    handleAssigneeChange(null);
+    handleAuthorChange(null);
+  }, [
+    handleStatusChange,
+    handleLineChange,
+    commitTicketIdFilter,
+    handleAssigneeChange,
+    handleAuthorChange,
+  ]);
+
   useTicketListSubscription({
     queryKey: queryKeys.tickets.lists(),
     enabled,
@@ -146,6 +236,8 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
       status: statusFilter || undefined,
       lineId: lineFilter || undefined,
       ticketId: ticketIdFilter ? Number(ticketIdFilter) : undefined,
+      assigneeId: assigneeFilter?.id,
+      authorId: authorFilter?.id,
     }),
     queryFn: () =>
       ticketApi.listFiltered(
@@ -154,6 +246,8 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
         statusFilter || undefined,
         lineFilter || undefined,
         ticketIdFilter ? Number(ticketIdFilter) : undefined,
+        assigneeFilter?.id,
+        authorFilter?.id,
       ),
     staleTime: 300 * 1000,
     refetchInterval: 300 * 1000,
@@ -262,58 +356,167 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
 
       {/* Filters — only on "all" tab */}
       {tab === "all" && (
-        <Flex gap={2} mb={4} wrap="wrap">
-          <NativeSelect.Root size="sm">
-            <NativeSelect.Field
-              value={statusFilter}
-              onChange={(e) =>
-                handleStatusChange(e.target.value as TicketStatus | "")
-              }
-            >
-              <option value="">Все статусы</option>
-              {(Object.keys(ticketStatusConfig) as TicketStatus[]).map((s) => (
-                <option key={s} value={s}>
-                  {ticketStatusConfig[s].label}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+        <Collapsible.Root
+          open={filtersOpen}
+          onOpenChange={(e) => handleFiltersOpenChange(e.open)}
+        >
+          <Box
+            mb={4}
+            bg="bg.surface"
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="border.default"
+            overflow="hidden"
+          >
+            <Flex align="center">
+              <Collapsible.Trigger asChild>
+                <Button
+                  variant="ghost"
+                  flex={1}
+                  justifyContent="space-between"
+                  px={4}
+                  py={3}
+                  h="auto"
+                  borderRadius="none"
+                  fontSize="sm"
+                  fontWeight="semibold"
+                >
+                  <HStack gap={2}>
+                    <LuFilter size={14} />
+                    <Text>Фильтры</Text>
+                    {activeFilterCount > 0 && (
+                      <Badge
+                        colorPalette="accent"
+                        variant="solid"
+                        size="sm"
+                        borderRadius="full"
+                      >
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </HStack>
+                  {filtersOpen ? (
+                    <LuChevronUp size={14} />
+                  ) : (
+                    <LuChevronDown size={14} />
+                  )}
+                </Button>
+              </Collapsible.Trigger>
+              {hasActiveFilters && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="fg.muted"
+                  mr={2}
+                  onClick={resetFilters}
+                >
+                  <LuX />
+                  Сбросить
+                </Button>
+              )}
+            </Flex>
 
-          <NativeSelect.Root size="sm">
-            <NativeSelect.Field
-              value={lineFilter}
-              onChange={(e) =>
-                handleLineChange(
-                  e.target.value === "" ? "" : Number(e.target.value),
-                )
-              }
-            >
-              <option value="">Все линии</option>
-              {lines?.map((line) => (
-                <option key={line.id} value={line.id}>
-                  {line.name}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+            <Collapsible.Content>
+              <Box px={4} pb={4}>
+                <Grid
+                  templateColumns="repeat(auto-fit, minmax(200px, 1fr))"
+                  gap={3}
+                >
+                  <Field.Root>
+                    <Field.Label fontSize="xs" color="fg.muted">
+                      Статус
+                    </Field.Label>
+                    <NativeSelect.Root size="sm">
+                      <NativeSelect.Field
+                        value={statusFilter}
+                        onChange={(e) =>
+                          handleStatusChange(
+                            e.target.value as TicketStatus | "",
+                          )
+                        }
+                      >
+                        <option value="">Все статусы</option>
+                        {(Object.keys(ticketStatusConfig) as TicketStatus[]).map(
+                          (s) => (
+                            <option key={s} value={s}>
+                              {ticketStatusConfig[s].label}
+                            </option>
+                          ),
+                        )}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
 
-          <Input
-            size="sm"
-            type="number"
-            placeholder="№ заявки"
-            maxW="140px"
-            value={ticketIdInput}
-            onChange={(e) => setTicketIdInput(e.target.value)}
-            onBlur={() => commitTicketIdFilter(ticketIdInput)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                commitTicketIdFilter(ticketIdInput);
-              }
-            }}
-          />
-        </Flex>
+                  <Field.Root>
+                    <Field.Label fontSize="xs" color="fg.muted">
+                      Линия поддержки
+                    </Field.Label>
+                    <NativeSelect.Root size="sm">
+                      <NativeSelect.Field
+                        value={lineFilter}
+                        onChange={(e) =>
+                          handleLineChange(
+                            e.target.value === "" ? "" : Number(e.target.value),
+                          )
+                        }
+                      >
+                        <option value="">Все линии</option>
+                        {lines?.map((line) => (
+                          <option key={line.id} value={line.id}>
+                            {line.name}
+                          </option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
+
+                  <Field.Root>
+                    <Field.Label fontSize="xs" color="fg.muted">
+                      Исполнитель
+                    </Field.Label>
+                    <UserSearchSelect
+                      value={assigneeFilter}
+                      onChange={handleAssigneeChange}
+                      placeholder="ФИО исполнителя..."
+                    />
+                  </Field.Root>
+
+                  <Field.Root>
+                    <Field.Label fontSize="xs" color="fg.muted">
+                      Автор
+                    </Field.Label>
+                    <UserSearchSelect
+                      value={authorFilter}
+                      onChange={handleAuthorChange}
+                      placeholder="ФИО автора..."
+                    />
+                  </Field.Root>
+
+                  <Field.Root>
+                    <Field.Label fontSize="xs" color="fg.muted">
+                      № заявки
+                    </Field.Label>
+                    <Input
+                      size="sm"
+                      type="number"
+                      placeholder="Например, 1024"
+                      value={ticketIdInput}
+                      onChange={(e) => setTicketIdInput(e.target.value)}
+                      onBlur={() => commitTicketIdFilter(ticketIdInput)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          commitTicketIdFilter(ticketIdInput);
+                        }
+                      }}
+                    />
+                  </Field.Root>
+                </Grid>
+              </Box>
+            </Collapsible.Content>
+          </Box>
+        </Collapsible.Root>
       )}
 
       {/* Filters — only on "assigned" tab (status only) */}

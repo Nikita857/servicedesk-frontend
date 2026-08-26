@@ -1,8 +1,24 @@
 import api from "./client";
-import type { ApiResponse } from "@/types/api";
-import type { UserActivityStatus, UserStatusResponse } from "@/types/auth";
+import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type {
+  UserActivityStatus,
+  UserSearchResult,
+  UserStatusResponse,
+} from "@/types/auth";
 
 export const userApi = {
+  /**
+   * Search users by ФИО or username (min 2 chars). Excludes the current user.
+   * Backing for assignee/author pickers — see UserSearchSelect.
+   */
+  search: async (query: string): Promise<UserSearchResult[]> => {
+    const response = await api.get<ApiResponse<PaginatedResponse<UserSearchResult>>>(
+      "/users/search",
+      { params: { q: query } },
+    );
+    return response.data.data.content;
+  },
+
   /**
    * Get current user's activity status
    */
