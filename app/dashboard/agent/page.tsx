@@ -9,6 +9,7 @@ import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 import { useAgentChat } from "@/lib/hooks/agent-chat";
 import { useAgentChatStore } from "@/stores/agentChatStore";
+import { AGENT_ENABLED } from "@/lib/config";
 import {
   AgentChatHeader,
   AgentChatInput,
@@ -34,12 +35,12 @@ export default function AgentPage() {
   const { has } = useCurrentPermissions();
 
   useEffect(() => {
-    if (isHydrated && !has(PERM.AI_AGENT_USE)) {
+    if (isHydrated && (!AGENT_ENABLED || !has(PERM.AI_AGENT_USE))) {
       router.push("/dashboard");
     }
   }, [isHydrated, has, router]);
 
-  if (!isHydrated || !has(PERM.AI_AGENT_USE)) return null;
+  if (!isHydrated || !AGENT_ENABLED || !has(PERM.AI_AGENT_USE)) return null;
 
   return (
     <AgentDensityProvider density="comfortable">

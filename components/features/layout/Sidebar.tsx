@@ -27,6 +27,7 @@ import {
 import type { IconType } from "react-icons";
 import { useColorMode } from "@/components/ui/color-mode";
 import { useAuthStore } from "@/stores";
+import { AGENT_ENABLED } from "@/lib/config";
 import { ProfileMenu } from "./ProfileMenu";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
@@ -99,7 +100,8 @@ export function Sidebar({ onClose }: SidebarProps) {
     // "Мои обращения" — для специалистов линии, у которых нет доступа ко всем тикетам
     if (item.href === "/dashboard/my-tickets")
       return has(PERM.TICKET_READ_LINE) && !has(PERM.TICKET_READ_ALL);
-    if (item.href === "/dashboard/agent") return has(PERM.AI_AGENT_USE);
+    if (item.href === "/dashboard/agent")
+      return AGENT_ENABLED && has(PERM.AI_AGENT_USE);
     return true;
   });
 
