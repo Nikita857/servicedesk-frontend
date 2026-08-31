@@ -32,7 +32,12 @@ import { UserSearchSelect } from "@/components/ui/UserSearchSelect";
 import { usePersistentPage, useTicketListSubscription } from "@/lib/hooks";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
-import { ticketStatusConfig, type TicketStatus } from "@/types/ticket";
+import {
+  ticketStatusConfig,
+  TicketStatusGroups,
+  type TicketStatus,
+  type TicketStatusGroup,
+} from "@/types/ticket";
 import { useWebSocket } from "@/lib/providers";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -72,6 +77,15 @@ function readUserFilterStorage(key: string): UserFilterValue {
   return null;
 }
 
+// statusFilter хранит либо "" , либо сырой TicketStatus, либо "grp:ACTIVE" / "grp:INACTIVE".
+// Валидируем то, что могло остаться в хранилище от старых версий.
+function readStatusFilterStorage(): string {
+  const raw = readStorage(STORAGE_KEY_STATUS);
+  if (!raw) return "";
+  if (raw === "grp:ACTIVE" || raw === "grp:INACTIVE") return raw;
+  return raw in ticketStatusConfig ? raw : "";
+}
+
 export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
   const { has } = useCurrentPermissions();
   const [page, setPage] = usePersistentPage("admin-tickets");
@@ -84,8 +98,9 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     () => (readStorage(STORAGE_KEY_TAB) as "all" | "assigned") || "all",
   );
 
-  const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(
-    () => readStorage(STORAGE_KEY_STATUS) as TicketStatus | "",
+  // "" | TicketStatus | "grp:ACTIVE" | "grp:INACTIVE"
+  const [statusFilter, setStatusFilter] = useState<string>(() =>
+    readStatusFilterStorage(),
   );
 
   const [lineFilter, setLineFilter] = useState<number | "">(() => {
@@ -137,7 +152,7 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
   }, []);
 
   const handleStatusChange = useCallback(
-    (value: TicketStatus | "") => {
+    (value: string) => {
       setStatusFilter(value);
       sessionStorage.setItem(STORAGE_KEY_STATUS, value);
       setPage(0);
@@ -229,11 +244,21 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
     prevConnectedRef.current = isConnected;
   }, [isConnected, queryClient]);
 
+  // Разбор значения фильтра статуса: группа ("grp:ACTIVE") → список статусов,
+  // иначе — одиночный статус.
+  const isStatusGroup = statusFilter.startsWith("grp:");
+  const statusesParam = isStatusGroup
+    ? TicketStatusGroups[statusFilter.slice(4) as TicketStatusGroup]
+    : undefined;
+  const singleStatusParam =
+    !isStatusGroup && statusFilter ? (statusFilter as TicketStatus) : undefined;
+
   const { data, isLoading, isFetching } = useQuery({
     queryKey: queryKeys.tickets.list({
       filter: "all",
       page,
-      status: statusFilter || undefined,
+      status: singleStatusParam,
+      statuses: statusesParam,
       lineId: lineFilter || undefined,
       ticketId: ticketIdFilter ? Number(ticketIdFilter) : undefined,
       assigneeId: assigneeFilter?.id,
@@ -243,11 +268,12 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
       ticketApi.listFiltered(
         page,
         PAGE_SIZE,
-        statusFilter || undefined,
+        singleStatusParam,
         lineFilter || undefined,
         ticketIdFilter ? Number(ticketIdFilter) : undefined,
         assigneeFilter?.id,
         authorFilter?.id,
+        statusesParam,
       ),
     staleTime: 300 * 1000,
     refetchInterval: 300 * 1000,
@@ -429,20 +455,22 @@ export function AdminTicketsView(options: AdminTicketsViewProps = {}) {
                     <NativeSelect.Root size="sm">
                       <NativeSelect.Field
                         value={statusFilter}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            e.target.value as TicketStatus | "",
-                          )
-                        }
+                        onChange={(e) => handleStatusChange(e.target.value)}
                       >
                         <option value="">Все статусы</option>
-                        {(Object.keys(ticketStatusConfig) as TicketStatus[]).map(
-                          (s) => (
+                        <optgroup label="Группы">
+                          <option value="grp:ACTIVE">Активные</option>
+                          <option value="grp:INACTIVE">Неактивные</option>
+                        </optgroup>
+                        <optgroup label="Статусы">
+                          {(
+                            Object.keys(ticketStatusConfig) as TicketStatus[]
+                          ).map((s) => (
                             <option key={s} value={s}>
                               {ticketStatusConfig[s].label}
                             </option>
-                          ),
-                        )}
+                          ))}
+                        </optgroup>
                       </NativeSelect.Field>
                       <NativeSelect.Indicator />
                     </NativeSelect.Root>

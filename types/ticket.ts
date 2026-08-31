@@ -29,6 +29,24 @@ export const TicketStatusCollection: Record<string, TicketStatus[]> = {
   rejected: ["REJECTED"],
 };
 
+// Агрегатные группы статусов для фильтра админского списка заявок.
+// PENDING_CLOSURE считается активным — заявка ещё не закрыта окончательно.
+export const TicketStatusGroups: Record<"ACTIVE" | "INACTIVE", TicketStatus[]> =
+  {
+    ACTIVE: [
+      "NEW",
+      "OPEN",
+      "PENDING",
+      "ESCALATED",
+      "RESOLVED",
+      "REOPENED",
+      "PENDING_CLOSURE",
+    ],
+    INACTIVE: ["CLOSED", "REJECTED", "CANCELLED"],
+  };
+
+export type TicketStatusGroup = keyof typeof TicketStatusGroups;
+
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface UserShortResponse {
