@@ -11,3 +11,5 @@ export * from "./profile";
 export * from "./categories";
 export * from "./rbac";
 export * from "./maintenance";
+export * from "./agent";
+export * from "./agentStream";

@@ -9,6 +9,12 @@ export interface UserStatusResponse {
   updatedAt: string;
 }
 
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  fio: string;
+}
+
 export interface User {
   id: number;
   username: string;

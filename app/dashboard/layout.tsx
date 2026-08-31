@@ -19,6 +19,9 @@ import { Header } from "@/components/features/layout/Header";
 import { WebSocketProvider } from "@/lib/providers";
 import { NotificationSubscriber } from "@/components/features/layout/NotificationSubscriber";
 import { AssignmentSubscriber } from "@/components/features/layout/AssignmentSubscriber";
+import { AnnouncementGate } from "@/components/features/announcement";
+import { AgentChatLauncher } from "@/components/features/agent";
+import { AGENT_ENABLED } from "@/lib/config";
 import {
   OnboardingOverlay,
   USER_ONBOARDING_STEPS,
@@ -76,6 +79,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <WebSocketProvider>
       <NotificationSubscriber />
       <AssignmentSubscriber />
+      <AnnouncementGate />
+      {AGENT_ENABLED && <AgentChatLauncher />}
 
       {/* Онбординг — рендерится поверх всего интерфейса */}
       <OnboardingOverlay steps={USER_ONBOARDING_STEPS} controls={onboarding} />

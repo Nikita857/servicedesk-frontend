@@ -3,6 +3,7 @@ import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type {
   AssignmentResponse,
   CreateAssignmentRequest,
+  RejectAssignmentRequest,
 } from "@/types/assignment";
 import type { SupportLineListResponse } from "@/types/support-line";
 
@@ -16,6 +17,10 @@ export const assignmentApi = {
       data,
     );
     return response.data.data;
+  },
+
+  cancel: async (id: number, data: RejectAssignmentRequest): Promise<void> => {
+    await api.post<ApiResponse<void>>(`/assignments/${id}/cancel`, data);
   },
 
   // Get assignment by ID
