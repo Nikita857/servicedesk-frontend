@@ -21,7 +21,9 @@ export const ticketApi = {
     return response.data.data;
   },
 
-  // List tickets with optional admin filters (status, lineId, assigneeId, authorId) and/or ticket number (ticketId)
+  // List tickets with optional admin filters (status, lineId, assigneeId, authorId),
+  // aggregate status group (statuses) and/or ticket number (ticketId).
+  // `statuses` is sent comma-joined (?statuses=NEW,OPEN) — Spring binds it to Collection<TicketStatus>.
   listFiltered: async (
     page = 0,
     size = 20,
@@ -30,9 +32,19 @@ export const ticketApi = {
     ticketId?: number,
     assigneeId?: number,
     authorId?: number,
+    statuses?: TicketStatus[],
   ): Promise<PagedTicketList> => {
     const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
-      params: { page, size, status, lineId, ticketId, assigneeId, authorId },
+      params: {
+        page,
+        size,
+        status,
+        lineId,
+        ticketId,
+        assigneeId,
+        authorId,
+        statuses: statuses?.length ? statuses.join(",") : undefined,
+      },
     });
     return response.data.data;
   },
