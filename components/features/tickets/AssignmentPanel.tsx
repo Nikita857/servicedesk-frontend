@@ -2,6 +2,7 @@ import { assignmentApi } from "@/lib/api/assignments";
 import type { AssignmentResponse } from "@/types/assignment";
 import { formatDate, handleApiError, toast } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryKeys";
+import { useCancelAssignment } from "@/lib/hooks/ticket-detail/useCancelAssignment";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Box,
@@ -27,6 +28,7 @@ import {
 import { useState } from "react";
 
 interface AssignmentPanelProps {
+  ticketId: number;
   currentAssignment: AssignmentResponse | null;
   assignmentHistory: AssignmentResponse[];
   isSpecialist: boolean;
@@ -71,6 +73,7 @@ const STATUS_CONF = {
 } as const;
 
 export default function AssignmentPanel({
+  ticketId,
   currentAssignment,
   assignmentHistory,
   isSpecialist,
@@ -78,15 +81,23 @@ export default function AssignmentPanel({
   onDecision,
 }: AssignmentPanelProps) {
   const queryClient = useQueryClient();
+  const cancelMutation = useCancelAssignment(ticketId);
   const [showHistory, setShowHistory] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const isPendingForMe =
     currentAssignment?.status === "PENDING" &&
     currentAssignment.toUser?.username === currentUsername;
+
+  // Назначение создал я сам — пока получатель не ответил, могу его отозвать
+  const isPendingFromMe =
+    currentAssignment?.status === "PENDING" &&
+    currentAssignment.fromUser?.username === currentUsername;
 
   const invalidateCaches = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
@@ -124,6 +135,20 @@ export default function AssignmentPanel({
     } finally {
       setIsRejecting(false);
     }
+  };
+
+  const handleCancel = () => {
+    if (!currentAssignment || !cancelReason.trim()) return;
+    cancelMutation.mutate(
+      { assignmentId: currentAssignment.id, reason: cancelReason.trim() },
+      {
+        onSuccess: () => {
+          setShowCancelForm(false);
+          setCancelReason("");
+          onDecision?.();
+        },
+      },
+    );
   };
 
   if (!isSpecialist || (!currentAssignment && assignmentHistory.length === 0)) {
@@ -345,8 +370,134 @@ export default function AssignmentPanel({
           </Box>
         )}
 
-        {/* Текущее (не pending для меня) */}
-        {currentAssignment && !isPendingForMe && (
+        {/* Ожидает решения получателя — назначил я сам, могу отозвать */}
+        {isPendingFromMe && currentAssignment && (
+          <Box
+            bg={{ base: "gray.50", _dark: "gray.800/40" }}
+            borderWidth="1px"
+            borderColor="border.default"
+            borderRadius="lg"
+            p={3}
+          >
+            <HStack
+              display="inline-flex"
+              bg="gray.500"
+              color="white"
+              px={2}
+              py={0.5}
+              borderRadius="full"
+              gap={1}
+              mb={2.5}
+            >
+              <Icon as={LuClock} boxSize={2.5} />
+              <Text
+                fontSize="2xs"
+                fontWeight="bold"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                Ожидает решения
+              </Text>
+            </HStack>
+
+            {/* To */}
+            <HStack gap={2.5} mb={2.5}>
+              <Avatar name={assignmentTo(currentAssignment)} size="28px" />
+              <Box flex={1} minW={0}>
+                <Text fontSize="2xs" color="fg.muted" lineHeight="1">
+                  Назначено
+                  {currentAssignment.toLine?.name &&
+                    ` · ${currentAssignment.toLine?.name}`}
+                </Text>
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="fg.default"
+                  truncate
+                  mt="2px"
+                >
+                  {assignmentTo(currentAssignment)}
+                </Text>
+              </Box>
+            </HStack>
+
+            {/* Note */}
+            {currentAssignment.note && (
+              <Box
+                bg="bg.surface"
+                borderWidth="1px"
+                borderColor="border.muted"
+                borderRadius="md"
+                px={2.5}
+                py={2}
+                mb={2.5}
+              >
+                <Text fontSize="sm" color="fg.default" lineHeight="1.45">
+                  {currentAssignment.note}
+                </Text>
+              </Box>
+            )}
+
+            {/* Actions */}
+            {showCancelForm ? (
+              <VStack align="stretch" gap={2}>
+                <Textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Укажите причину отмены"
+                  rows={2}
+                  size="xs"
+                  bg="bg.surface"
+                />
+                <HStack gap={2} justify="flex-end">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => {
+                      setShowCancelForm(false);
+                      setCancelReason("");
+                    }}
+                    disabled={cancelMutation.isPending}
+                  >
+                    Назад
+                  </Button>
+                  <Button
+                    colorPalette="gray"
+                    size="xs"
+                    onClick={handleCancel}
+                    loading={cancelMutation.isPending}
+                    disabled={!cancelReason.trim()}
+                  >
+                    <LuBan /> Отменить назначение
+                  </Button>
+                </HStack>
+              </VStack>
+            ) : (
+              <Button
+                variant="outline"
+                colorPalette="gray"
+                size="xs"
+                w="full"
+                onClick={() => setShowCancelForm(true)}
+              >
+                <LuBan /> Отменить назначение
+              </Button>
+            )}
+
+            <Text
+              fontSize="2xs"
+              color="fg.subtle"
+              textAlign="right"
+              mt={2}
+              fontVariantNumeric="tabular-nums"
+            >
+              Назначено · {formatDate(currentAssignment.createdAt)}
+            </Text>
+          </Box>
+        )}
+
+        {/* Текущее (не pending для меня и не моё pending-назначение) */}
+        {currentAssignment && !isPendingForMe && !isPendingFromMe && (
           <AssignmentCard a={currentAssignment} />
         )}
 

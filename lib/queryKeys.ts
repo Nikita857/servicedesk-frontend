@@ -19,6 +19,8 @@ export const queryKeys = {
       [...queryKeys.tickets.all, "by-status", status, page, size] as const,
     closureRejections: (id: number) =>
       [...queryKeys.tickets.detail(id), "closure-rejections"] as const,
+    cancelAssignments: (id: number) =>
+      [...queryKeys.tickets.detail(id), "cancel-assignments"] as const,
   },
 
   // Assignments

@@ -257,6 +257,7 @@ export default function TicketDetailPage({ params }: PageProps) {
             />
             {/* Assignment Panel - under chat */}
             <AssignmentPanel
+              ticketId={ticket.id}
               currentAssignment={currentAssignment}
               assignmentHistory={assignmentHistory}
               isSpecialist={has(PERM.TICKET_ASSIGN)}
