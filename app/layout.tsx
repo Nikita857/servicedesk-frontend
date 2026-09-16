@@ -20,8 +20,8 @@ const manrope = Manrope({
 export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props;
   return (
-    <html lang="ru" className={manrope.variable}>
-      <body>
+    <html lang="ru" className={manrope.variable} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <QueryProvider>
           <Provider>
             <AuthRefresh />
