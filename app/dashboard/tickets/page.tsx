@@ -11,5 +11,5 @@ export default function TicketsPage() {
 
   if (has(PERM.TICKET_READ_ALL)) return <AdminTicketsView />;
   if (has(PERM.TICKET_READ_LINE)) return <SpecialistTicketsView />;
-  return <UserTicketsView />;
+  return <UserTicketsView showFilters />;
 }
