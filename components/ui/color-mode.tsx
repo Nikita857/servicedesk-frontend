@@ -2,21 +2,10 @@
 
 import { ThemeProvider, useTheme } from "next-themes";
 import type { ThemeProviderProps } from "next-themes";
-import * as React from "react";
 
 export type ColorModeProviderProps = ThemeProviderProps;
 
 export function ColorModeProvider(props: ThemeProviderProps) {
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return props.children
-  }
-
   return (
     <ThemeProvider
       attribute="class"
