@@ -124,3 +124,27 @@ it('passes binary responseType through and returns the blob', async () => {
   })).resolves.toBe(blob);
   expect(seen[0].responseType).toBe('blob');
 });
+
+it('routes generated ticket upload through the shared multipart and CSRF path', async () => {
+  const file = new Blob(['ticket file']);
+  await getServiceDeskAPI().uploadToTicket(8, { file });
+  expect(seen).toHaveLength(1);
+  expect(apiClient.getUri(seen[0])).toBe('/api/v1/tickets/8/attachments');
+  expect(seen[0].data).toBeInstanceOf(FormData);
+  expect(await ((seen[0].data as FormData).get('file') as Blob).text()).toBe('ticket file');
+  expect(seen[0].headers.toJSON()).not.toHaveProperty('Content-Type');
+  expect(seen[0].headers.get('X-XSRF-TOKEN')).toBe('csrf-test');
+  expect(seen[0].headers.get('X-Test-Interceptor')).toBe('visited');
+});
+
+it('routes generated binary download through the shared client', async () => {
+  const blob = new Blob(['download']);
+  apiClient.defaults.adapter = async config => {
+    seen.push(config);
+    return { config, data: blob, headers: {}, status: 200, statusText: 'OK' };
+  };
+  await expect(getServiceDeskAPI().downloadById(8)).resolves.toBe(blob);
+  expect(apiClient.getUri(seen[0])).toBe('/api/v1/attachments/8/download');
+  expect(seen[0].responseType).toBe('blob');
+  expect(seen[0].headers.get('X-Test-Interceptor')).toBe('visited');
+});

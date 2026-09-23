@@ -8,6 +8,8 @@ import type {
   UpdateTicketRequest as WireUpdateTicketRequest,
   ChangeStatusRequest as WireChangeStatusRequest,
   RateTicketRequest as WireRateTicketRequest,
+  AssignmentResponseStatus,
+  AssignmentResponseMode,
 } from "@/lib/api/generated/models";
 import type { CategoryResponse } from "./category";
 import type { SupportLineListResponse } from "./support-line";
@@ -127,11 +129,7 @@ export const ticketStatusConfig: Record<TicketStatus, StatusConfig> = {
 };
 
 // Assignment Status configuration
-export type AssignmentStatus =
-  | "PENDING"
-  | "ACCEPTED"
-  | "REJECTED"
-  | "CANCELLED";
+export type AssignmentStatus = AssignmentResponseStatus;
 
 export const assignmentStatusConfig: Record<AssignmentStatus, StatusConfig> = {
   PENDING: { label: "Ожидает", color: "yellow" },
@@ -141,11 +139,7 @@ export const assignmentStatusConfig: Record<AssignmentStatus, StatusConfig> = {
 };
 
 // Assignment Mode configuration
-export type AssignmentMode =
-  | "FIRST_AVAILABLE"
-  | "ROUND_ROBIN"
-  | "LEAST_LOADED"
-  | "DIRECT";
+export type AssignmentMode = AssignmentResponseMode;
 
 export const assignmentModeConfig: Record<AssignmentMode, string> = {
   FIRST_AVAILABLE: "Первый свободный",

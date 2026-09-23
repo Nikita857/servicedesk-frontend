@@ -1,4 +1,4 @@
-import type { ConfirmUploadRequest as WireConfirmUploadRequest } from "@/lib/api/generated/models";
+import type { ConfirmUploadRequest as WireConfirmUploadRequest, PartInfo } from "@/lib/api/generated/models";
 
 export interface AttachmentResponse {
   id: number;
@@ -31,10 +31,7 @@ export interface InitiateMultipartResponse {
   bucket: string;
 }
 
-export interface MultipartPartInfo {
-  partNumber: number;
-  etag: string;
-}
+export type MultipartPartInfo = PartInfo;
 
 export interface WikiMediaUploadUrlResponse {
   uploadUrl: string;

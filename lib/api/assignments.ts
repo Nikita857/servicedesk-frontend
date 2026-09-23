@@ -1,5 +1,4 @@
 import { getServiceDeskAPI } from './generated/client';
-import type { AssignmentCreateRequest } from './generated/models';
 import { requireData } from './ticketContractView';
 import type { PaginatedResponse } from '@/types/api';
 import type { AssignmentResponse, CreateAssignmentRequest, RejectAssignmentRequest } from '@/types/assignment';
@@ -9,8 +8,10 @@ const generated = getServiceDeskAPI();
 const asAssignment = (value: unknown): AssignmentResponse => value as AssignmentResponse;
 
 export const assignmentApi = {
-  create: async (data: CreateAssignmentRequest): Promise<AssignmentResponse> =>
-    asAssignment(requireData(await generated.createAssignment(data as AssignmentCreateRequest))),
+  create: async (data: CreateAssignmentRequest): Promise<AssignmentResponse> => {
+    if (data.fromLineId == null) throw new Error('Source support line is required');
+    return asAssignment(requireData(await generated.createAssignment(data)));
+  },
   cancel: async (id: number, data: RejectAssignmentRequest): Promise<void> => { await generated.cancelAssignment(id, data); },
   get: async (id: number): Promise<AssignmentResponse> => asAssignment(requireData(await generated.getAssignment(id))),
   getCurrentForTicket: async (ticketId: number): Promise<AssignmentResponse | null> => {

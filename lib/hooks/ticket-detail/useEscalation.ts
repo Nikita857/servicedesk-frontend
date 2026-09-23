@@ -4,7 +4,6 @@ import { assignmentApi } from "@/lib/api/assignments";
 import type { AssignmentResponse } from "@/types/assignment";
 import { ticketApi } from "@/lib/api/tickets";
 import { toast, handleApiError } from "@/lib/utils";
-import { useAuthStore } from "@/stores";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Ticket } from "@/types/ticket";
 
@@ -29,7 +28,6 @@ interface UseEscalationReturn {
 
 export function useEscalation(options: UseEscalationOptions): UseEscalationReturn {
   const { ticket, onSuccess } = options;
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
   const [showEscalation, setShowEscalation] = useState(false);
@@ -50,6 +48,10 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
       toast.error("Ошибка", "Выберите линию поддержки");
       return;
     }
+    if (ticket.supportLine?.id == null) {
+      toast.error("Ошибка", "У заявки не указана текущая линия поддержки");
+      return;
+    }
 
     setIsEscalating(true);
     try {
@@ -58,8 +60,7 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
         ticketId: ticket.id,
         toLineId: selectedLineId,
         toUserId: selectedSpecialistId,
-        fromLineId: ticket.supportLine?.id ?? null,
-        fromUserId: user?.id ?? null,
+        fromLineId: ticket.supportLine.id,
         note: escalationComment,
         mode: selectedSpecialistId ? "DIRECT" : "FIRST_AVAILABLE",
       });
@@ -87,7 +88,7 @@ export function useEscalation(options: UseEscalationOptions): UseEscalationRetur
     } finally {
       setIsEscalating(false);
     }
-  }, [ticket, selectedLineId, selectedSpecialistId, escalationComment, user, onSuccess, resetForm]);
+  }, [ticket, selectedLineId, selectedSpecialistId, escalationComment, onSuccess, resetForm]);
 
   return {
     showEscalation,

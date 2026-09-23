@@ -1,7 +1,7 @@
 import { getServiceDeskAPI } from './generated/client';
 import type { ConfirmUploadRequest as WireConfirmUploadRequest, CompleteMultipartRequest, InitiateMultipartRequest, PartUrlRequest, UploadUrlRequest, AbortMultipartRequest, AttachmentResponse as WireAttachmentResponse } from './generated/models';
 import { requireData } from './ticketContractView';
-import type { AttachmentResponse, UploadUrlResponse, ConfirmUploadRequest, InitiateMultipartResponse, MultipartPartInfo } from '@/types/attachment';
+import type { AttachmentResponse, UploadUrlResponse, ConfirmUploadRequest, InitiateMultipartResponse } from '@/types/attachment';
 
 const generated = getServiceDeskAPI();
 type TargetType = UploadUrlRequest['targetType'];
@@ -33,7 +33,7 @@ export const attachmentApi = {
     if (!value.partUrl) throw new Error('Multipart part URL is missing');
     return { partUrl: value.partUrl };
   },
-  completeMultipart: async (data: { fileKey: string; bucket: string; uploadId: string; parts: MultipartPartInfo[]; filename: string; contentType: string; fileSize: number; targetType: TargetType; targetId: number }): Promise<AttachmentResponse> =>
-    asAttachment(requireData(await generated.completeMultipart1(data as CompleteMultipartRequest))),
+  completeMultipart: async (data: CompleteMultipartRequest): Promise<AttachmentResponse> =>
+    asAttachment(requireData(await generated.completeMultipart1(data))),
   abortMultipart: async (data: AbortMultipartRequest): Promise<void> => { await generated.abortMultipart1(data); },
 };

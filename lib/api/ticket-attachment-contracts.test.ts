@@ -16,6 +16,7 @@ import { assignmentApi } from './assignments';
 import { messageApi } from './messages';
 import { attachmentApi } from './attachments';
 import { getServiceDeskAPI } from './generated/client';
+import type { AssignmentCreateRequest } from './generated/models';
 
 beforeEach(() => { wire.requests = []; wire.response = { success: true, data: {} }; });
 
@@ -47,6 +48,19 @@ it('retains descending message sort and the public page shape', async () => {
 it('passes a nullable assignment response through the current-assignment helper', async () => {
   wire.response = { success: true, data: null };
   await expect(assignmentApi.getCurrentForTicket(8)).resolves.toBeNull();
+});
+
+it('rejects an assignment without a source line before making a request', async () => {
+  const request = { ticketId: 8, toLineId: 4, fromLineId: null, note: 'forward' } as unknown as AssignmentCreateRequest;
+  await expect(assignmentApi.create(request)).rejects.toThrow('Source support line is required');
+  expect(wire.requests).toEqual([]);
+});
+
+it('sends a valid generated assignment request', async () => {
+  const request: AssignmentCreateRequest = { ticketId: 8, fromLineId: 2, toLineId: 4, note: 'forward', mode: 'FIRST_AVAILABLE' };
+  wire.response = { success: true, data: { id: 20, ticketId: 8 } };
+  await expect(assignmentApi.create(request)).resolves.toMatchObject({ id: 20 });
+  expect(wire.requests[0]).toMatchObject({ url: '/api/v1/assignments', method: 'POST', data: request });
 });
 
 it('sends generated multipart completion data and returns the attachment', async () => {
