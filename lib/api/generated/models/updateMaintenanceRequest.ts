@@ -7,10 +7,12 @@
 
 export interface UpdateMaintenanceRequest {
   enabled: boolean;
-  endsAt?: string;
+  /** @nullable */
+  endsAt?: string | null;
   /**
      * @minLength 0
      * @maxLength 500
+     * @nullable
      */
-  message?: string;
+  message?: string | null;
 }

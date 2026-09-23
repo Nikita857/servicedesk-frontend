@@ -1,87 +1,17 @@
-import api from "./client";
-import type {
-  ChangePasswordRequest,
-  ProfileResponse,
-  UpdateProfileRequest,
-  UpdateBitrixRequest,
-  UpdateVkRequest,
-  UpdateMaxRequest,
-} from "@/types/profile";
+import type { ChangePasswordRequest, ProfileResponse, UpdateProfileRequest, UpdateBitrixRequest, UpdateVkRequest, UpdateMaxRequest } from '@/types/profile';
+import { getServiceDeskAPI } from './generated/client';
 
-// ==================== API ====================
+const generated = getServiceDeskAPI();
 
 export const profileApi = {
-  /**
-   * Получить профиль текущего пользователя
-   */
-  getProfile: async (): Promise<ProfileResponse> => {
-    const response = await api.get<{ data: ProfileResponse }>("/profile");
-    return response.data.data;
-  },
-
-  /**
-   * Обновить профиль (ФИО, email)
-   */
-  updateProfile: async (
-    data: UpdateProfileRequest
-  ): Promise<ProfileResponse> => {
-    const response = await api.patch<{ data: ProfileResponse }>(
-      "/profile",
-      data
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Сменить пароль
-   */
-  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
-    await api.put("/profile/password", data);
-  },
-
-  /**
-   * Привязать Bitrix24
-   */
-  updateBitrix: async (data: UpdateBitrixRequest): Promise<void> => {
-    await api.put("/profile/bitrix", data);
-  },
-
-  /**
-   * Привязать ВКонтакте
-   */
-  updateVk: async (data: UpdateVkRequest): Promise<void> => {
-    await api.put("/profile/vk", data);
-  },
-
-  /**
-   * Привязать MAX
-   */
-  updateMax: async (data: UpdateMaxRequest): Promise<void> => {
-    await api.put("/profile/max", data);
-  },
-
-  /**
-   * Загрузить аватар
-   */
-  uploadAvatar: async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post<{ data: string }>(
-      "/profile/avatar",
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Удалить аватар
-   */
-  deleteAvatar: async (): Promise<void> => {
-    await api.delete("/profile/avatar");
-  },
+  getProfile: async (): Promise<ProfileResponse> => (await generated.getProfile()).data as ProfileResponse,
+  updateProfile: async (data: UpdateProfileRequest): Promise<ProfileResponse> => (await generated.updateProfile(data)).data as ProfileResponse,
+  changePassword: async (data: ChangePasswordRequest): Promise<void> => { await generated.changePassword(data); },
+  updateBitrix: async (data: UpdateBitrixRequest): Promise<void> => { await generated.updateBitrixUserId(data); },
+  updateVk: async (data: UpdateVkRequest): Promise<void> => { await generated.updateVkId(data); },
+  updateMax: async (data: UpdateMaxRequest): Promise<void> => { await generated.updateMaxId(data); },
+  uploadAvatar: async (file: File): Promise<string> => (await generated.uploadAvatar({ file })).data as string,
+  deleteAvatar: async (): Promise<void> => { await generated.deleteAvatar(); },
 };
 
 export type { ProfileResponse, UpdateProfileRequest };

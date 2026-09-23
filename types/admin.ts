@@ -26,8 +26,4 @@ export interface CreateUserRequest {
   specialistType?: string | null;
 }
 
-export interface BackupResponse {
-  postgresOk: boolean;
-  minioOk: boolean;
-  timestamp: string;
-}
+export type { BackupResult as BackupResponse } from '@/lib/api/generated/models';

@@ -7,8 +7,10 @@
 
 export interface CreateUserRequest {
   active?: boolean;
-  departmentId?: number;
-  email?: string;
+  /** @nullable */
+  departmentId?: number | null;
+  /** @nullable */
+  email?: string | null;
   /**
      * @minLength 3
      * @maxLength 200
@@ -19,9 +21,11 @@ export interface CreateUserRequest {
      * @maxLength 100
      */
   password: string;
-  positionId?: number;
+  /** @nullable */
+  positionId?: number | null;
   roles?: string[];
-  specialistTypeCode?: string;
+  /** @nullable */
+  specialistTypeCode?: string | null;
   /**
      * @minLength 3
      * @maxLength 100

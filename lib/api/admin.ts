@@ -1,202 +1,63 @@
-import api from "./client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
-import type { TicketListResponse } from "@/types/ticket";
-import { handleApiError } from "../utils";
-import type { WikiCategoryTree } from "@/types/wiki";
-import type {
-  AdminUserResponse,
-  BackupResponse,
-  CreateUserRequest,
-} from "@/types/admin";
+import type { PaginatedResponse } from '@/types/api';
+import type { TicketListResponse } from '@/types/ticket';
+import type { WikiCategoryTree } from '@/types/wiki';
+import type { AdminUserResponse, BackupResponse, CreateUserRequest } from '@/types/admin';
+import type { CreateUserRequest as WireCreateUserRequest, PageObjectOfUserAuthResponse, PageObjectOfTicketListResponse } from './generated/models';
+import { handleApiError } from '../utils';
+import { getServiceDeskAPI } from './generated/client';
 
-// ==================== API ====================
+const generated = getServiceDeskAPI();
+
+function asPage<T>(wire: PageObjectOfUserAuthResponse | PageObjectOfTicketListResponse | undefined): PaginatedResponse<T> {
+  return {
+    content: (wire?.content ?? []) as T[],
+    page: {
+      number: wire?.number ?? 0, size: wire?.size ?? 0,
+      totalElements: wire?.totalElements ?? 0, totalPages: wire?.totalPages ?? 0,
+    },
+  };
+}
 
 export const adminApi = {
-  // Get all users with pagination and search
-  getUsers: async (
-    page: number = 0,
-    size: number = 20,
-    search?: string,
-  ): Promise<PaginatedResponse<AdminUserResponse>> => {
-    const params = new URLSearchParams();
-    params.append("page", page.toString());
-    params.append("size", size.toString());
-    if (search) params.append("search", search);
-
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<AdminUserResponse>>
-    >(`/admin/users?${params.toString()}`);
-    return response.data.data;
-  },
-
-  // Get users by role with pagination
-  getUsersByRole: async (
-    role: string,
-    page: number = 0,
-    size: number = 50,
-  ): Promise<PaginatedResponse<AdminUserResponse>> => {
-    const params = new URLSearchParams();
-    params.append("page", page.toString());
-    params.append("size", size.toString());
-
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<AdminUserResponse>>
-    >(`/admin/users/by-role/${role}?${params.toString()}`);
-    return response.data.data;
-  },
-
-  // Get user by ID
-  getUser: async (id: number): Promise<AdminUserResponse> => {
-    const response = await api.get<ApiResponse<AdminUserResponse>>(
-      `/admin/users/${id}`,
-    );
-    return response.data.data;
-  },
-
-  // Create new user
+  getUsers: async (page = 0, size = 20, search?: string): Promise<PaginatedResponse<AdminUserResponse>> =>
+    asPage<AdminUserResponse>((await generated.getAllUsers({ page, size, ...(search ? { search } : {}) })).data),
+  getUsersByRole: async (role: string, page = 0, size = 50): Promise<PaginatedResponse<AdminUserResponse>> =>
+    asPage<AdminUserResponse>((await generated.getUsersByRole(role, { page, size })).data),
+  getUser: async (id: number): Promise<AdminUserResponse> => (await generated.getUser(id)).data as AdminUserResponse,
   createUser: async (params: CreateUserRequest): Promise<AdminUserResponse> => {
     const payload = {
-      username: params.username,
-      password: params.password,
-      fio: params.fio,
-      email: params.email ?? null,
-      roles: params.roles ?? [],
-      active: params.active,
-      departmentId: params.departmentId ?? null,
-      positionId: params.positionId ?? null,
+      username: params.username, password: params.password, fio: params.fio,
+      email: params.email ?? null, roles: params.roles ?? [], active: params.active,
+      departmentId: params.departmentId ?? null, positionId: params.positionId ?? null,
       specialistTypeCode: params.specialistType ?? null,
-    };
-
+    } as WireCreateUserRequest;
     try {
-      const response = await api.post<ApiResponse<AdminUserResponse>>(
-        "/admin/users",
-        payload,
-      );
-      return response.data.data;
+      return (await generated.createUser(payload)).data as AdminUserResponse;
     } catch (error) {
-      handleApiError(error, { context: "создать пользователя" });
+      handleApiError(error, { context: 'создать пользователя' });
       throw error;
     }
   },
-
-  // Delete user
-  deleteUser: async (id: number): Promise<void> => {
-    await api.delete(`/admin/users/${id}`);
-  },
-
-  // Change user password
-  changePassword: async (id: number, newPassword: string): Promise<void> => {
-    await api.put(
-      `/admin/users/${id}/password?newPassword=${encodeURIComponent(
-        newPassword,
-      )}`,
-    );
-  },
-
-  // Update user roles
-  updateRoles: async (
-    id: number,
-    roles: string[],
-  ): Promise<AdminUserResponse> => {
-    const queryParams = new URLSearchParams();
-    roles.forEach((role) => queryParams.append("roles", role));
-
-    const response = await api.patch<ApiResponse<AdminUserResponse>>(
-      `/admin/users/${id}/roles?${queryParams.toString()}`,
-    );
-    return response.data.data;
-  },
-
-  // Update user FIO
-  updateFio: async (id: number, fio: string): Promise<AdminUserResponse> => {
-    const response = await api.patch<ApiResponse<AdminUserResponse>>(
-      `/admin/users/${id}/fio?fio=${encodeURIComponent(fio)}`,
-    );
-    return response.data.data;
-  },
-
-  // Toggle user active status
-  toggleActive: async (
-    id: number,
-    active: boolean,
-  ): Promise<AdminUserResponse> => {
-    const response = await api.patch<ApiResponse<AdminUserResponse>>(
-      `/admin/users/${id}/active?active=${active}`,
-    );
-    return response.data.data;
-  },
-
-  // Update user specialist type
-  updateSpecialistType: async (
-    id: number,
-    code: string | null,
-  ): Promise<AdminUserResponse> => {
-    const params = new URLSearchParams();
-    if (code) params.append("code", code);
-    const response = await api.patch<ApiResponse<AdminUserResponse>>(
-      `/admin/users/${id}/specialist-type?${params.toString()}`,
-    );
-    return response.data.data;
-  },
-
-  // Update user department and position
-  updateDepartmentAndPosition: async (
-    id: number,
-    departmentId?: number | null,
-    positionId?: number | null,
-  ): Promise<AdminUserResponse> => {
-    const queryParams = new URLSearchParams();
-    if (departmentId !== undefined)
-      queryParams.append(
-        "departmentId",
-        departmentId === null ? "" : departmentId.toString(),
-      );
-    if (positionId !== undefined)
-      queryParams.append(
-        "positionId",
-        positionId === null ? "" : positionId.toString(),
-      );
-
-    const response = await api.patch<ApiResponse<AdminUserResponse>>(
-      `/admin/users/${id}/department-position?${queryParams.toString()}`,
-    );
-    return response.data.data;
-  },
-
-  // ==================== Admin Tickets ====================
-
-  // Get all NEW (unclaimed) tickets
-  getNewTickets: async (
-    page: number = 0,
-    size: number = 20,
-  ): Promise<PaginatedResponse<TicketListResponse>> => {
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<TicketListResponse>>
-    >(`/admin/tickets/new?page=${page}&size=${size}`);
-    return response.data.data;
-  },
-
-  // Get all CLOSED tickets
-  getClosedTickets: async (
-    page: number = 0,
-    size: number = 20,
-  ): Promise<PaginatedResponse<TicketListResponse>> => {
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<TicketListResponse>>
-    >(`/admin/tickets/closed?page=${page}&size=${size}`);
-    return response.data.data;
-  },
-
-  getCategoriesTree: async (): Promise<WikiCategoryTree[]> => {
-    const response = await api.get<ApiResponse<WikiCategoryTree[]>>(
-      `/wiki/categories/tree`,
-    );
-    return response.data.data;
-  },
-
-  runBackup: async (): Promise<BackupResponse> => {
-    const response =
-      await api.post<ApiResponse<BackupResponse>>("/admin/backup/run");
-    return response.data.data;
-  },
+  deleteUser: async (id: number): Promise<void> => { await generated.deleteUser(id); },
+  changePassword: async (id: number, newPassword: string): Promise<void> => { await generated.changePassword1(id, { newPassword }); },
+  updateRoles: async (id: number, roles: string[]): Promise<AdminUserResponse> =>
+    (await generated.updateRoles(id, { roles })).data as AdminUserResponse,
+  updateFio: async (id: number, fio: string): Promise<AdminUserResponse> =>
+    (await generated.updateFio(id, { fio })).data as AdminUserResponse,
+  toggleActive: async (id: number, active: boolean): Promise<AdminUserResponse> =>
+    (await generated.toggleActive(id, { active })).data as AdminUserResponse,
+  updateSpecialistType: async (id: number, code: string | null): Promise<AdminUserResponse> =>
+    (await generated.updateSpecialistType(id, code ? { code } : undefined)).data as AdminUserResponse,
+  updateDepartmentAndPosition: async (id: number, departmentId?: number | null, positionId?: number | null): Promise<AdminUserResponse> =>
+    (await generated.updateDepartmentAndPosition(id, {
+      ...(departmentId !== undefined ? { departmentId: departmentId === null ? '' : String(departmentId) } : {}),
+      ...(positionId !== undefined ? { positionId: positionId === null ? '' : String(positionId) } : {}),
+    })).data as AdminUserResponse,
+  getNewTickets: async (page = 0, size = 20): Promise<PaginatedResponse<TicketListResponse>> =>
+    asPage<TicketListResponse>((await generated.getNewTickets({ page, size })).data),
+  getClosedTickets: async (page = 0, size = 20): Promise<PaginatedResponse<TicketListResponse>> =>
+    asPage<TicketListResponse>((await generated.getClosedTickets({ page, size })).data),
+  getCategoriesTree: async (): Promise<WikiCategoryTree[]> =>
+    (await generated.getCategoryTree()).data as WikiCategoryTree[],
+  runBackup: async (): Promise<BackupResponse> => (await generated.runBackup()).data as BackupResponse,
 };

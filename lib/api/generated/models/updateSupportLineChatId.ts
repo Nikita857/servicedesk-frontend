@@ -6,7 +6,10 @@
  */
 
 export interface UpdateSupportLineChatId {
-  bitrixChatId?: number;
-  maxChatId?: number;
-  vkChatId?: number;
+  /** @nullable */
+  bitrixChatId?: number | null;
+  /** @nullable */
+  maxChatId?: number | null;
+  /** @nullable */
+  vkChatId?: number | null;
 }

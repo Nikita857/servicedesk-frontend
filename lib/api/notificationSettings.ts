@@ -1,18 +1,10 @@
-import api from "./client"
-import {ApiResponse, NotificationSettingResponse, NotificationSettingsBulkUpdate} from "@/types";
+import type { NotificationSettingResponse, NotificationSettingsBulkUpdate } from '@/types/notification';
+import { getServiceDeskAPI } from './generated/client';
+
+const generated = getServiceDeskAPI();
 
 export const notificationSettingsApi = {
-    get: async (): Promise<NotificationSettingResponse[]> => {
-        const response = await api.get<ApiResponse<NotificationSettingResponse[]>>(
-            "/notification/settings"
-        );
-        return response.data.data;
-    },
-    update: async (data: NotificationSettingsBulkUpdate): Promise<NotificationSettingResponse[]> => {
-        const response = await api.put<ApiResponse<NotificationSettingResponse[]>>(
-            "/notification/settings",
-            data
-        );
-        return response.data.data;
-    }
-}
+  get: async (): Promise<NotificationSettingResponse[]> => (await generated.getSettings()).data as NotificationSettingResponse[],
+  update: async (data: NotificationSettingsBulkUpdate): Promise<NotificationSettingResponse[]> =>
+    (await generated.updateSettings(data)).data as NotificationSettingResponse[],
+};

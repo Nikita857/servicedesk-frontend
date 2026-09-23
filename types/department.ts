@@ -1,12 +1,4 @@
-export interface CreateDepartmentRequest {
-  name: string;
-  description: string;
-}
-
-export interface CreatePositionRequest {
-  name: string;
-  departmentId: number;
-}
+export type { CreateDepartmentRequest, CreatePositionRequest } from '@/lib/api/generated/models';
 
 export interface DepartmentResponse {
   id: number;

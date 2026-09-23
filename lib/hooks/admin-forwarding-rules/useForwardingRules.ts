@@ -27,7 +27,7 @@ function buildMatrix(
     const src = rule.sourceRole?.code;
     const tgt = rule.targetRole?.code;
     if (src && tgt && matrix[src] !== undefined) {
-      matrix[src][tgt] = rule.enabled;
+      matrix[src][tgt] = rule.enabled ?? false;
     }
   }
   return matrix;

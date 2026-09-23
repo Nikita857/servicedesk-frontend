@@ -59,14 +59,4 @@ export interface NotificationSettingResponse {
   maxEnabled: boolean;
 }
 
-export interface NotificationSettingUpdateRequest {
-  type: NotificationType;
-  inAppEnabled: boolean;
-  bitrixEnabled: boolean;
-  vkEnabled: boolean;
-  maxEnabled: boolean;
-}
-
-export interface NotificationSettingsBulkUpdate {
-  settings: NotificationSettingUpdateRequest[];
-}
+export type { NotificationSettingUpdateRequest, NotificationSettingsBulkUpdate } from '@/lib/api/generated/models';

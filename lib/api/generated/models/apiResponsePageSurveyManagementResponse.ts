@@ -4,10 +4,10 @@
  * ServiceDesk API
  * OpenAPI spec version: 1.0
  */
-import type { PageObject } from './pageObject';
+import type { PageObjectOfSurveyManagementResponse } from './pageObjectOfSurveyManagementResponse';
 
 export interface ApiResponsePageSurveyManagementResponse {
-  data?: PageObject;
+  data?: PageObjectOfSurveyManagementResponse;
   message?: string;
   path?: string;
   success?: boolean;

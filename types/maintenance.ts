@@ -12,8 +12,4 @@ export interface MaintenanceSettings {
   updatedAt: string;
 }
 
-export interface UpdateMaintenanceRequest {
-  enabled: boolean;
-  message?: string | null;
-  endsAt?: string | null;
-}
+export type { UpdateMaintenanceRequest } from '@/lib/api/generated/models';

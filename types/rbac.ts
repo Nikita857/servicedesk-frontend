@@ -18,36 +18,10 @@ export interface RoleResponse {
   updatedAt: string;
 }
 
-export interface CreateRoleRequest {
-  code: string; // формат: ROLE_[A-Z_]+
-  name: string;
-  color: string;
-  description?: string;
-  permissionCodes?: string[];
-}
-
-export interface UpdateRoleRequest {
-  name?: string;
-  description?: string;
-}
-
-export interface UpdateRolePermissionsRequest {
-  permissionCodes: string[];
-}
+export type { CreateRoleRequest, UpdateRoleRequest, UpdateRolePermissionsRequest } from '@/lib/api/generated/models';
 
 export interface AssignUserRolesRequest {
   roleCodes: string[];
 }
 
-export interface CreateSpecialistTypeRequest {
-  code: string;
-  name: string;
-  displayOrder?: number;
-}
-
-export interface UpdateSpecialistTypeRequest {
-  code?: string;
-  name?: string;
-  displayOrder?: number;
-  active?: boolean;
-}
+export type { CreateSpecialistTypeRequest, UpdateSpecialistTypeRequest } from '@/lib/api/generated/models';

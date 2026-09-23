@@ -39,19 +39,7 @@ export type SenderType =
   | "SUPERVISOR"
   | "ADMIN";
 
-export interface AuthRequest {
-  username: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
-  expiresAt: string;
-  userAuthResponse: User; // matches backend API field name
-}
+export type { AuthRequest, AuthResponse } from '@/lib/api/generated/models';
 
 export const userRolesBadges: Record<
   string,

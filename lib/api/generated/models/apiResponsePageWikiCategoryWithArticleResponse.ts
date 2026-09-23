@@ -4,10 +4,10 @@
  * ServiceDesk API
  * OpenAPI spec version: 1.0
  */
-import type { PageObject } from './pageObject';
+import type { PageObjectOfWikiCategoryWithArticleResponse } from './pageObjectOfWikiCategoryWithArticleResponse';
 
 export interface ApiResponsePageWikiCategoryWithArticleResponse {
-  data?: PageObject;
+  data?: PageObjectOfWikiCategoryWithArticleResponse;
   message?: string;
   path?: string;
   success?: boolean;

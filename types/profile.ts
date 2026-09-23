@@ -21,24 +21,4 @@ export interface SocialNetworks {
   maxId: number | null;
 }
 
-export interface UpdateProfileRequest {
-  fio?: string;
-  email?: string;
-}
-
-export interface ChangePasswordRequest {
-  oldPassword: string;
-  newPassword: string;
-}
-
-export interface UpdateBitrixRequest {
-  bitrixUserId: number;
-}
-
-export interface UpdateVkRequest {
-  vkId: number;
-}
-
-export interface UpdateMaxRequest {
-  maxId: number;
-}
+export type { UpdateProfileRequest, ChangePasswordRequest, UpdateBitrixRequest, UpdateVkRequest, UpdateMaxRequest } from '@/lib/api/generated/models';

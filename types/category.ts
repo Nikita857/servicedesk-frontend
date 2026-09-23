@@ -22,23 +22,7 @@ export interface CategoryDetailResponse {
   updatedAt?: string;
 }
 
-export interface CreateCategoryRequest {
-  name: string;
-  description?: string;
-  type?: CategoryType;
-  displayOrder?: number;
-  userSelectable?: boolean;
-  recommendedLineId?: number | null;
-}
-
-export interface UpdateCategoryRequest {
-  name?: string;
-  description?: string;
-  type?: CategoryType;
-  displayOrder?: number;
-  userSelectable?: boolean;
-  recommendedLineId?: number | null;
-}
+export type { CreateCategoryRequest, UpdateCategoryRequest } from '@/lib/api/generated/models';
 
 export const categoryTypeConfig: Record<CategoryType, { label: string; color: string }> = {
   GENERAL: { label: "Обычная", color: "blue" },

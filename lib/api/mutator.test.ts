@@ -63,6 +63,16 @@ it('routes an actual generated operation through the existing client', async () 
   expect(apiClient.getUri(seen[0])).toBe('/api/v1/admin/forwarding-rules');
 });
 
+it('serializes a generated Pageable as Spring page and size query parameters', async () => {
+  await customInstance({ url: '/api/v1/admin/users', method: 'GET', params: { pageable: { page: 2, size: 20 } } });
+  expect(apiClient.getUri(seen[0])).toBe('/api/v1/admin/users?page=2&size=20');
+});
+
+it('serializes generated array query parameters as repeated Spring keys', async () => {
+  await getServiceDeskAPI().updateRoles(7, { roles: ['ADMIN', 'USER'] });
+  expect(apiClient.getUri(seen[0])).toBe('/api/v1/admin/users/7/roles?roles=ADMIN&roles=USER');
+});
+
 it('returns the response body for a 204 without inventing an envelope', async () => {
   apiClient.defaults.adapter = async config => ({
     config, data: '', headers: {}, status: 204, statusText: 'No Content',

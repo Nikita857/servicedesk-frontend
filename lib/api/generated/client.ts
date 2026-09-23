@@ -443,7 +443,7 @@ const addSpecialist = (
  * @summary Получить закрытые тикеты
  */
 const getClosedTickets = (
-    params: GetClosedTicketsParams,
+    params?: GetClosedTicketsParams,
  ) => {
       return customInstance<ApiResponsePageTicketListResponse>(
       {url: `/api/v1/admin/tickets/closed`, method: 'GET',
@@ -457,7 +457,7 @@ const getClosedTickets = (
  * @summary Получить не взятые тикеты
  */
 const getNewTickets = (
-    params: GetNewTicketsParams,
+    params?: GetNewTicketsParams,
  ) => {
       return customInstance<ApiResponsePageTicketListResponse>(
       {url: `/api/v1/admin/tickets/new`, method: 'GET',
@@ -471,7 +471,7 @@ const getNewTickets = (
  * @summary Получить список всех пользователей
  */
 const getAllUsers = (
-    params: GetAllUsersParams,
+    params?: GetAllUsersParams,
  ) => {
       return customInstance<ApiResponsePageUserAuthResponse>(
       {url: `/api/v1/admin/users`, method: 'GET',
@@ -501,7 +501,7 @@ const createUser = (
  */
 const getUsersByRole = (
     role: string,
-    params: GetUsersByRoleParams,
+    params?: GetUsersByRoleParams,
  ) => {
       return customInstance<ApiResponsePageUserAuthResponse>(
       {url: `/api/v1/admin/users/by-role/${role}`, method: 'GET',

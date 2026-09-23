@@ -6,6 +6,12 @@
  */
 
 export type UpdateDepartmentAndPositionParams = {
-departmentId?: number;
-positionId?: number;
+/**
+ * Numeric ID, or an empty value to clear the department
+ */
+departmentId?: string;
+/**
+ * Numeric ID, or an empty value to clear the position
+ */
+positionId?: string;
 };

@@ -1,9 +1,6 @@
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  timestamp: string;
-}
+import type { ApiResponseVoid } from '@/lib/api/generated/models';
+
+export type ApiResponse<T> = Omit<ApiResponseVoid, 'data'> & { data: T };
 
 export interface PaginatedResponse<T> {
   content: T[];

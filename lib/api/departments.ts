@@ -1,91 +1,16 @@
-import { ApiResponse } from "@/types/api";
-import {
-  DepartmentResponse,
-  PositionResponse,
-  CreateDepartmentRequest,
-  CreatePositionRequest,
-} from "@/types/department";
-import api from "./client";
+import type { DepartmentResponse, PositionResponse, CreateDepartmentRequest, CreatePositionRequest } from '@/types/department';
+import { getServiceDeskAPI } from './generated/client';
+
+const generated = getServiceDeskAPI();
 
 export const departmentApi = {
-  // === Departments (Отделы) ===
-
-  // Получить все отделы
-  getDepartments: async (): Promise<DepartmentResponse[]> => {
-    const response =
-      await api.get<ApiResponse<DepartmentResponse[]>>("/departments");
-    return response.data.data;
-  },
-
-  // Получить отдел по ID
-  getDepartmentById: async (id: number): Promise<DepartmentResponse> => {
-    const response = await api.get<ApiResponse<DepartmentResponse>>(
-      `/departments/${id}`,
-    );
-    return response.data.data;
-  },
-
-  // Создать отдел
-  createDepartment: async (
-    request: CreateDepartmentRequest,
-  ): Promise<DepartmentResponse> => {
-    const response = await api.post<ApiResponse<DepartmentResponse>>(
-      "/departments",
-      request,
-    );
-    return response.data.data;
-  },
-
-  // Обновить отдел
-  updateDepartment: async (
-    id: number,
-    request: CreateDepartmentRequest,
-  ): Promise<DepartmentResponse> => {
-    const response = await api.put<ApiResponse<DepartmentResponse>>(
-      `/departments/${id}`,
-      request,
-    );
-    return response.data.data;
-  },
-
-  // Удалить отдел
-  deleteDepartment: async (id: number): Promise<void> => {
-    await api.delete<ApiResponse<void>>(`/departments/${id}`);
-  },
-
-  // === Positions (Должности) ===
-
-  // Получить все должности
-  getAllPositions: async (): Promise<PositionResponse[]> => {
-    const response = await api.get<ApiResponse<PositionResponse[]>>(
-      "/departments/positions",
-    );
-    return response.data.data;
-  },
-
-  // Получить должности конкретного отдела
-  getPositionsByDepartment: async (
-    departmentId: number,
-  ): Promise<PositionResponse[]> => {
-    const response = await api.get<ApiResponse<PositionResponse[]>>(
-      `/departments/${departmentId}/positions`,
-    );
-    return response.data.data;
-  },
-
-  // Создать должность
-  createPosition: async (
-    request: CreatePositionRequest,
-  ): Promise<PositionResponse> => {
-    const response = await api.post<ApiResponse<PositionResponse>>(
-      "/departments/positions",
-      request,
-    );
-    return response.data.data;
-  },
-
-  // Удалить должность
-  deletePosition: async (id: number): Promise<void> => {
-    await api.delete<ApiResponse<void>>(`/departments/positions/${id}`);
-  },
+  getDepartments: async (): Promise<DepartmentResponse[]> => (await generated.getAllDepartments()).data as DepartmentResponse[],
+  getDepartmentById: async (id: number): Promise<DepartmentResponse> => (await generated.getDepartment(id)).data as DepartmentResponse,
+  createDepartment: async (request: CreateDepartmentRequest): Promise<DepartmentResponse> => (await generated.createDepartment(request)).data as DepartmentResponse,
+  updateDepartment: async (id: number, request: CreateDepartmentRequest): Promise<DepartmentResponse> => (await generated.updateDepartment(id, request)).data as DepartmentResponse,
+  deleteDepartment: async (id: number): Promise<void> => { await generated.deleteDepartment(id); },
+  getAllPositions: async (): Promise<PositionResponse[]> => (await generated.getAllPositions()).data as PositionResponse[],
+  getPositionsByDepartment: async (departmentId: number): Promise<PositionResponse[]> => (await generated.getPositions(departmentId)).data as PositionResponse[],
+  createPosition: async (request: CreatePositionRequest): Promise<PositionResponse> => (await generated.createPosition(request)).data as PositionResponse,
+  deletePosition: async (id: number): Promise<void> => { await generated.deletePosition(id); },
 };

@@ -45,29 +45,9 @@ export interface SupportLineDetail extends SupportLineListResponse {
   supportLineChatsResponse: SupportLineChatsResponse;
 }
 
-export interface CreateSupportLineRequest {
-  name: string;
-  description?: string;
-  slaMinutes?: number;
-  assignmentMode?: AssignmentMode;
-  specialistTypeId: number;
-  displayOrder?: number;
-}
+export type { CreateSupportLineRequest, UpdateSupportLineRequest } from '@/lib/api/generated/models';
 
-export interface UpdateSupportLineRequest {
-  name?: string;
-  description?: string;
-  slaMinutes?: number;
-  assignmentMode?: AssignmentMode;
-  specialistTypeId?: number;
-  displayOrder?: number;
-}
-
-export interface UpdateSupportLineChatId {
-  bitrixChatId: number | null;
-  vkChatId: number | null;
-  maxChatId: number | null;
-}
+export type { UpdateSupportLineChatId } from '@/lib/api/generated/models';
 
 export interface SupportLineChatsResponse {
   bitrixChatId: number | null;

@@ -19,7 +19,8 @@ export interface UpdateCategoryRequest {
      * @maxLength 150
      */
   name?: string;
-  recommendedLineId?: number;
+  /** @nullable */
+  recommendedLineId?: number | null;
   type?: UpdateCategoryRequestType;
   userSelectable?: boolean;
 }

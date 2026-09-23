@@ -4,10 +4,10 @@
  * ServiceDesk API
  * OpenAPI spec version: 1.0
  */
-import type { PageObject } from './pageObject';
+import type { PageObjectOfMessageResponse } from './pageObjectOfMessageResponse';
 
 export interface ApiResponsePageMessageResponse {
-  data?: PageObject;
+  data?: PageObjectOfMessageResponse;
   message?: string;
   path?: string;
   success?: boolean;
