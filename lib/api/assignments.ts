@@ -1,112 +1,39 @@
-import api from "./client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
-import type {
-  AssignmentResponse,
-  CreateAssignmentRequest,
-  RejectAssignmentRequest,
-} from "@/types/assignment";
-import type { SupportLineListResponse } from "@/types/support-line";
+import { getServiceDeskAPI } from './generated/client';
+import type { AssignmentCreateRequest } from './generated/models';
+import { requireData } from './ticketContractView';
+import type { PaginatedResponse } from '@/types/api';
+import type { AssignmentResponse, CreateAssignmentRequest, RejectAssignmentRequest } from '@/types/assignment';
+import type { SupportLineListResponse } from '@/types/support-line';
+
+const generated = getServiceDeskAPI();
+const asAssignment = (value: unknown): AssignmentResponse => value as AssignmentResponse;
 
 export const assignmentApi = {
-  // Create new assignment (escalate ticket)
-  create: async (
-    data: CreateAssignmentRequest,
-  ): Promise<AssignmentResponse> => {
-    const response = await api.post<ApiResponse<AssignmentResponse>>(
-      "/assignments",
-      data,
-    );
-    return response.data.data;
-  },
-
-  cancel: async (id: number, data: RejectAssignmentRequest): Promise<void> => {
-    await api.post<ApiResponse<void>>(`/assignments/${id}/cancel`, data);
-  },
-
-  // Get assignment by ID
-  get: async (id: number): Promise<AssignmentResponse> => {
-    const response = await api.get<ApiResponse<AssignmentResponse>>(
-      `/assignments/${id}`,
-    );
-    return response.data.data;
-  },
-
-  // Get current active assignment for ticket
-  getCurrentForTicket: async (
-    ticketId: number,
-  ): Promise<AssignmentResponse | null> => {
+  create: async (data: CreateAssignmentRequest): Promise<AssignmentResponse> =>
+    asAssignment(requireData(await generated.createAssignment(data as AssignmentCreateRequest))),
+  cancel: async (id: number, data: RejectAssignmentRequest): Promise<void> => { await generated.cancelAssignment(id, data); },
+  get: async (id: number): Promise<AssignmentResponse> => asAssignment(requireData(await generated.getAssignment(id))),
+  getCurrentForTicket: async (ticketId: number): Promise<AssignmentResponse | null> => {
     try {
-      const response = await api.get<ApiResponse<AssignmentResponse>>(
-        `/tickets/${ticketId}/current-assignment`,
-      );
-      return response.data.data;
+      const response = await generated.getCurrentAssignment(ticketId);
+      if (response.success === false) return null;
+      return response.data ? asAssignment(response.data) : null;
     } catch {
       return null;
     }
   },
-
-  // Get assignment history for ticket
-  getTicketHistory: async (ticketId: number): Promise<AssignmentResponse[]> => {
-    const response = await api.get<ApiResponse<AssignmentResponse[]>>(
-      `/tickets/${ticketId}/assignments`,
-    );
-    return response.data.data;
+  getTicketHistory: async (ticketId: number): Promise<AssignmentResponse[]> =>
+    requireData(await generated.getTicketAssignments(ticketId)) as AssignmentResponse[],
+  getMyPending: async (page = 0, size = 20): Promise<PaginatedResponse<AssignmentResponse>> => {
+    const wire = requireData(await generated.getMyPendingAssignments({ pageable: { page, size } }));
+    return { content: (wire.content ?? []) as AssignmentResponse[], page: {
+      number: wire.number ?? 0, size: wire.size ?? 0, totalElements: wire.totalElements ?? 0, totalPages: wire.totalPages ?? 0,
+    } };
   },
-
-  // Get my pending assignments
-  getMyPending: async (
-    page = 0,
-    size = 20,
-  ): Promise<PaginatedResponse<AssignmentResponse>> => {
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<AssignmentResponse>>
-    >("/assignments/pending", {
-      params: { page, size },
-    });
-    return response.data.data;
-  },
-
-  // Get pending count
-  getPendingCount: async (): Promise<number> => {
-    const response = await api.get<ApiResponse<number>>(
-      "/assignments/pending-count",
-    );
-    return response.data.data;
-  },
-
-  // Accept assignment
-  accept: async (id: number): Promise<AssignmentResponse> => {
-    const response = await api.post<ApiResponse<AssignmentResponse>>(
-      `/assignments/${id}/accept`,
-    );
-    return response.data.data;
-  },
-
-  // Reject assignment
-  reject: async (id: number, reason: string): Promise<AssignmentResponse> => {
-    const response = await api.post<ApiResponse<AssignmentResponse>>(
-      `/assignments/${id}/reject`,
-      { reason },
-    );
-    return response.data.data;
-  },
-
-  // Get ticket IDs where current user is co-executor
-  getMyCoExecutorTicketIds: async (): Promise<number[]> => {
-    const response = await api.get<ApiResponse<number[]>>(
-      "/tickets/co-executor/my",
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Get available lines for forwarding based on user role
-   * Respects forwarding rules: SYSADMIN → ONE_C_SUPPORT, etc.
-   */
-  getAvailableForwardingLines: async (): Promise<SupportLineListResponse[]> => {
-    const response = await api.get<ApiResponse<SupportLineListResponse[]>>(
-      "/assignments/available-lines",
-    );
-    return response.data.data;
-  },
+  getPendingCount: async (): Promise<number> => requireData(await generated.getPendingCount()),
+  accept: async (id: number): Promise<AssignmentResponse> => asAssignment(requireData(await generated.acceptAssignment(id))),
+  reject: async (id: number, reason: string): Promise<AssignmentResponse> => asAssignment(requireData(await generated.rejectAssignment(id, { reason }))),
+  getMyCoExecutorTicketIds: async (): Promise<number[]> => requireData(await generated.getTicketWhereICoExecutor()),
+  getAvailableForwardingLines: async (): Promise<SupportLineListResponse[]> =>
+    requireData(await generated.getAvailableForwardingLines()) as SupportLineListResponse[],
 };

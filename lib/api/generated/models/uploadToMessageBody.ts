@@ -6,5 +6,5 @@
  */
 
 export type UploadToMessageBody = {
-  file: Blob;
+  file: Blob | File;
 };

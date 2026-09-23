@@ -1,6 +1,7 @@
 export * from "./client";
 export * from "./auth";
 export * from "./tickets";
+export * from "./assignments";
 export * from "./users";
 export * from "./messages";
 export * from "./supportLines";

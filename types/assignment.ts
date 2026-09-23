@@ -3,6 +3,7 @@ import type {
   AssignmentMode,
   UserShortResponse,
 } from "./ticket";
+import type { AssignmentRejectRequest as WireAssignmentRejectRequest } from "@/lib/api/generated/models";
 
 export interface SupportLineShortResponse {
   id: number;
@@ -37,9 +38,7 @@ export interface CreateAssignmentRequest {
   mode?: AssignmentMode;
 }
 
-export interface RejectAssignmentRequest {
-  reason: string;
-}
+export type RejectAssignmentRequest = WireAssignmentRejectRequest;
 
 export interface CoExecutorResponse {
   assignmentId: number;

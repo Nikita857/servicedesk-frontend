@@ -1,312 +1,40 @@
-import api from "./client";
-import type { ApiResponse } from "@/types/api";
-import type {
-  Ticket,
-  PagedTicketList,
-  CreateTicketRequest,
-  UpdateTicketRequest,
-  ChangeStatusRequest,
-  TicketStatus,
-  TicketStatusHistory,
-  RateTicketRequest,
-} from "@/types/ticket";
-import type { CoExecutorResponse } from "@/types/assignment";
+import { getServiceDeskAPI } from './generated/client';
+import type { CreateTicketRequest as WireCreateTicketRequest, UpdateTicketRequest as WireUpdateTicketRequest, ChangeStatusRequest as WireChangeStatusRequest, RateTicketRequest as WireRateTicketRequest } from './generated/models';
+import { requireData, ticketPage } from './ticketContractView';
+import type { Ticket, PagedTicketList, CreateTicketRequest, UpdateTicketRequest, ChangeStatusRequest, TicketStatus, TicketStatusHistory, RateTicketRequest } from '@/types/ticket';
+import type { CoExecutorResponse } from '@/types/assignment';
+
+const generated = getServiceDeskAPI();
+const pageable = (page: number, size: number) => ({ page, size });
+const asTicket = (value: unknown): Ticket => value as Ticket;
 
 export const ticketApi = {
-  // List all tickets (paginated)
-  list: async (page = 0, size = 20): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
-      params: { page, size },
-    });
-    return response.data.data;
-  },
-
-  // List tickets with optional admin filters (status, lineId, assigneeId, authorId),
-  // aggregate status group (statuses) and/or ticket number (ticketId).
-  // `statuses` is sent comma-joined (?statuses=NEW,OPEN) — Spring binds it to Collection<TicketStatus>.
-  listFiltered: async (
-    page = 0,
-    size = 20,
-    status?: TicketStatus,
-    lineId?: number,
-    ticketId?: number,
-    assigneeId?: number,
-    authorId?: number,
-    statuses?: TicketStatus[],
-  ): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
-      params: {
-        page,
-        size,
-        status,
-        lineId,
-        ticketId,
-        assigneeId,
-        authorId,
-        statuses: statuses?.length ? statuses.join(",") : undefined,
-      },
-    });
-    return response.data.data;
-  },
-
-  /**
-   * List all tickets without pagination limit
-   * @deprecated Consider using a dedicated counts API endpoint for better performance
-   */
-  listAll: async (page = 0, size = 10000): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>("/tickets", {
-      params: { page, size },
-    });
-    return response.data.data;
-  },
-
-  // Get tickets by status
-  listByStatus: async (
-    status: TicketStatus,
-    page = 0,
-    size = 20,
-  ): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>(
-      `/tickets/status/${status}`,
-      {
-        params: { page, size },
-      },
-    );
-    return response.data.data;
-  },
-
-  // Get my tickets (created by me)
-  listMy: async (page = 0, size = 20): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>(
-      "/tickets/my",
-      {
-        params: { page, size },
-      },
-    );
-    return response.data.data;
-  },
-
-  // Get tickets assigned to me
-  listAssigned: async (
-    page = 0,
-    size = 20,
-    status?: TicketStatus,
-  ): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>(
-      "/tickets/assigned",
-      {
-        params: { page, size, statuses: status || undefined },
-      },
-    );
-    return response.data.data;
-  },
-
-  // Get tickets by support line
-  listByLine: async (
-    lineId: number,
-    page = 0,
-    size = 20,
-  ): Promise<PagedTicketList> => {
-    const response = await api.get<ApiResponse<PagedTicketList>>(
-      `/tickets/line/${lineId}`,
-      {
-        params: { page, size },
-      },
-    );
-    return response.data.data;
-  },
-
-  // Get single ticket
-  get: async (id: number): Promise<Ticket> => {
-    const response = await api.get<ApiResponse<Ticket>>(`/tickets/${id}`);
-    return response.data.data;
-  },
-
-  // Create ticket
-  create: async (data: CreateTicketRequest): Promise<Ticket> => {
-    const response = await api.post<ApiResponse<Ticket>>("/tickets", data);
-    return response.data.data;
-  },
-
-  // Update ticket
-  update: async (id: number, data: UpdateTicketRequest): Promise<Ticket> => {
-    const response = await api.put<ApiResponse<Ticket>>(`/tickets/${id}`, data);
-    return response.data.data;
-  },
-
-  // Change status
-  changeStatus: async (
-    id: number,
-    data: ChangeStatusRequest,
-  ): Promise<Ticket> => {
-    const response = await api.patch<ApiResponse<Ticket>>(
-      `/tickets/${id}/status`,
-      data,
-    );
-    return response.data.data;
-  },
-
-  // Assign to specialist
-  assignToSpecialist: async (
-    id: number,
-    specialistId: number,
-  ): Promise<Ticket> => {
-    const response = await api.patch<ApiResponse<Ticket>>(
-      `/tickets/${id}/assign-specialist`,
-      null,
-      {
-        params: { specialistId },
-      },
-    );
-    return response.data.data;
-  },
-
-  // Assign to support line
-  assignToLine: async (id: number, lineId: number): Promise<Ticket> => {
-    const response = await api.patch<ApiResponse<Ticket>>(
-      `/tickets/${id}/assign-line`,
-      null,
-      {
-        params: { lineId },
-      },
-    );
-    return response.data.data;
-  },
-
-  // Take ticket into work (specialist becomes assignee)
-  takeTicket: async (id: number): Promise<Ticket> => {
-    const response = await api.post<ApiResponse<Ticket>>(`/tickets/${id}/take`);
-    return response.data.data;
-  },
-
-  // Delete ticket
-  delete: async (id: number): Promise<void> => {
-    await api.delete(`/tickets/${id}`);
-  },
-
-  // ============ Two-factor closure ============
-
-  /**
-   * Confirm ticket closure (user endpoint)
-   * Moves ticket from PENDING_CLOSURE to CLOSED
-   */
-  confirmClosure: async (id: number): Promise<Ticket> => {
-    const response = await api.post<ApiResponse<Ticket>>(
-      `/tickets/${id}/confirm-closure`,
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Reject ticket closure (user endpoint)
-   * Moves ticket from PENDING_CLOSURE to REOPENED
-   */
-  rejectClosure: async (id: number, reason?: string): Promise<Ticket> => {
-    const response = await api.post<ApiResponse<Ticket>>(
-      `/tickets/${id}/reject-closure`,
-      null,
-      {
-        params: reason ? { reason } : undefined,
-      },
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Get status history for a ticket
-   */
-  getStatusHistory: async (id: number): Promise<TicketStatusHistory[]> => {
-    const response = await api.get<ApiResponse<TicketStatusHistory[]>>(
-      `/tickets/${id}/status-history`,
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Get closure rejection history for a ticket (newest first)
-   */
-  getClosureRejections: async (id: number): Promise<TicketStatusHistory[]> => {
-    const response = await api.get<ApiResponse<TicketStatusHistory[]>>(
-      `/tickets/${id}/closure-rejections`,
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Rate a closed ticket (only ticket creator can rate, once)
-   */
-  rateTicket: async (
-    id: number,
-    request: RateTicketRequest,
-  ): Promise<Ticket> => {
-    const response = await api.post<ApiResponse<Ticket>>(
-      `/tickets/${id}/rate`,
-      request,
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Cancel ticket (only ticket creator or admin can cancel)
-   * Ticket will be marked as CANCELLED and soft deleted
-   */
-  cancelTicket: async (id: number, reason?: string): Promise<Ticket> => {
-    const response = await api.post<ApiResponse<Ticket>>(
-      `/tickets/${id}/cancel`,
-      null,
-      {
-        params: reason ? { reason } : undefined,
-      },
-    );
-    return response.data.data;
-  },
-
-  setEstimatedDate: async (
-    id: number,
-    estimatedCompletionDate: string,
-  ): Promise<Ticket> => {
-    const response = await api.patch<ApiResponse<Ticket>>(
-      `/tickets/${id}/estimated-date`,
-      { estimatedCompletionDate },
-    );
-    return response.data.data;
-  },
-
-  // ============ Co-executors ============
-
-  getCoExecutors: async (ticketId: number): Promise<CoExecutorResponse[]> => {
-    const response = await api.get<ApiResponse<CoExecutorResponse[]>>(
-      `/tickets/${ticketId}/co-executors`,
-    );
-    return response.data.data;
-  },
-
-  addCoExecutor: async (
-    ticketId: number,
-    specialistId: number,
-  ): Promise<CoExecutorResponse> => {
-    const response = await api.post<ApiResponse<CoExecutorResponse>>(
-      `/tickets/${ticketId}/co-executors`,
-      null,
-      { params: { specialistId } },
-    );
-    return response.data.data;
-  },
-
-  removeCoExecutor: async (ticketId: number, userId: number): Promise<void> => {
-    await api.delete(`/tickets/${ticketId}/co-executors/${userId}`);
-  },
-
-  //Set ticket category by support line opinion (for stats)
-  setSupportCategory: async (
-    ticketId: number,
-    categoryId: number,
-  ): Promise<Ticket> => {
-    const response = await api.patch(
-      `/tickets/${ticketId}/category-support`,
-      null,
-      { params: { categoryId } },
-    );
-    return response.data.data;
-  },
+  list: async (page = 0, size = 20): Promise<PagedTicketList> => ticketPage(requireData(await generated.listTickets({ pageable: pageable(page, size) }))),
+  listFiltered: async (page = 0, size = 20, status?: TicketStatus, lineId?: number, ticketId?: number, assigneeId?: number, authorId?: number, statuses?: TicketStatus[]): Promise<PagedTicketList> =>
+    ticketPage(requireData(await generated.listTickets({ pageable: pageable(page, size), status, lineId, ticketId, assigneeId, authorId, statuses: statuses?.length ? statuses : undefined }))),
+  /** @deprecated Prefer a paginated query or a dedicated counts endpoint. */
+  listAll: async (page = 0, size = 10000): Promise<PagedTicketList> => ticketPage(requireData(await generated.listTickets({ pageable: pageable(page, size) }))),
+  listByStatus: async (status: TicketStatus, page = 0, size = 20): Promise<PagedTicketList> => ticketPage(requireData(await generated.getTicketsByStatus(status, { pageable: pageable(page, size) }))),
+  listMy: async (page = 0, size = 20): Promise<PagedTicketList> => ticketPage(requireData(await generated.getMyTickets({ pageable: pageable(page, size) }))),
+  listAssigned: async (page = 0, size = 20, status?: TicketStatus): Promise<PagedTicketList> => ticketPage(requireData(await generated.getAssignedTickets({ pageable: pageable(page, size), statuses: status ? [status] : undefined }))),
+  listByLine: async (lineId: number, page = 0, size = 20): Promise<PagedTicketList> => ticketPage(requireData(await generated.getTicketsByLine(lineId, { pageable: pageable(page, size) }))),
+  get: async (id: number): Promise<Ticket> => asTicket(requireData(await generated.getTicket(id))),
+  create: async (data: CreateTicketRequest): Promise<Ticket> => asTicket(requireData(await generated.createTicket(data as WireCreateTicketRequest))),
+  update: async (id: number, data: UpdateTicketRequest): Promise<Ticket> => asTicket(requireData(await generated.updateTicket(id, data as WireUpdateTicketRequest))),
+  changeStatus: async (id: number, data: ChangeStatusRequest): Promise<Ticket> => asTicket(requireData(await generated.changeStatus1(id, data as WireChangeStatusRequest))),
+  assignToSpecialist: async (id: number, specialistId: number): Promise<Ticket> => asTicket(requireData(await generated.assignToSpecialist(id, { specialistId }))),
+  assignToLine: async (id: number, lineId: number): Promise<Ticket> => asTicket(requireData(await generated.assignToLine(id, { lineId }))),
+  takeTicket: async (id: number): Promise<Ticket> => asTicket(requireData(await generated.takeTicket(id))),
+  delete: async (id: number): Promise<void> => { await generated.deleteTicket(id); },
+  confirmClosure: async (id: number): Promise<Ticket> => asTicket(requireData(await generated.confirmClosure(id))),
+  rejectClosure: async (id: number, reason?: string): Promise<Ticket> => asTicket(requireData(await generated.rejectClosure(id, reason ? { reason } : undefined))),
+  getStatusHistory: async (id: number): Promise<TicketStatusHistory[]> => requireData(await generated.getStatusHistory(id)) as TicketStatusHistory[],
+  getClosureRejections: async (id: number): Promise<TicketStatusHistory[]> => requireData(await generated.getClosureRejections(id)) as TicketStatusHistory[],
+  rateTicket: async (id: number, request: RateTicketRequest): Promise<Ticket> => asTicket(requireData(await generated.rateTicket(id, request as WireRateTicketRequest))),
+  cancelTicket: async (id: number, reason?: string): Promise<Ticket> => asTicket(requireData(await generated.cancelTicket(id, reason ? { reason } : undefined))),
+  setEstimatedDate: async (id: number, estimatedCompletionDate: string): Promise<Ticket> => asTicket(requireData(await generated.setEstimatedDate(id, { estimatedCompletionDate }))),
+  getCoExecutors: async (ticketId: number): Promise<CoExecutorResponse[]> => requireData(await generated.getCoExecutors(ticketId)) as CoExecutorResponse[],
+  addCoExecutor: async (ticketId: number, specialistId: number): Promise<CoExecutorResponse> => requireData(await generated.addCoExecutor(ticketId, { specialistId })) as CoExecutorResponse,
+  removeCoExecutor: async (ticketId: number, userId: number): Promise<void> => { await generated.removeCoExecutor(ticketId, userId); },
+  setSupportCategory: async (ticketId: number, categoryId: number): Promise<Ticket> => asTicket(requireData(await generated.setSupportCategory(ticketId, { categoryId }))),
 };

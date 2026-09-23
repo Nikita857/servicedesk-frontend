@@ -1,6 +1,14 @@
-// Ticket types based on OpenAPI spec
+// UI view models retain required and nullable fields expected by existing screens.
 
-import { Page } from "./api";
+import type { Page } from "./api";
+import type {
+  TicketResponseStatus,
+  TicketResponsePriority,
+  CreateTicketRequest as WireCreateTicketRequest,
+  UpdateTicketRequest as WireUpdateTicketRequest,
+  ChangeStatusRequest as WireChangeStatusRequest,
+  RateTicketRequest as WireRateTicketRequest,
+} from "@/lib/api/generated/models";
 import type { CategoryResponse } from "./category";
 import type { SupportLineListResponse } from "./support-line";
 import type {
@@ -10,17 +18,7 @@ import type {
   SupportLineShortResponse,
 } from "./assignment";
 
-export type TicketStatus =
-  | "NEW"
-  | "OPEN"
-  | "PENDING"
-  | "ESCALATED"
-  | "RESOLVED"
-  | "PENDING_CLOSURE"
-  | "CLOSED"
-  | "REOPENED"
-  | "REJECTED"
-  | "CANCELLED";
+export type TicketStatus = TicketResponseStatus;
 
 export const TicketStatusCollection: Record<string, TicketStatus[]> = {
   new: ["NEW"],
@@ -47,7 +45,7 @@ export const TicketStatusGroups: Record<"ACTIVE" | "INACTIVE", TicketStatus[]> =
 
 export type TicketStatusGroup = keyof typeof TicketStatusGroups;
 
-export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+export type TicketPriority = TicketResponsePriority;
 
 export interface UserShortResponse {
   id: number;
@@ -99,27 +97,9 @@ export interface Ticket {
 }
 
 // Request DTOs
-export interface CreateTicketRequest {
-  title: string;
-  description: string;
-  link1c?: string;
-  categoryUserId?: number;
-  priority?: TicketPriority;
-  supportLineId?: number;
-  assignToUserId?: number; // Прямое назначение специалисту
-}
-
-export interface UpdateTicketRequest {
-  title?: string;
-  description?: string;
-  link1c?: string;
-  priority?: TicketPriority;
-}
-
-export interface ChangeStatusRequest {
-  status: TicketStatus;
-  comment?: string;
-}
+export type CreateTicketRequest = WireCreateTicketRequest;
+export type UpdateTicketRequest = WireUpdateTicketRequest;
+export type ChangeStatusRequest = WireChangeStatusRequest;
 
 // Paginated response
 export interface PagedTicketList {
@@ -240,7 +220,4 @@ export interface TicketStatusHistory {
   comment: string | null;
 }
 
-export interface RateTicketRequest {
-  rating: number;
-  feedback?: string;
-}
+export type RateTicketRequest = WireRateTicketRequest;

@@ -1842,11 +1842,15 @@ const getMessageAttachments = (
 const uploadToMessage = (
     messageId: number,
     uploadToMessageBody?: UploadToMessageBody,
- ) => {
+ ) => {const formData = new FormData();
+if(uploadToMessageBody?.file !== undefined) {
+ formData.append(`file`, uploadToMessageBody.file);
+ }
+
       return customInstance<ApiResponseAttachmentResponse>(
       {url: `/api/v1/messages/${messageId}/attachments`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: uploadToMessageBody
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData
     },
       );
     }
@@ -3034,11 +3038,15 @@ const getTicketAttachments = (
 const uploadToTicket = (
     ticketId: number,
     uploadToTicketBody?: UploadToTicketBody,
- ) => {
+ ) => {const formData = new FormData();
+if(uploadToTicketBody?.file !== undefined) {
+ formData.append(`file`, uploadToTicketBody.file);
+ }
+
       return customInstance<ApiResponseAttachmentResponse>(
       {url: `/api/v1/tickets/${ticketId}/attachments`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: uploadToTicketBody
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData
     },
       );
     }

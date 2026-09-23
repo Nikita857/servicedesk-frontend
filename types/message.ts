@@ -1,7 +1,8 @@
-// Message types based on OpenAPI spec
+// Message view models retain the fields expected by chat components.
 
 import type { UserShortResponse } from "./ticket";
 import { SenderType } from "@/types/auth";
+import type { SendMessageRequest as WireSendMessageRequest, EditMessageRequest as WireEditMessageRequest } from "@/lib/api/generated/models";
 
 export interface MessageAttachment {
   id: number;
@@ -27,14 +28,8 @@ export interface Message {
   updatedAt: string;
 }
 
-export interface SendMessageRequest {
-  content: string;
-  internal?: boolean;
-}
-
-export interface EditMessageRequest {
-  content: string;
-}
+export type SendMessageRequest = WireSendMessageRequest;
+export type EditMessageRequest = WireEditMessageRequest;
 
 export interface PagedMessages {
   content: Message[];

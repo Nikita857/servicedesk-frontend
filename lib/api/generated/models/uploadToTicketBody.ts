@@ -6,5 +6,5 @@
  */
 
 export type UploadToTicketBody = {
-  file: Blob;
+  file: Blob | File;
 };

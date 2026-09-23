@@ -1,3 +1,5 @@
+import type { ConfirmUploadRequest as WireConfirmUploadRequest } from "@/lib/api/generated/models";
+
 export interface AttachmentResponse {
   id: number;
   filename: string;
@@ -19,15 +21,7 @@ export interface UploadUrlResponse {
   bucket: string;
 }
 
-export interface ConfirmUploadRequest {
-  fileKey: string;
-  filename: string;
-  contentType: string;
-  fileSize: number;
-  bucket: string;
-  targetType: 'TICKET' | 'MESSAGE' | 'DIRECT_MESSAGE' | 'WIKI_ARTICLE';
-  targetId: number;
-}
+export type ConfirmUploadRequest = WireConfirmUploadRequest;
 
 // ===== Multipart Upload (файлы > 5 ГБ) =====
 
