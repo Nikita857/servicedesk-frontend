@@ -22,19 +22,42 @@ import { forwardingRulesApi } from './forwardingRules';
 import { notificationSettingsApi } from './notificationSettings';
 import { maintenanceApi } from './maintenance';
 
+const wireUser = {
+  id: 5,
+  username: 'new',
+  fio: 'New User',
+  avatarUrl: null,
+  socialNetwork: { bitrixUserId: 42, vkId: null, maxId: 9 },
+  specialist: false,
+  roles: ['USER'],
+  permissions: [],
+  active: true,
+  departmentName: null,
+  positionName: null,
+  specialistType: null,
+};
+
 beforeEach(() => { calls.requests = []; calls.result = { success: true, data: [] }; });
 
 it('auth login sends credentials through the generated contract and unwraps its envelope', async () => {
-  const user = { id: 3, username: 'user' };
-  const data = { expiresIn: 3600, userAuthResponse: user };
+  const data = { expiresIn: 3600, userAuthResponse: wireUser };
   calls.result = { success: true, data };
-  await expect(authApi.login({ username: 'user', password: 'pass' })).resolves.toEqual(data);
+  await expect(authApi.login({ username: 'user', password: 'pass' })).resolves.toMatchObject({
+    expiresIn: 3600, userAuthResponse: { id: 5, username: 'new' },
+  });
   expect(calls.requests[0]).toMatchObject({ url: '/api/v1/auth/login', method: 'POST', data: { username: 'user', password: 'pass' } });
 });
 
 it('auth login rejects an empty generated envelope before creating a session', async () => {
   calls.result = { success: true };
   await expect(authApi.login({ username: 'user', password: 'pass' })).rejects.toThrow('Authentication response is missing user data');
+});
+
+it('auth login returns the public socialNetworks field instead of the wire socialNetwork field', async () => {
+  calls.result = { data: { expiresIn: 3600, userAuthResponse: wireUser } };
+  const result = await authApi.login({ username: 'new', password: 'pass' });
+  expect(result.userAuthResponse.socialNetworks).toEqual({ bitrixUserId: 42, vkId: null, maxId: 9 });
+  expect(result.userAuthResponse).not.toHaveProperty('socialNetwork');
 });
 
 it('profile update preserves nullable response values', async () => {
@@ -57,7 +80,7 @@ it('rbac roles preserve empty lists', async () => {
 });
 
 it('admin maps specialist type form field into the generated create request', async () => {
-  calls.result = { data: { id: 5, username: 'new' } };
+  calls.result = { data: wireUser };
   await adminApi.createUser({ username: 'new', password: 'pass', fio: 'New', email: null, roles: [], active: true, departmentId: null, positionId: null, specialistType: 'SYSADMIN' });
   expect(calls.requests[0]).toMatchObject({ url: '/api/v1/admin/users', method: 'POST', data: { specialistTypeCode: 'SYSADMIN' } });
 });
@@ -71,12 +94,37 @@ it('admin users flatten pageable params and keep the public page result shape', 
 });
 
 it('admin sends empty query values to clear department and position', async () => {
-  calls.result = { data: { id: 5, username: 'new' } };
+  calls.result = { data: wireUser };
   await adminApi.updateDepartmentAndPosition(5, null, null);
   expect(calls.requests[0]).toMatchObject({
     url: '/api/v1/admin/users/5/department-position', method: 'PATCH',
     params: { departmentId: '', positionId: '' },
   });
+});
+
+it.each([
+  ['getUsers', () => adminApi.getUsers(0, 20)],
+  ['getUsersByRole', () => adminApi.getUsersByRole('USER', 0, 20)],
+] as const)('admin %s maps every paginated user to the public socialNetworks field', async (_operation, invoke) => {
+  calls.result = { data: { content: [wireUser], number: 0, size: 20, totalElements: 1, totalPages: 1 } };
+  const user = (await invoke()).content[0];
+  expect(user.socialNetworks).toEqual({ bitrixUserId: 42, vkId: null, maxId: 9 });
+  expect(user).not.toHaveProperty('socialNetwork');
+});
+
+it.each([
+  ['getUser', () => adminApi.getUser(5)],
+  ['createUser', () => adminApi.createUser({ username: 'new', password: 'pass', fio: 'New User', email: null, roles: ['USER'], active: true, departmentId: null, positionId: null })],
+  ['updateRoles', () => adminApi.updateRoles(5, ['USER'])],
+  ['updateFio', () => adminApi.updateFio(5, 'New User')],
+  ['toggleActive', () => adminApi.toggleActive(5, true)],
+  ['updateSpecialistType', () => adminApi.updateSpecialistType(5, null)],
+  ['updateDepartmentAndPosition', () => adminApi.updateDepartmentAndPosition(5, null, null)],
+] as const)('admin %s returns the public socialNetworks field', async (_operation, invoke) => {
+  calls.result = { data: wireUser };
+  const user = await invoke();
+  expect(user.socialNetworks).toEqual({ bitrixUserId: 42, vkId: null, maxId: 9 });
+  expect(user).not.toHaveProperty('socialNetwork');
 });
 
 it('departments list unwraps an empty generated response', async () => {

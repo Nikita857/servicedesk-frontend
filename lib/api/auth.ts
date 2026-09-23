@@ -1,5 +1,6 @@
 import type { AuthRequest, AuthResponse, User } from '@/types/auth';
 import { getServiceDeskAPI } from './generated/client';
+import { toUserView } from './userAuthView';
 
 const generated = getServiceDeskAPI();
 
@@ -9,7 +10,7 @@ export const authApi = {
     if (!data?.userAuthResponse || data.expiresIn == null) {
       throw new Error('Authentication response is missing user data');
     }
-    return { ...data, userAuthResponse: data.userAuthResponse as User, expiresIn: data.expiresIn };
+    return { ...data, userAuthResponse: toUserView(data.userAuthResponse), expiresIn: data.expiresIn };
   },
   logout: async (): Promise<void> => { await generated.logout(); },
 };

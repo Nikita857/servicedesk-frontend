@@ -5,10 +5,11 @@ import type { AdminUserResponse, BackupResponse, CreateUserRequest } from '@/typ
 import type { CreateUserRequest as WireCreateUserRequest, PageObjectOfUserAuthResponse, PageObjectOfTicketListResponse } from './generated/models';
 import { handleApiError } from '../utils';
 import { getServiceDeskAPI } from './generated/client';
+import { toUserView } from './userAuthView';
 
 const generated = getServiceDeskAPI();
 
-function asPage<T>(wire: PageObjectOfUserAuthResponse | PageObjectOfTicketListResponse | undefined): PaginatedResponse<T> {
+function asPage<T>(wire: PageObjectOfTicketListResponse | undefined): PaginatedResponse<T> {
   return {
     content: (wire?.content ?? []) as T[],
     page: {
@@ -18,12 +19,22 @@ function asPage<T>(wire: PageObjectOfUserAuthResponse | PageObjectOfTicketListRe
   };
 }
 
+function asUserPage(wire: PageObjectOfUserAuthResponse | undefined): PaginatedResponse<AdminUserResponse> {
+  return {
+    content: (wire?.content ?? []).map(toUserView),
+    page: {
+      number: wire?.number ?? 0, size: wire?.size ?? 0,
+      totalElements: wire?.totalElements ?? 0, totalPages: wire?.totalPages ?? 0,
+    },
+  };
+}
+
 export const adminApi = {
   getUsers: async (page = 0, size = 20, search?: string): Promise<PaginatedResponse<AdminUserResponse>> =>
-    asPage<AdminUserResponse>((await generated.getAllUsers({ page, size, ...(search ? { search } : {}) })).data),
+    asUserPage((await generated.getAllUsers({ page, size, ...(search ? { search } : {}) })).data),
   getUsersByRole: async (role: string, page = 0, size = 50): Promise<PaginatedResponse<AdminUserResponse>> =>
-    asPage<AdminUserResponse>((await generated.getUsersByRole(role, { page, size })).data),
-  getUser: async (id: number): Promise<AdminUserResponse> => (await generated.getUser(id)).data as AdminUserResponse,
+    asUserPage((await generated.getUsersByRole(role, { page, size })).data),
+  getUser: async (id: number): Promise<AdminUserResponse> => toUserView((await generated.getUser(id)).data),
   createUser: async (params: CreateUserRequest): Promise<AdminUserResponse> => {
     const payload = {
       username: params.username, password: params.password, fio: params.fio,
@@ -32,7 +43,7 @@ export const adminApi = {
       specialistTypeCode: params.specialistType ?? null,
     } as WireCreateUserRequest;
     try {
-      return (await generated.createUser(payload)).data as AdminUserResponse;
+      return toUserView((await generated.createUser(payload)).data);
     } catch (error) {
       handleApiError(error, { context: 'создать пользователя' });
       throw error;
@@ -41,18 +52,18 @@ export const adminApi = {
   deleteUser: async (id: number): Promise<void> => { await generated.deleteUser(id); },
   changePassword: async (id: number, newPassword: string): Promise<void> => { await generated.changePassword1(id, { newPassword }); },
   updateRoles: async (id: number, roles: string[]): Promise<AdminUserResponse> =>
-    (await generated.updateRoles(id, { roles })).data as AdminUserResponse,
+    toUserView((await generated.updateRoles(id, { roles })).data),
   updateFio: async (id: number, fio: string): Promise<AdminUserResponse> =>
-    (await generated.updateFio(id, { fio })).data as AdminUserResponse,
+    toUserView((await generated.updateFio(id, { fio })).data),
   toggleActive: async (id: number, active: boolean): Promise<AdminUserResponse> =>
-    (await generated.toggleActive(id, { active })).data as AdminUserResponse,
+    toUserView((await generated.toggleActive(id, { active })).data),
   updateSpecialistType: async (id: number, code: string | null): Promise<AdminUserResponse> =>
-    (await generated.updateSpecialistType(id, code ? { code } : undefined)).data as AdminUserResponse,
+    toUserView((await generated.updateSpecialistType(id, code ? { code } : undefined)).data),
   updateDepartmentAndPosition: async (id: number, departmentId?: number | null, positionId?: number | null): Promise<AdminUserResponse> =>
-    (await generated.updateDepartmentAndPosition(id, {
+    toUserView((await generated.updateDepartmentAndPosition(id, {
       ...(departmentId !== undefined ? { departmentId: departmentId === null ? '' : String(departmentId) } : {}),
       ...(positionId !== undefined ? { positionId: positionId === null ? '' : String(positionId) } : {}),
-    })).data as AdminUserResponse,
+    })).data),
   getNewTickets: async (page = 0, size = 20): Promise<PaginatedResponse<TicketListResponse>> =>
     asPage<TicketListResponse>((await generated.getNewTickets({ page, size })).data),
   getClosedTickets: async (page = 0, size = 20): Promise<PaginatedResponse<TicketListResponse>> =>
