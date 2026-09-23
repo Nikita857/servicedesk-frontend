@@ -3,7 +3,7 @@ import type {
   ChangePasswordRequest,
   ProfileResponse,
   UpdateProfileRequest,
-  UpdateTelegramRequest,
+  UpdateBitrixRequest,
   UpdateVkRequest,
   UpdateMaxRequest,
 } from "@/types/profile";
@@ -40,10 +40,10 @@ export const profileApi = {
   },
 
   /**
-   * Привязать Telegram
+   * Привязать Bitrix24
    */
-  updateTelegram: async (data: UpdateTelegramRequest): Promise<void> => {
-    await api.put("/profile/telegram", data);
+  updateBitrix: async (data: UpdateBitrixRequest): Promise<void> => {
+    await api.put("/profile/bitrix", data);
   },
 
   /**

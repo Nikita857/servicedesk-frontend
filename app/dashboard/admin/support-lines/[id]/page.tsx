@@ -286,17 +286,17 @@ export default function SupportLineDetailPage({ params }: PageProps) {
 
             <Box>
               <Text fontWeight="medium" mb={2}>
-                ID чата поддержки в Telegram{" "}
-                {form.telegramChatId && (
+                ID чата поддержки в Bitrix24{" "}
+                {form.bitrixChatId && (
                   <Badge variant="subtle" colorPalette="green">
                     Привязан <LuCheck />
                   </Badge>
                 )}
               </Text>
               <Input
-                placeholder="-100123456789"
-                value={form.telegramChatId}
-                onChange={(e) => form.setTelegramChatId(e.target.value)}
+                placeholder="Bitrix24 chat ID"
+                value={form.bitrixChatId}
+                onChange={(e) => form.setBitrixChatId(e.target.value)}
               />
               <Text fontSize="xs" color="fg.muted" mt={1}>
                 ID чата или группы для отправки уведомлений о новых заявках

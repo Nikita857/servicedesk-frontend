@@ -20,7 +20,7 @@ export function useSupportLineDetail(lineId: number) {
       useState<AssignmentMode>("FIRST_AVAILABLE");
   const [specialistTypeId, setSpecialistTypeId] = useState<number | null>(null);
   const [displayOrder, setDisplayOrder] = useState(0);
-  const [telegramChatId, setTelegramChatId] = useState<string>("");
+  const [bitrixChatId, setBitrixChatId] = useState<string>("");
   const [vkChatId, setVkChatId] = useState<string>("");
   const [maxChatId, setMaxChatId] = useState<string>("");
   const [isFormDirty, setIsFormDirty] = useState(false);
@@ -54,7 +54,7 @@ export function useSupportLineDetail(lineId: number) {
     setAssignmentMode(line.assignmentMode);
     setSpecialistTypeId(line.specialistType?.id ?? null);
     setDisplayOrder(line.displayOrder);
-    setTelegramChatId(line.supportLineChatsResponse?.telegramChatId?.toString() || "");
+    setBitrixChatId(line.supportLineChatsResponse?.bitrixChatId?.toString() || "");
     setVkChatId(line.supportLineChatsResponse?.vkChatId?.toString() || "");
     setMaxChatId(line.supportLineChatsResponse?.maxChatId?.toString() || "");
     setIsFormDirty(false);
@@ -73,7 +73,7 @@ export function useSupportLineDetail(lineId: number) {
       });
 
       await supportLineApi.updateChatIds(lineId, {
-        telegramChatId: telegramChatId ? parseInt(telegramChatId) : null,
+        bitrixChatId: bitrixChatId ? parseInt(bitrixChatId) : null,
         vkChatId: vkChatId ? parseInt(vkChatId) : null,
         maxChatId: maxChatId ? parseInt(maxChatId) : null,
       });
@@ -183,9 +183,9 @@ export function useSupportLineDetail(lineId: number) {
           handleFieldChange(setAssignmentMode, val),
       setSpecialistTypeId: (val: number | null) => handleFieldChange(setSpecialistTypeId, val),
       setDisplayOrder: (val: number) => handleFieldChange(setDisplayOrder, val),
-      telegramChatId,
-      setTelegramChatId: (val: string) =>
-          handleFieldChange(setTelegramChatId, val),
+      bitrixChatId,
+      setBitrixChatId: (val: string) =>
+          handleFieldChange(setBitrixChatId, val),
       vkChatId,
       setVkChatId: (val: string) => handleFieldChange(setVkChatId, val),
       maxChatId,

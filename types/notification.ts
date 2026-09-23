@@ -54,7 +54,7 @@ export interface NotificationResponse {
 export interface NotificationSettingResponse {
   type: NotificationType;
   inAppEnabled: boolean;
-  telegramEnabled: boolean;
+  bitrixEnabled: boolean;
   vkEnabled: boolean;
   maxEnabled: boolean;
 }
@@ -62,7 +62,7 @@ export interface NotificationSettingResponse {
 export interface NotificationSettingUpdateRequest {
   type: NotificationType;
   inAppEnabled: boolean;
-  telegramEnabled: boolean;
+  bitrixEnabled: boolean;
   vkEnabled: boolean;
   maxEnabled: boolean;
 }

@@ -22,7 +22,7 @@ import { useAuthStore } from "@/stores";
 import { ProfileSidebar } from "./components/ProfileSidebar";
 import { PersonalInfoCard } from "./components/PersonalInfoCard";
 import { OrganizationCard } from "./components/OrganizationCard";
-import { TelegramCard } from "./components/TelegramCard";
+import { BitrixCard } from "./components/BitrixCard";
 import { VkCard } from "./components/VkCard";
 import { MaxCard } from "./components/MaxCard";
 import { PasswordCard } from "./components/PasswordCard";
@@ -36,7 +36,7 @@ export default function ProfilePage() {
   // Form states
   const [fio, setFio] = useState("");
   const [email, setEmail] = useState("");
-  const [telegramId, setTelegramId] = useState("");
+  const [bitrixUserId, setBitrixUserId] = useState("");
   const [vkId, setVkId] = useState("");
   const [maxId, setMaxId] = useState("");
   const [oldPassword, setOldPassword] = useState("");
@@ -123,7 +123,7 @@ export default function ProfilePage() {
   if (!formInitialized && profile) {
     setFio(profile.fio || "");
     setEmail(profile.email || "");
-    setTelegramId(profile.socialNetwork.telegramId?.toString() || "");
+    setBitrixUserId(profile.socialNetwork.bitrixUserId?.toString() || "");
     setVkId(profile.socialNetwork.vkId?.toString() || "");
     setMaxId(profile.socialNetwork.maxId?.toString() || "");
     setFormInitialized(true);
@@ -151,11 +151,11 @@ export default function ProfilePage() {
       toast.error("Ошибка при смене пароля. Проверьте текущий пароль"),
   });
 
-  const updateTelegramMutation = useMutation({
-    mutationFn: profileApi.updateTelegram,
+  const updateBitrixMutation = useMutation({
+    mutationFn: profileApi.updateBitrix,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success("Telegram привязан");
+      toast.success("Bitrix24 привязан");
     },
     onError: (error) => handleApiError(error),
   });
@@ -235,13 +235,13 @@ export default function ProfilePage() {
     changePasswordMutation.mutate({ oldPassword, newPassword });
   };
 
-  const handleUpdateTelegram = () => {
-    const id = parseInt(telegramId, 10);
+  const handleUpdateBitrix = () => {
+    const id = parseInt(bitrixUserId, 10);
     if (isNaN(id)) {
-      toast.error("Введите корректный Telegram ID");
+      toast.error("Введите корректный Bitrix24 user ID");
       return;
     }
-    updateTelegramMutation.mutate({ telegramId: id });
+    updateBitrixMutation.mutate({ bitrixUserId: id });
   };
 
   const handleUpdateVk = () => {
@@ -342,12 +342,12 @@ export default function ProfilePage() {
               isPending={updateOrgMutation.isPending}
             />
 
-            <TelegramCard
+            <BitrixCard
               profile={profile}
-              telegramId={telegramId}
-              setTelegramId={setTelegramId}
-              onUpdate={handleUpdateTelegram}
-              isPending={updateTelegramMutation.isPending}
+              bitrixUserId={bitrixUserId}
+              setBitrixUserId={setBitrixUserId}
+              onUpdate={handleUpdateBitrix}
+              isPending={updateBitrixMutation.isPending}
             />
 
             <VkCard
