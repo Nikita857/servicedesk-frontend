@@ -34,7 +34,7 @@ export default function SettingsPage() {
       settings: localSettings.map((s) => ({
         type: s.type,
         inAppEnabled: s.inAppEnabled,
-        telegramEnabled: s.telegramEnabled,
+        bitrixEnabled: s.bitrixEnabled,
         vkEnabled: s.vkEnabled,
         maxEnabled: s.maxEnabled,
       })),

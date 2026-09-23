@@ -64,13 +64,13 @@ export interface UpdateSupportLineRequest {
 }
 
 export interface UpdateSupportLineChatId {
-  telegramChatId: number | null;
+  bitrixChatId: number | null;
   vkChatId: number | null;
   maxChatId: number | null;
 }
 
 export interface SupportLineChatsResponse {
-  telegramChatId: number | null;
+  bitrixChatId: number | null;
   vkChatId: number | null;
   maxChatId: number | null;
 }

@@ -16,7 +16,7 @@ export interface ProfileResponse {
 }
 
 export interface SocialNetworks {
-  telegramId: number | null;
+  bitrixUserId: number | null;
   vkId: number | null;
   maxId: number | null;
 }
@@ -31,8 +31,8 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-export interface UpdateTelegramRequest {
-  telegramId: number;
+export interface UpdateBitrixRequest {
+  bitrixUserId: number;
 }
 
 export interface UpdateVkRequest {

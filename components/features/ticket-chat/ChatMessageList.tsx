@@ -97,7 +97,7 @@ function MessageBubble({
     <>
       <Box
         maxW={{ base: "65%", md: "60%" }}
-        // Telegram-style: flat bottom corner on the "tail" side
+        // Messenger-style: flat bottom corner on the "tail" side
         borderRadius="14px"
         borderBottomRightRadius={isOwn ? (isGroupEnd ? "3px" : "14px") : "14px"}
         borderBottomLeftRadius={isOwn ? "14px" : isGroupEnd ? "3px" : "14px"}
