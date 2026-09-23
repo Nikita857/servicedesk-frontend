@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "generate:api": "tsx scripts/generate-api.ts",
+    "check:generated": "tsx scripts/generate-api.ts --check"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",
@@ -38,12 +42,19 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^13.1.0",
+    "@asyncapi/parser": "^3.6.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/sockjs-client": "^1.5.4",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
-    "typescript": "^5"
+    "json-schema-to-typescript": "^16.0.0",
+    "orval": "^8.36.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^3.2.7",
+    "yaml": "^2.9.1"
   }
 }
