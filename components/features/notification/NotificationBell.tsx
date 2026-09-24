@@ -54,6 +54,7 @@ const typeConfig: Record<NotificationType, { icon: React.ElementType; color: str
   SPECIALIST_ADDED_TO_LINE: { icon: LuShield, color: "green.500" },
   SPECIALIST_REMOVED_FROM_LINE: { icon: LuShieldOff, color: "red.500" },
   SURVEY_SENT: { icon: LuClipboardList, color: "blue.500" },
+  SCHEDULED_TASK_OVERDUE: { icon: LuCalendar, color: "red.500" },
   ANNOUNCEMENT_CREATED: { icon: LuMegaphone, color: "purple.500" },
 };
 

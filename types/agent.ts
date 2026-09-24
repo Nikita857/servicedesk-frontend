@@ -1,36 +1,20 @@
-/**
- * Типы модуля ИИ-агента (бэкенд: feature/agent).
- * Контракт сверен с AgentController / AgentConversationResponse / AgentMessageResponse.
- */
+import type {
+  AgentConversationResponse,
+  AgentFileResponse,
+  AgentMessageResponse,
+} from '@/lib/api/generated/models';
 
-export interface AgentConversation {
-  id: number;
-  title: string | null;
-  createdAt: string; // ISO-8601
-  updatedAt: string;
-}
+export type AgentConversation = Omit<Required<AgentConversationResponse>, 'title'> & { title: string | null };
 
 export type AgentMessageRole = "USER" | "ASSISTANT";
 
-export interface AgentMessageDto {
-  id: number;
-  conversationId: number;
-  role: AgentMessageRole;
-  content: string;
-  cancelled: boolean;
-  createdAt: string;
-}
+export type AgentMessageDto = Omit<Required<AgentMessageResponse>, 'role'> & { role: AgentMessageRole };
 
 /**
  * Бланк Word/Excel, приложенный к диалогу. Ответ POST /agent/conversations/{id}/files.
  * Ссылки на скачивание здесь нет намеренно: файл пользователь только что выбрал сам.
  */
-export interface AgentFile {
-  id: number;
-  filename: string;
-  sizeBytes: number;
-  createdAt: string;
-}
+export type AgentFile = Required<AgentFileResponse>;
 
 /** Сообщение в том виде, в каком его показывает виджет. */
 export interface AgentUiMessage {

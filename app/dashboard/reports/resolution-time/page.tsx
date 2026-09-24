@@ -108,8 +108,7 @@ export default function ResolutionTimeReportPage() {
                 </Text>
               </Flex>
               <Text fontSize="2xl" fontWeight="bold" color="blue.600">
-                {data.formattedAvgTime ||
-                  formatDurationFull(data.avgResolutionSeconds)}
+                {formatDurationFull(data.avgResolutionSeconds)}
               </Text>
             </Box>
 

@@ -1,6 +1,7 @@
-import api from "./client";
-import { type ApiResponse, type PaginatedResponse } from "@/types/api";
-import type { TicketStatus, TicketPriority } from "@/types/ticket";
+import { type PaginatedResponse } from "@/types/api";
+import { getServiceDeskAPI } from './generated/client';
+import { toPage } from './page';
+import type { TicketFilter } from './generated/models';
 import type {
   TimeReportBySpecialist,
   TimeReportByLine,
@@ -17,16 +18,12 @@ import type {
  * Фильтр отчёта «Все заявки» (включая удалённые).
  * Поля соответствуют backend `TicketFilter` (@ModelAttribute).
  */
-export interface AllTicketsFilter {
-  status?: TicketStatus;
-  priority?: TicketPriority;
-  creatorName?: string;
-  executorName?: string;
-  /** Дата создания «от», ISO-формат YYYY-MM-DD (backend LocalDate) */
-  from?: string;
-  /** Дата создания «до», ISO-формат YYYY-MM-DD (backend LocalDate) */
-  to?: string;
-}
+export type AllTicketsFilter = TicketFilter;
+
+const generated = getServiceDeskAPI();
+const legacyReportUnavailable = (): never => {
+  throw new Error('This legacy report is unavailable: no backend operation exists');
+};
 
 /**
  * Reports API
@@ -38,40 +35,33 @@ export interface AllTicketsFilter {
 export const reportsApi = {
   /**
    * Отчёт по времени по специалистам
+   * @deprecated Backend route was removed; retained for import compatibility.
    */
   getTimeBySpecialist: async (
     from: string,
     to: string,
   ): Promise<TimeReportBySpecialist[]> => {
-    const response = await api.get<ApiResponse<TimeReportBySpecialist[]>>(
-      "/reports/time/by-specialist",
-      { params: { from, to } },
-    );
-    return response.data.data;
+    void from; void to;
+    return legacyReportUnavailable();
   },
 
   /**
    * Отчёт по времени по линиям поддержки
+   * @deprecated Backend route was removed; retained for import compatibility.
    */
   getTimeByLine: async (
     from: string,
     to: string,
   ): Promise<TimeReportByLine[]> => {
-    const response = await api.get<ApiResponse<TimeReportByLine[]>>(
-      "/reports/time/by-line",
-      { params: { from, to } },
-    );
-    return response.data.data;
+    void from; void to;
+    return legacyReportUnavailable();
   },
 
   /**
    * История тикета с временной статистикой
    */
   getTicketHistory: async (ticketId: number): Promise<TicketHistory> => {
-    const response = await api.get<ApiResponse<TicketHistory>>(
-      `/reports/tickets/${ticketId}/history`,
-    );
-    return response.data.data;
+    return (await generated.getTicketHistory(ticketId)).data as TicketHistory;
   },
 
   /**
@@ -80,50 +70,35 @@ export const reportsApi = {
   getReassignmentHistory: async (
     ticketId: number,
   ): Promise<ReassignmentHistory[]> => {
-    const response = await api.get<ApiResponse<ReassignmentHistory[]>>(
-      `/reports/tickets/${ticketId}/assignments`,
-    );
-    return response.data.data;
+    return (await generated.getReassignmentHistory(ticketId)).data as ReassignmentHistory[];
   },
 
   /**
    * Статистика времени решения тикетов
    */
   getResolutionTimeStats: async (): Promise<ResolutionTimeStats> => {
-    const response = await api.get<ApiResponse<ResolutionTimeStats>>(
-      "/reports/tickets/resolution-time",
-    );
-    return response.data.data;
+    return (await generated.getResolutionTimeStats()).data as ResolutionTimeStats;
   },
 
   /**
    * Статистика по пользовательским категориям
    */
   getStatsByUserCategory: async (): Promise<TicketStatsByCategory[]> => {
-    const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      "/reports/tickets/by-user-category",
-    );
-    return response.data.data;
+    return (await generated.getTicketStatsByUserCategory()).data as TicketStatsByCategory[];
   },
 
   /**
    * Статистика по категориям поддержки
    */
   getStatsBySupportCategory: async (): Promise<TicketStatsByCategory[]> => {
-    const response = await api.get<ApiResponse<TicketStatsByCategory[]>>(
-      "/reports/tickets/by-support-category",
-    );
-    return response.data.data;
+    return (await generated.getTicketStatsBySupportCategory()).data as TicketStatsByCategory[];
   },
 
   /**
    * Статистика по статусам
    */
   getStatsByStatus: async (): Promise<TicketStatsByStatus[]> => {
-    const response = await api.get<ApiResponse<TicketStatsByStatus[]>>(
-      "/reports/tickets/by-status",
-    );
-    return response.data.data;
+    return (await generated.getTicketStatsByStatus()).data as TicketStatsByStatus[];
   },
 
   /**
@@ -134,20 +109,15 @@ export const reportsApi = {
     size = 20,
     filter: AllTicketsFilter = {},
   ): Promise<PaginatedResponse<TicketReportListResponse>> => {
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<TicketReportListResponse>>
-    >("/reports/tickets/all", { params: { page, size, ...filter } });
-    return response.data.data;
+    return toPage((await generated.getAllTickets({ pageable: { page, size }, filter })).data) as PaginatedResponse<TicketReportListResponse>;
   },
 
   /**
    * Загрузка специалистов
+   * @deprecated Backend route was removed; retained for import compatibility.
    */
   getSpecialistWorkload: async (): Promise<SpecialistWorkload[]> => {
-    const response = await api.get<ApiResponse<SpecialistWorkload[]>>(
-      "/reports/specialists/workload",
-    );
-    return response.data.data;
+    return legacyReportUnavailable();
   },
 
   /**
@@ -159,11 +129,7 @@ export const reportsApi = {
     year: number,
     month: number,
   ): Promise<Blob> => {
-    const response = await api.get("/scheduled-tasks/report/export", {
-      params: { departmentId, year, month },
-      responseType: "blob",
-    });
-    return response.data;
+    return await generated.exportReport({ departmentId, year, month });
   },
 };
 

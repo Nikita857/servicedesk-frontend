@@ -1,27 +1,27 @@
-import api from "./client";
-import {ApiResponse, NotificationResponse, PaginatedResponse} from "@/types";
+import type { NotificationResponse, PaginatedResponse } from "@/types";
+import { getServiceDeskAPI } from './generated/client';
+import { toPage } from './page';
+
+const generated = getServiceDeskAPI();
 
 export const notificationsApi = {
     list: async (page: number = 0, size: number = 5): Promise<PaginatedResponse<NotificationResponse>> => {
-        const response = await api.get<ApiResponse<PaginatedResponse<NotificationResponse>>>("/notifications",
-            { params: {page, size} });
-        return response.data.data;
+        return toPage((await generated.getNotifications({ pageable: { page, size } })).data) as PaginatedResponse<NotificationResponse>;
     },
     
     getUnreadCount: async (): Promise<number> => {
-        const response = await api.get<ApiResponse<number>>("/notifications/unread-count");
-        return response.data.data;
+        return (await generated.getUnreadCount1()).data as number;
     },
 
     markAsRead: async (id: number): Promise<void> => {
-        await api.patch<void>(`/notifications/${id}/read`);
+        await generated.markAsRead2(id);
     },
 
     markAllAsRead: async (): Promise<void> => {
-        await api.patch<void>(`/notifications/read-all`);
+        await generated.markAllAsRead();
     },
 
     clearAll: async (): Promise<void> => {
-        await api.patch<void>(`/notifications/clear`);
+        await generated.clear();
     }
 }

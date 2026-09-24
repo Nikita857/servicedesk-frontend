@@ -6,6 +6,7 @@ import type {
   AgentDoneEvent,
   AgentErrorEvent,
 } from "@/types/agent";
+import type { SendAgentMessageRequest } from './generated/models';
 
 /**
  * Стриминг ответа ИИ-агента.
@@ -121,6 +122,10 @@ async function postMessage(
   signal: AbortSignal,
 ): Promise<Response> {
   const csrfToken = await ensureCsrfToken();
+  const request: SendAgentMessageRequest = {
+    content,
+    ...(fileIds?.length ? { fileIds } : {}),
+  };
   return fetch(`${API_BASE_URL}/agent/conversations/${conversationId}/messages`, {
     method: "POST",
     credentials: "include",
@@ -129,13 +134,11 @@ async function postMessage(
       "Content-Type": "application/json",
       ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
     },
-    body: JSON.stringify({
-      content,
-      fileIds: fileIds?.length ? fileIds : null,
-    }),
+    body: JSON.stringify(request),
   });
 }
 
+/** SSE exception: fetch exposes the response stream; generated JSON/Axios cannot deliver incremental frames. */
 export async function streamAgentMessage(
   options: AgentStreamOptions,
 ): Promise<void> {

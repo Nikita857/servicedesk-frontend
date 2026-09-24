@@ -1,22 +1,14 @@
-import api from "./client";
 import axios from "axios";
-import type { ApiResponse } from "@/types/api";
-import type {
-  WikiMediaResponse,
-  WikiMediaUploadUrlResponse,
-} from "@/types/attachment";
+import type { WikiMediaResponse } from "@/types/attachment";
+import { getServiceDeskAPI } from './generated/client';
 import { withRetry } from "../utils";
+
+const generated = getServiceDeskAPI();
 
 // Порог: выше — S3/MinIO не примет один PUT → идём в multipart
 const MULTIPART_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5 ГБ
 // Размер одной части
 const CHUNK_SIZE = 100 * 1024 * 1024; // 100 МБ
-
-interface InitiateMultipartResponse {
-  uploadId: string;
-  fileKey: string;
-  bucket: string;
-}
 
 /**
  * Multipart-загрузка большого видео (> 5 ГБ) частями напрямую в MinIO.
@@ -28,13 +20,12 @@ async function uploadVideoMultipart(
   onProgress?: (percent: number) => void,
 ): Promise<WikiMediaResponse> {
   // Step 1: инициация multipart на бэкенде
-  const { data: initResp } = await api.post<
-    ApiResponse<InitiateMultipartResponse>
-  >("/wiki/videos/multipart/initiate", {
+  const initResp = await generated.initiateMultipart({
     filename: file.name,
     contentType: file.type,
   });
-  const { uploadId, fileKey, bucket } = initResp.data;
+  const { uploadId, fileKey, bucket } = initResp.data!;
+  if (!uploadId || !fileKey || !bucket) throw new Error('Multipart upload initialization is incomplete');
 
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
   const parts: { partNumber: number; etag: string }[] = [];
@@ -47,17 +38,17 @@ async function uploadVideoMultipart(
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
 
-      const { data: partResp } = await api.post<
-        ApiResponse<{ partUrl: string }>
-      >("/wiki/videos/multipart/part-url", {
+      const partResp = await generated.getPartUrl({
         fileKey,
         bucket,
         uploadId,
         partNumber,
       });
+      const partUrl = partResp.data?.['partUrl'];
+      if (!partUrl) throw new Error('Multipart part URL response is incomplete');
 
       const res = await withRetry(() =>
-        axios.put(partResp.data.partUrl, chunk, {
+        axios.put(partUrl, chunk, {
           headers: { "Content-Type": file.type },
           onUploadProgress: onProgress
             ? (e) => {
@@ -86,9 +77,7 @@ async function uploadVideoMultipart(
       );
     }
     // Step 3: завершение — бэкенд склеит части и вернёт URL для стриминга
-    const { data: completeResp } = await api.post<
-      ApiResponse<WikiMediaResponse>
-    >("/wiki/videos/multipart/complete", {
+    const completeResp = await generated.completeMultipart({
       fileKey,
       bucket,
       uploadId,
@@ -97,7 +86,7 @@ async function uploadVideoMultipart(
       contentType: file.type,
       fileSize: file.size,
     });
-    return completeResp.data;
+    return completeResp.data as WikiMediaResponse;
   } catch (err) {
     try {
       await abortVideoMultipart(fileKey, bucket, uploadId);
@@ -113,7 +102,7 @@ async function abortVideoMultipart(
   bucket: string,
   uploadId: string,
 ): Promise<void> {
-  await api.post("/wiki/videos/multipart/abort", { fileKey, bucket, uploadId });
+  await generated.abortMultipart({ fileKey, bucket, uploadId });
 }
 
 export const wikiVideoApi = {
@@ -132,13 +121,12 @@ export const wikiVideoApi = {
     }
 
     // Step 1: request presigned URL
-    const { data: urlResp } = await api.post<
-      ApiResponse<WikiMediaUploadUrlResponse>
-    >("/wiki/videos/upload-url", {
+    const urlResp = await generated.getUploadUrl({
       filename: file.name,
       contentType: file.type,
     });
-    const { uploadUrl, fileKey, filename } = urlResp.data;
+    const { uploadUrl, fileKey, filename } = urlResp.data!;
+    if (!uploadUrl || !fileKey || !filename) throw new Error('Video upload URL response is incomplete');
 
     // Step 2: upload directly to MinIO (auth is signed into the URL)
     await axios.put(uploadUrl, file, {
@@ -150,21 +138,19 @@ export const wikiVideoApi = {
     });
 
     // Step 3: confirm on backend
-    const { data: confirmResp } = await api.post<
-      ApiResponse<WikiMediaResponse>
-    >("/wiki/videos/confirm", {
+    const confirmResp = await generated.confirmUpload({
       fileKey,
       filename,
       contentType: file.type,
       fileSize: file.size,
     });
-    return confirmResp.data;
+    return confirmResp.data as WikiMediaResponse;
   },
 
   /**
    * Delete a video by file key
    */
   deleteVideo: async (fileKey: string): Promise<void> => {
-    await api.delete(`/wiki/videos/${fileKey}`);
+    await generated.deleteVideo(fileKey);
   },
 };

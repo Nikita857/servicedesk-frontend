@@ -1,55 +1,25 @@
-// Типы фичи "Опросы" — должны совпадать с ru.bormash.servicedesk.feature.survey.dto.*
-// questions/data — сырой SurveyJS JSON ({"elements": [...]}), бэк его не типизирует (см. SurveyService)
+import type {
+  CreateSurveyRequest as WireCreateSurvey,
+  MySurveyResponse as WireMine,
+  SurveyDetailResponse as WireDetail,
+  SurveyManagementResponse as WireManagement,
+} from '@/lib/api/generated/models';
 
-export interface CreateSurveyRequest {
-  title: string; // required, max 250
-  description?: string; // max 2000
-  anonymous: boolean;
-  endDate: string; // ISO 8601, обязана быть в будущем
+// The form supplies a structured SurveyJS editor value for the generated JSON object.
+export type CreateSurveyRequest = Omit<WireCreateSurvey, 'questions' | 'anonymous'> & {
   questions: SurveyElementsJson;
-  departmentIds?: number[];
-  userIds?: number[];
-}
-
-export interface SubmitSurveyAnswersRequest {
-  data: Record<string, unknown>;
-}
-
-export interface MySurveyResponse {
-  id: number;
-  title: string;
-  description: string | null;
-  endDate: string;
-  responded: boolean;
-  expired: boolean;
-}
-
-export interface SurveyDetailResponse {
-  id: number;
-  title: string;
-  description: string | null;
   anonymous: boolean;
-  endDate: string;
+};
+export type { SubmitSurveyAnswersRequest } from '@/lib/api/generated/models';
+
+export type MySurveyResponse = Omit<Required<WireMine>, 'description'> & { description: string | null };
+export type SurveyDetailResponse = Omit<Required<WireDetail>, 'description' | 'questions'> & {
+  description: string | null;
   questions: SurveyElementsJson;
-  alreadyAnswered: boolean;
-}
+};
+export type SurveyManagementResponse = Omit<Required<WireManagement>, 'closedAt'> & { closedAt: string | null };
 
-export interface SurveyManagementResponse {
-  id: number;
-  title: string;
-  endDate: string;
-  closedAt: string | null;
-  anonymous: boolean;
-  questionCount: number;
-  totalRecipients: number;
-  totalResponded: number;
-  createdAt: string;
-  targetDepartmentNames: string[];
-  targetUserNames: string[];
-}
-
-// ─── SurveyJS JSON (совместимо с survey-core) ──────────────
-
+// SurveyJS form/editor models remain hand-written UI types.
 export type SurveyQuestionType = "radiogroup" | "checkbox" | "text" | "comment";
 
 export interface SurveyChoice {
@@ -66,6 +36,7 @@ export interface SurveyElement {
 }
 
 export interface SurveyElementsJson {
+  [key: string]: unknown;
   elements: SurveyElement[];
 }
 

@@ -68,6 +68,14 @@ it('serializes a generated Pageable as Spring page and size query parameters', a
   expect(apiClient.getUri(seen[0])).toBe('/api/v1/admin/users?page=2&size=20');
 });
 
+it('flattens Spring model-attribute filters beside pagination', async () => {
+  await getServiceDeskAPI().getTasks({
+    filter: { status: 'SCHEDULED', from: '2026-09-01T00:00:00Z' },
+    pageable: { page: 1, size: 10 },
+  });
+  expect(apiClient.getUri(seen[0])).toBe('/api/v1/scheduled-tasks?status=SCHEDULED&from=2026-09-01T00:00:00Z&page=1&size=10');
+});
+
 it('serializes generated array query parameters as repeated Spring keys', async () => {
   await getServiceDeskAPI().updateRoles(7, { roles: ['ADMIN', 'USER'] });
   expect(apiClient.getUri(seen[0])).toBe('/api/v1/admin/users/7/roles?roles=ADMIN&roles=USER');

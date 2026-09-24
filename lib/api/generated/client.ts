@@ -784,11 +784,15 @@ const getFiles = (
 const uploadFile = (
     id: number,
     uploadFileBody?: UploadFileBody,
- ) => {
+ ) => {const formData = new FormData();
+if(uploadFileBody?.file !== undefined) {
+ formData.append(`file`, uploadFileBody.file);
+ }
+
       return customInstance<ApiResponseAgentFileResponse>(
       {url: `/api/v1/agent/conversations/${id}/files`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: uploadFileBody
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData
     },
       );
     }
@@ -2279,9 +2283,10 @@ const getCalendar = (
 const exportReport = (
     params: ExportReportParams,
  ) => {
-      return customInstance<string>(
+      return customInstance<Blob>(
       {url: `/api/v1/scheduled-tasks/report/export`, method: 'GET',
-        params
+        params,
+        responseType: 'blob'
     },
       );
     }

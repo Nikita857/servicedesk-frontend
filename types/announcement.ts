@@ -1,41 +1,16 @@
-// Типы фичи "Объявления" — должны совпадать с ru.bormash.servicedesk.feature.announcement.dto.*
+import type {
+  AnnouncementDetailResponse as WireDetail,
+  AnnouncementManagementResponse as WireManagement,
+  MyAnnouncementResponse as WireMine,
+} from '@/lib/api/generated/models';
 
-export interface CreateAnnouncementRequest {
-  title: string; // required, max 250
-  body: string; // required, max 5000
-  expiresAt?: string; // ISO 8601, опционально — @Future на бэке
-  broadcastAll: boolean;
-  departmentIds?: number[];
-  userIds?: number[];
-}
+export type { CreateAnnouncementRequest } from '@/lib/api/generated/models';
 
-export interface MyAnnouncementResponse {
-  id: number;
-  title: string;
-  body: string;
-  expiresAt: string | null;
-  read: boolean;
-  expired: boolean;
-}
-
-export interface AnnouncementDetailResponse {
-  id: number;
-  title: string;
-  body: string;
-  expiresAt: string | null;
-  read: boolean;
-}
-
-export interface AnnouncementManagementResponse {
-  id: number;
-  title: string;
-  body: string;
+// These view types retain the UI's non-optional fields while their wire fields
+// and enum values come from the generated contract.
+export type MyAnnouncementResponse = Omit<Required<WireMine>, 'expiresAt'> & { expiresAt: string | null };
+export type AnnouncementDetailResponse = Omit<Required<WireDetail>, 'expiresAt'> & { expiresAt: string | null };
+export type AnnouncementManagementResponse = Omit<Required<WireManagement>, 'expiresAt' | 'archivedAt'> & {
   expiresAt: string | null;
   archivedAt: string | null;
-  broadcastAll: boolean;
-  totalRecipients: number;
-  totalRead: number;
-  createdAt: string;
-  targetDepartmentNames: string[];
-  targetUserNames: string[];
-}
+};

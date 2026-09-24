@@ -1,26 +1,27 @@
-import api from "./client";
-import type { ApiResponse } from "@/types/api";
+import { getServiceDeskAPI } from './generated/client';
+
+const generated = getServiceDeskAPI();
 
 export const searchAdminApi = {
   /**
    * Полная переиндексация всех сущностей (Статьи, Заявки и т.д.)
    */
   reindexAll: async (): Promise<void> => {
-    await api.post<ApiResponse<void>>("/admin/search/reindex");
+    await generated.reindexAll();
   },
 
   /**
    * Переиндексация только статей Wiki
    */
   reindexWiki: async (): Promise<void> => {
-    await api.post<ApiResponse<void>>("/admin/search/reindex/wiki");
+    await generated.reindexWiki();
   },
 
   /**
    * Переиндексация только тикетов
    */
   reindexTickets: async (): Promise<void> => {
-    await api.post<ApiResponse<void>>("/admin/search/reindex/tickets");
+    await generated.reindexTickets();
   },
 
   /**
@@ -28,6 +29,6 @@ export const searchAdminApi = {
    */
 
   reindexSurveys: async (): Promise<void> => {
-    await api.post<ApiResponse<void>>("/admin/search/reindex/surveys");
+    await generated.reindexSurveys();
   },
 };

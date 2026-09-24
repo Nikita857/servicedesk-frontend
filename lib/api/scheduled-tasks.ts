@@ -10,8 +10,10 @@ import {
   SetOccurrenceDeadlineRequest,
   UpdateScheduledTaskRequest,
 } from "@/types/scheduler";
-import api from "./client";
+import { getServiceDeskAPI } from './generated/client';
 import { PaginatedResponse } from "@/types";
+
+const generated = getServiceDeskAPI();
 
 export const scheduledTasksApi = {
   list: async (
@@ -19,43 +21,34 @@ export const scheduledTasksApi = {
     page = 0,
     size = 20,
   ): Promise<PaginatedResponse<ScheduledTaskListResponse>> => {
-    const response = await api.get(`/scheduled-tasks`, {
-      params: { ...filter, page, size },
-    });
-    return response.data;
+    return await generated.getTasks({ filter, pageable: { page, size } }) as PaginatedResponse<ScheduledTaskListResponse>;
   },
 
   getById: async (id: number): Promise<ScheduledTaskResponse> => {
-    const response = await api.get(`/scheduled-tasks/${id}`);
-    return response.data.data;
+    return (await generated.getTask(id)).data as ScheduledTaskResponse;
   },
 
   create: async (
     request: CreateScheduledTaskRequest,
   ): Promise<ScheduledTaskResponse> => {
-    const response = await api.post(`/scheduled-tasks`, request);
-    return response.data.data;
+    return (await generated.createTask(request)).data as ScheduledTaskResponse;
   },
 
   update: async (
     id: number,
     body: UpdateScheduledTaskRequest,
   ): Promise<ScheduledTaskResponse> => {
-    const response = await api.put(`/scheduled-tasks/${id}`, body);
-    return response.data.data;
+    return (await generated.updateTask(id, body)).data as ScheduledTaskResponse;
   },
 
   cancel: async (id: number): Promise<void> => {
-    await api.delete(`/scheduled-tasks/${id}`);
+    await generated.cancelTask(id);
   },
 
   getCalendar: async (
     window: DateWindow,
   ): Promise<ScheduledTaskOccurrenceResponse[]> => {
-    const response = await api.get(`/scheduled-tasks/calendar`, {
-      params: { from: window.from, to: window.to },
-    });
-    return response.data.data;
+    return (await generated.getCalendar(window)).data as ScheduledTaskOccurrenceResponse[];
   },
 
   getExecutions: async (
@@ -63,31 +56,25 @@ export const scheduledTasksApi = {
     page = 0,
     size = 20,
   ): Promise<ScheduledTaskExecutionResponse[]> => {
-    const response = await api.get(`/scheduled-tasks/${id}/executions`, {
-      params: { page, size },
-    });
-    return response.data.data;
+    return (await generated.getTaskExecutions(id, { pageable: { page, size } })).data as ScheduledTaskExecutionResponse[];
   },
 
   getByTicket: async (
     ticketId: number,
   ): Promise<ScheduledTaskDeadlineResponse | null> => {
-    const response = await api.get(`/scheduled-tasks/by-ticket/${ticketId}`);
-    return response.data.data;
+    return (await generated.getByTicket(ticketId)).data as ScheduledTaskDeadlineResponse | null;
   },
   setOccurrenceDeadline: async (
     id: number,
     body: SetOccurrenceDeadlineRequest,
   ): Promise<void> => {
-    await api.put(`/scheduled-tasks/${id}/occurrences/deadline`, body);
+    await generated.setOccurrenceDeadline(id, body);
   },
 
   clearOccurrenceDeadline: async (
     id: number,
     occurrenceAt: string,
   ): Promise<void> => {
-    await api.delete(`/scheduled-tasks/${id}/occurrences/deadline`, {
-      params: { occurrenceAt },
-    });
+    await generated.clearOccurrenceDeadline(id, { occurrenceAt });
   },
 };

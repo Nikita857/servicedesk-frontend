@@ -10,10 +10,11 @@ export const customInstance = async <T>(config: RequestConfig): Promise<T> => {
     ? config.url.slice(basePath.length)
     : config.url;
   const headers = AxiosHeaders.from(config.headers as RawAxiosHeaders | AxiosHeaders | undefined);
-  const params = config.params?.pageable
-    ? { ...config.params, ...config.params.pageable }
-    : config.params;
+  const params = config.params
+    ? { ...config.params, ...config.params.filter, ...config.params.pageable }
+    : undefined;
   if (params && 'pageable' in params) delete params.pageable;
+  if (params && 'filter' in params) delete params.filter;
 
   // Let Axios choose the multipart boundary for the current runtime.
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {

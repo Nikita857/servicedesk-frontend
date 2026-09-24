@@ -1,5 +1,5 @@
-import api from "./client";
-import type { ApiResponse } from "@/types/api";
+import { getServiceDeskAPI } from './generated/client';
+import { toPage } from './page';
 import type {
   WikiArticle,
   WikiCategory,
@@ -15,6 +15,41 @@ import type {
   PagedWikiArticleList,
   PagedWikiCategoryList,
 } from "@/types/wiki";
+import type { WikiArticleListResponse as WireArticleList } from './generated/models';
+
+const generated = getServiceDeskAPI();
+
+function required<T>(value: T | undefined, field: string): T {
+  if (value === undefined) throw new Error(`Wiki article is missing ${field}`);
+  return value;
+}
+
+function toWikiArticleListItem(article: WireArticleList): WikiArticleListItem {
+  return {
+    id: required(article.id, 'id'),
+    title: required(article.title, 'title'),
+    slug: required(article.slug, 'slug'),
+    excerpt: article.excerpt ?? null,
+    categoryName: article.categoryName ?? null,
+    departments: (article.departments ?? []).map(department => ({
+      id: required(department.id, 'department.id'),
+      name: required(department.name, 'department.name'),
+    })),
+    tags: required(article.tags, 'tags'),
+    author: article.author ? {
+      id: required(article.author.id, 'author.id'),
+      username: required(article.author.username, 'author.username'),
+      fio: article.author.fio ?? null,
+      avatarUrl: article.author.avatarUrl ?? null,
+      isSpecialist: required(article.author.isSpecialist, 'author.isSpecialist'),
+      color: article.author.color ?? null,
+    } : null,
+    viewCount: required(article.viewCount, 'viewCount'),
+    likeCount: required(article.likeCount, 'likeCount'),
+    likedByCurrentUser: required(article.likedByCurrentUser, 'likedByCurrentUser'),
+    updatedAt: required(article.updatedAt, 'updatedAt'),
+  };
+}
 
 export const wikiApi = {
   // List all categories with articles (paginated)
@@ -25,13 +60,7 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
-    const response = await api.get<ApiResponse<PagedWikiCategoryList>>(
-      "/wiki/tree",
-      {
-        params: { page, size, showAll, onlyMyDepartment, onlyPublic },
-      },
-    );
-    return response.data.data;
+    return toPage((await generated.getAllArticlesAsTree({ pageable: { page, size }, showAll, onlyMyDepartment, onlyPublic })).data) as PagedWikiCategoryList;
   },
 
   // Search categories with articles (paginated)
@@ -43,15 +72,8 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
-    const response = await api.get<ApiResponse<WikiCategoryWithArticles[]>>(
-      "/wiki/search",
-      {
-        params: { q: query, page, size, showAll, onlyMyDepartment, onlyPublic },
-      },
-    );
-
-    // API returns array directly, wrap it in paged structure
-    const categories = response.data.data;
+    void onlyMyDepartment; void onlyPublic;
+    const categories = (await generated.search({ q: query, pageable: { page, size }, showAll })).data as WikiCategoryWithArticles[];
     return {
       content: categories,
       page: {
@@ -71,22 +93,24 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>("/wiki", {
-      params: { page, size, showAll, onlyMyDepartment, onlyPublic },
-    });
-    return response.data.data;
+    const categoryPage = (await generated.getAllArticles({ pageable: { page, size }, showAll, onlyMyDepartment, onlyPublic })).data;
+    // This legacy adapter flattens a page of categories, so page metadata describes categories, not articles.
+    const pageOfCategories = toPage(categoryPage);
+    return {
+      content: pageOfCategories.content.flatMap(category => (category.children ?? []).map(toWikiArticleListItem)),
+      page: pageOfCategories.page,
+    };
   },
 
   // Get article by slug
   getBySlug: async (slug: string): Promise<WikiArticle> => {
-    const response = await api.get<ApiResponse<WikiArticle>>(`/wiki/${slug}`);
-    return response.data.data;
+    return (await generated.getBySlug(slug)).data as WikiArticle;
   },
 
   // Create new article
   create: async (data: CreateWikiArticleRequest): Promise<WikiArticle> => {
-    const response = await api.post<ApiResponse<WikiArticle>>("/wiki", data);
-    return response.data.data;
+    if (data.categoryId == null) throw new Error('Category is required');
+    return (await generated.createArticle({ ...data, categoryId: data.categoryId })).data as WikiArticle;
   },
 
   // Update article
@@ -94,26 +118,22 @@ export const wikiApi = {
     id: number,
     data: UpdateWikiArticleRequest,
   ): Promise<WikiArticle> => {
-    const response = await api.put<ApiResponse<WikiArticle>>(
-      `/wiki/${id}`,
-      data,
-    );
-    return response.data.data;
+    return (await generated.updateArticle(id, data)).data as WikiArticle;
   },
 
   // Delete article
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/wiki/${id}`);
+    await generated.deleteArticle(id);
   },
 
   // Like article
   like: async (id: number): Promise<void> => {
-    await api.post(`/wiki/${id}/like`);
+    await generated.likeArticle(id);
   },
 
   // Unlike article (remove like)
   unlike: async (id: number): Promise<void> => {
-    await api.delete(`/wiki/${id}/like`);
+    await generated.unlikeArticle(id);
   },
 
   // Search articles
@@ -123,13 +143,11 @@ export const wikiApi = {
     size = 20,
     showAll = false,
   ): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>(
-      "/wiki/search",
-      {
-        params: { q: query, page, size, showAll },
-      },
-    );
-    return response.data.data;
+    const categories = (await generated.search({ q: query, pageable: { page, size }, showAll })).data;
+    return {
+      content: categories?.flatMap(category => category.article ?? []) ?? [],
+      page: { number: page, size, totalElements: categories?.length ?? 0, totalPages: 1 },
+    } as PagedWikiArticleList;
   },
 
   // Get popular articles
@@ -138,13 +156,7 @@ export const wikiApi = {
     size = 10,
     showAll = false,
   ): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>(
-      "/wiki/popular",
-      {
-        params: { page, size, showAll },
-      },
-    );
-    return response.data.data;
+    return toPage((await generated.getPopularArticles({ pageable: { page, size }, showAll })).data) as PagedWikiArticleList;
   },
 
   // Get articles by category
@@ -153,95 +165,60 @@ export const wikiApi = {
     page = 0,
     size = 20,
   ): Promise<PagedWikiArticleList> => {
-    const response = await api.get<ApiResponse<PagedWikiArticleList>>(
-      `/wiki/category/${categoryId}`,
-      {
-        params: { page, size },
-      },
-    );
-    return response.data.data;
+    return toPage((await generated.getByCategory(categoryId, { pageable: { page, size } })).data) as PagedWikiArticleList;
   },
 
   // ============ Attachments ============
 
   // Get attachments for article
   getAttachments: async (articleId: number): Promise<WikiAttachment[]> => {
-    const response = await api.get<ApiResponse<WikiAttachment[]>>(
-      `/wiki/${articleId}/attachments`,
-    );
-    return response.data.data;
+    return (await generated.getWikiArticleAttachments(articleId)).data as WikiAttachment[];
   },
 
   // Get wiki categories
   getCategories: async (showAll = false): Promise<WikiCategory[]> => {
-    const response = await api.get<ApiResponse<WikiCategory[]>>(
-      "/wiki/categories",
-      {
-        params: { showAll },
-      },
-    );
-    return response.data.data;
+    return (await generated.getCategories({ showAll })).data as WikiCategory[];
   },
 
   // Autocomplete for wiki search
   autocomplete: async (query: string): Promise<string[]> => {
-    const response = await api.get<ApiResponse<string[]>>(
-      "/wiki/autocomplete",
-      {
-        params: { q: query },
-      },
-    );
-    return response.data.data;
+    return (await generated.autocomplete({ q: query })).data as string[];
   },
 
   // Search suggestions with title + excerpt
   suggest: async (q: string, limit = 5): Promise<WikiArticleSuggestion[]> => {
-    const response = await api.get<ApiResponse<WikiArticleSuggestion[]>>(
-      "/wiki/suggest",
-      { params: { q, limit } },
-    );
-    return response.data.data;
+    return (await generated.suggest({ q, limit })).data as WikiArticleSuggestion[];
   },
 
   // ============ Admin: Wiki Category Management ============
 
   adminGetCategories: async (): Promise<WikiCategory[]> => {
-    const response = await api.get<ApiResponse<WikiCategory[]>>(
-      "/admin/wiki/categories",
-    );
-    return response.data.data;
+    return (await generated.getAllCategories1()).data as WikiCategory[];
   },
 
   adminGetCategory: async (id: number): Promise<WikiCategory> => {
-    const response = await api.get<ApiResponse<WikiCategory>>(
-      `/admin/wiki/categories/${id}`,
-    );
-    return response.data.data;
+    return (await generated.getCategory1(id)).data as WikiCategory;
   },
 
   adminCreateCategory: async (
     data: CreateWikiCategoryRequest,
   ): Promise<WikiCategory> => {
-    const response = await api.post<ApiResponse<WikiCategory>>(
-      "/admin/wiki/categories",
-      data,
-    );
-    return response.data.data;
+    return (await generated.createCategory1({ ...data, parentId: data.parentId ?? undefined })).data as WikiCategory;
   },
 
   adminUpdateCategory: async (
     id: number,
     data: UpdateWikiCategoryRequest,
   ): Promise<WikiCategory> => {
-    const response = await api.put<ApiResponse<WikiCategory>>(
-      `/admin/wiki/categories/${id}`,
-      data,
-    );
-    return response.data.data;
+    return (await generated.updateCategory1(id, {
+      ...data,
+      departmentIds: data.departmentIds ?? undefined,
+      parentId: data.parentId ?? undefined,
+    })).data as WikiCategory;
   },
 
   adminDeleteCategory: async (id: number): Promise<void> => {
-    await api.delete(`/admin/wiki/categories/${id}`);
+    await generated.deleteCategory1(id);
   },
 };
 

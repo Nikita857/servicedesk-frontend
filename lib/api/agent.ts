@@ -1,5 +1,6 @@
-import api from "./client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { PaginatedResponse } from "@/types/api";
+import { getServiceDeskAPI } from './generated/client';
+import { toPage } from './page';
 import type {
   AgentConversation,
   AgentFile,
@@ -10,13 +11,11 @@ import type {
  * CRUD-часть ИИ-агента. Стриминг ответа живёт отдельно, в ./agentStream —
  * axios в браузере работает поверх XHR и потоковое тело не отдаёт.
  */
+const generated = getServiceDeskAPI();
+
 export const agentApi = {
   createConversation: async (title?: string): Promise<AgentConversation> => {
-    const response = await api.post<ApiResponse<AgentConversation>>(
-      "/agent/conversations",
-      { title: title ?? null },
-    );
-    return response.data.data;
+    return (await generated.createConversation(title ? { title } : {})).data as AgentConversation;
   },
 
   /**
@@ -27,28 +26,16 @@ export const agentApi = {
     page = 0,
     size = 20,
   ): Promise<PaginatedResponse<AgentConversation>> => {
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<AgentConversation>>
-    >("/agent/conversations", {
-      params: { page, size, sort: "updatedAt,desc" },
-    });
-    return response.data.data;
+    return toPage((await generated.getConversations({ pageable: { page, size, sort: ['updatedAt,desc'] } })).data) as PaginatedResponse<AgentConversation>;
   },
 
   getConversation: async (id: number): Promise<AgentConversation> => {
-    const response = await api.get<ApiResponse<AgentConversation>>(
-      `/agent/conversations/${id}`,
-    );
-    return response.data.data;
+    return (await generated.getConversation1(id)).data as AgentConversation;
   },
 
   /** Тем же эндпоинтом пользуется и MCP-тул set_conversation_title. */
   updateTitle: async (id: number, title: string): Promise<AgentConversation> => {
-    const response = await api.patch<ApiResponse<AgentConversation>>(
-      `/agent/conversations/${id}/title`,
-      { title },
-    );
-    return response.data.data;
+    return (await generated.updateTitle(id, { title })).data as AgentConversation;
   },
 
   listMessages: async (
@@ -57,12 +44,7 @@ export const agentApi = {
     size = 50,
     direction: "asc" | "desc" = "asc",
   ): Promise<PaginatedResponse<AgentMessageDto>> => {
-    const response = await api.get<
-      ApiResponse<PaginatedResponse<AgentMessageDto>>
-    >(`/agent/conversations/${id}/messages`, {
-      params: { page, size, sort: `createdAt,${direction}` },
-    });
-    return response.data.data;
+    return toPage((await generated.getMessages(id, { pageable: { page, size, sort: [`createdAt,${direction}`] } })).data) as PaginatedResponse<AgentMessageDto>;
   },
 
   /**
@@ -71,10 +53,7 @@ export const agentApi = {
    * активного стрима нет.
    */
   cancel: async (id: number): Promise<boolean> => {
-    const response = await api.post<ApiResponse<boolean>>(
-      `/agent/conversations/${id}/cancel`,
-    );
-    return response.data.data;
+    return (await generated.cancelGeneration(id)).data as boolean;
   },
 
   /**
@@ -83,20 +62,12 @@ export const agentApi = {
    * по которой агент вызывает свои инструменты работы с документами.
    */
   uploadFile: async (conversationId: number, file: File): Promise<AgentFile> => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await api.post<ApiResponse<AgentFile>>(
-      `/agent/conversations/${conversationId}/files`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } },
-    );
-    return response.data.data;
+    return (await generated.uploadFile(conversationId, { file })).data as AgentFile;
   },
 
   /** Софт-делит диалог и все его сообщения (каскад — на бэке, одной транзакцией). */
   deleteConversation: async (id: number): Promise<void> => {
-    await api.delete<ApiResponse<void>>(`/agent/conversations/${id}`);
+    await generated.deleteConversation(id);
   },
 
   /** Софт-делит одно сообщение. Бэк проверяет, что оно из указанного диалога. */
@@ -104,8 +75,6 @@ export const agentApi = {
     conversationId: number,
     messageId: number,
   ): Promise<void> => {
-    await api.delete<ApiResponse<void>>(
-      `/agent/conversations/${conversationId}/messages/${messageId}`,
-    );
+    await generated.deleteMessage2(conversationId, messageId);
   },
 };

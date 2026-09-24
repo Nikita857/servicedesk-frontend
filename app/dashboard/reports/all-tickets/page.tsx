@@ -290,12 +290,12 @@ export default function AllTicketsReportPage() {
                     {data.content.map((row) => (
                       <Table.Row
                         key={row.id}
-                        bg={row.deletedAt ? "red.subtle" : undefined}
+                        bg={row.isDeleted ? "red.subtle" : undefined}
                         cursor="pointer"
                         onClick={() =>
                           router.push(`/dashboard/tickets/${row.id}`)
                         }
-                        _hover={{ bg: row.deletedAt ? "red.muted" : "bg.muted" }}
+                        _hover={{ bg: row.isDeleted ? "red.muted" : "bg.muted" }}
                       >
                         <Table.Cell fontWeight="medium">#{row.id}</Table.Cell>
                         <Table.Cell maxW="200px" truncate>
@@ -338,16 +338,14 @@ export default function AllTicketsReportPage() {
                           {row.assignedToFio || "—"}
                         </Table.Cell>
                         <Table.Cell fontSize="sm">
-                          {row.supportLineName || "—"}
+                          {row.supportLine || "—"}
                         </Table.Cell>
                         <Table.Cell fontSize="sm">
                           {formatDate(row.createdAt)}
                         </Table.Cell>
                         <Table.Cell fontSize="sm">
-                          {row.deletedAt ? (
-                            <Text color="red.600">
-                              {formatDate(row.deletedAt)}
-                            </Text>
+                          {row.isDeleted ? (
+                            <Text color="red.600">Да</Text>
                           ) : (
                             "—"
                           )}

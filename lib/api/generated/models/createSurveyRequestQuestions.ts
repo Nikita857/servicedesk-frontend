@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export type UploadFileBody = {
-  file: Blob | File;
-};
+/**
+ * SurveyJS question document
+ */
+export type CreateSurveyRequestQuestions = {[key: string]: unknown};

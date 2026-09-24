@@ -1,6 +1,7 @@
 import { PagedTicketList } from "@/types";
-import api from "./client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { PaginatedResponse } from "@/types/api";
+import { getServiceDeskAPI } from './generated/client';
+import { toPage } from './page';
 import type {
   UserTicketStatsResponse,
   LineTicketStatsResponse,
@@ -14,17 +15,16 @@ import type {
  */
 
 // API Methods
+const generated = getServiceDeskAPI();
+
 export const statsApi = {
   /**
    * Моя статистика тикетов
    * Доступно всем пользователям
    */
   async getMyStats(params?: StatsQueryParams): Promise<UserTicketStatsResponse> {
-    const response = await api.get<ApiResponse<UserTicketStatsResponse>>(
-      "/stats/tickets/my",
-      { params },
-    );
-    return response.data.data;
+    void params;
+    return (await generated.getMyStats()).data as UserTicketStatsResponse;
   },
 
   /**
@@ -35,11 +35,7 @@ export const statsApi = {
    * @param size
    */
   async listBySupportLineAndStatus(params: ListBySupLineAndStatusParams) : Promise<PagedTicketList> {
-      const response = await api.get<ApiResponse<PagedTicketList>>(
-        "/stats/tickets/by-line-with-tickets",
-        {params},
-      );
-      return response.data.data;
+      return toPage((await generated.getTicketsByLineAndStatus({ lineId: params.lineId, ticketStatus: params.ticketStatus, pageable: { page: params.page, size: params.size } })).data) as PagedTicketList;
     },
 
   /**
@@ -49,11 +45,7 @@ export const statsApi = {
   async getStatsByAllLines(
     params?: StatsQueryParams,
   ): Promise<PaginatedResponse<LineTicketStatsResponse>> {
-    const response = await api.get<ApiResponse<PaginatedResponse<LineTicketStatsResponse>>>(
-      "/stats/tickets/by-line",
-      { params }
-    );
-    return response.data.data;
+    return toPage((await generated.getStatsByAllLines(params)).data) as PaginatedResponse<LineTicketStatsResponse>;
   },
 
   /**
@@ -64,11 +56,8 @@ export const statsApi = {
     lineId: number,
     params?: StatsQueryParams,
   ): Promise<LineTicketStatsResponse> {
-    const response = await api.get<ApiResponse<LineTicketStatsResponse>>(
-      `/stats/tickets/by-line/${lineId}`,
-      { params },
-    );
-    return response.data.data;
+    void params;
+    return (await generated.getStatsByLine(lineId)).data as LineTicketStatsResponse;
   },
 
   /**
@@ -76,10 +65,7 @@ export const statsApi = {
    * Только для ADMIN
    */
   async getGlobalStats(params?: StatsQueryParams): Promise<UserTicketStatsResponse> {
-    const response = await api.get<ApiResponse<UserTicketStatsResponse>>(
-      "/stats/tickets/global",
-      { params },
-    );
-    return response.data.data;
+    void params;
+    return (await generated.getGlobalStats()).data as UserTicketStatsResponse;
   },
 };

@@ -1,4 +1,10 @@
-import type { ConfirmUploadRequest as WireConfirmUploadRequest, PartInfo } from "@/lib/api/generated/models";
+import type {
+  ConfirmUploadRequest as WireConfirmUploadRequest,
+  PartInfo,
+  WikiImageResponse,
+  WikiMediaUploadUrlResponse as WireWikiMediaUploadUrlResponse,
+  WikiVideoMultipartInitResponse,
+} from "@/lib/api/generated/models";
 
 export interface AttachmentResponse {
   id: number;
@@ -25,25 +31,9 @@ export type ConfirmUploadRequest = WireConfirmUploadRequest;
 
 // ===== Multipart Upload (файлы > 5 ГБ) =====
 
-export interface InitiateMultipartResponse {
-  uploadId: string;
-  fileKey: string;
-  bucket: string;
-}
+export type InitiateMultipartResponse = Required<WikiVideoMultipartInitResponse>;
 
 export type MultipartPartInfo = PartInfo;
 
-export interface WikiMediaUploadUrlResponse {
-  uploadUrl: string;
-  fileKey: string;
-  filename: string;
-  bucket: string;
-}
-
-export interface WikiMediaResponse {
-  url: string;
-  filename: string;
-  size: number;
-  mimeType: string;
-  fileKey: string;
-}
+export type WikiMediaUploadUrlResponse = Required<WireWikiMediaUploadUrlResponse>;
+export type WikiMediaResponse = Required<WikiImageResponse>;

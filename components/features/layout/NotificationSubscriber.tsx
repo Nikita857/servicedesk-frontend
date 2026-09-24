@@ -32,6 +32,7 @@ const TOAST_LEVEL_BY_TYPE: Record<NotificationType, ToastLevel | null> = {
   SPECIALIST_ADDED_TO_LINE: "info",
   SPECIALIST_REMOVED_FROM_LINE: "warning",
   SURVEY_SENT: "info",
+  SCHEDULED_TASK_OVERDUE: "warning",
   // Показывается обязательной модалкой через AnnouncementGate — тост был бы дублированием
   ANNOUNCEMENT_CREATED: null,
 };

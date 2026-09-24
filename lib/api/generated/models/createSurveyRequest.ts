@@ -4,7 +4,7 @@
  * ServiceDesk API
  * OpenAPI spec version: 1.0
  */
-import type { JsonNode } from './jsonNode';
+import type { CreateSurveyRequestQuestions } from './createSurveyRequestQuestions';
 
 export interface CreateSurveyRequest {
   anonymous?: boolean;
@@ -15,7 +15,8 @@ export interface CreateSurveyRequest {
      */
   description?: string;
   endDate: string;
-  questions: JsonNode;
+  /** SurveyJS question document */
+  questions: CreateSurveyRequestQuestions;
   /**
      * @minLength 0
      * @maxLength 250

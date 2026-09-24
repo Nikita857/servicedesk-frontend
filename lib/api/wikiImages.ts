@@ -1,7 +1,8 @@
-import api from "./client";
 import axios from "axios";
-import type { ApiResponse } from "@/types/api";
-import type { WikiMediaResponse, WikiMediaUploadUrlResponse } from "@/types/attachment";
+import type { WikiMediaResponse } from "@/types/attachment";
+import { getServiceDeskAPI } from './generated/client';
+
+const generated = getServiceDeskAPI();
 
 export const wikiImageApi = {
   /**
@@ -15,13 +16,12 @@ export const wikiImageApi = {
     onProgress?: (percent: number) => void,
   ): Promise<WikiMediaResponse> => {
     // Step 1: request presigned URL
-    const { data: urlResp } = await api.post<
-      ApiResponse<WikiMediaUploadUrlResponse>
-    >("/wiki/images/upload-url", {
+    const urlResp = await generated.getUploadUrl1({
       filename: file.name,
       contentType: file.type,
     });
-    const { uploadUrl, fileKey, filename } = urlResp.data;
+    const { uploadUrl, fileKey, filename } = urlResp.data!;
+    if (!uploadUrl || !fileKey || !filename) throw new Error('Image upload URL response is incomplete');
 
     // Step 2: upload directly to MinIO (auth is signed into the URL)
     await axios.put(uploadUrl, file, {
@@ -33,22 +33,19 @@ export const wikiImageApi = {
     });
 
     // Step 3: confirm on backend
-    const { data: confirmResp } = await api.post<ApiResponse<WikiMediaResponse>>(
-      "/wiki/images/confirm",
-      {
+    const confirmResp = await generated.confirmUpload1({
         fileKey,
         filename,
         contentType: file.type,
         fileSize: file.size,
-      },
-    );
-    return confirmResp.data;
+      });
+    return confirmResp.data as WikiMediaResponse;
   },
 
   /**
    * Delete an image by file key
    */
   deleteImage: async (fileKey: string): Promise<void> => {
-    await api.delete(`/wiki/images/${fileKey}`);
+    await generated.deleteImage(fileKey);
   },
 };

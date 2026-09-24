@@ -1,37 +1,21 @@
-import { PaginatedResponse } from "./api";
 import type {
-  TicketPriority,
-  TicketStatus,
-  TicketStatusHistory,
-} from "./ticket";
+  LineTicketStatsResponse as WireLineStats,
+  ReassignmentHistoryResponse as WireReassignment,
+  ResolutionTimeResponse as WireResolution,
+  TicketHistoryResponse as WireHistory,
+  TicketReportListResponse as WireTicketReport,
+  TicketStatsByCategoryResponse as WireCategoryStats,
+  TicketStatsByStatusResponse as WireStatusStats,
+  UserTicketStatsResponse as WireUserStats,
+  GetStatsByAllLinesParams,
+} from '@/lib/api/generated/models';
+import type { TicketStatus } from './ticket';
 
-export interface UserTicketStatsResponse {
-  userId: number;
-  username: string;
-  total: number;
-  newTickets: number;
-  openTickets: number;
-  closedTickets: number;
-  rejectedTickets: number;
-  byStatus: Record<string, number>;
-}
+export type UserTicketStatsResponse = Required<WireUserStats>;
+export type LineTicketStatsResponse = Required<WireLineStats>;
+export type StatsQueryParams = GetStatsByAllLinesParams;
 
-export interface LineTicketStatsResponse {
-  lineId: number;
-  lineName: string;
-  total: number;
-  newTickets: number;
-  openTickets: number;
-  closedTickets: number;
-  rejectedTickets: number;
-  byStatus: Record<string, number>;
-}
-
-export interface StatsQueryParams {
-  page?: number;
-  size?: number;
-}
-
+// UI query state; generated.getTicketsByLineAndStatus receives its pageable form.
 export interface ListBySupLineAndStatusParams {
   ticketStatus: TicketStatus[];
   lineId: number;
@@ -39,6 +23,7 @@ export interface ListBySupLineAndStatusParams {
   size: number;
 }
 
+// Kept for the deprecated, unavailable report methods' import signatures.
 export interface TimeReportBySpecialist {
   specialistId: number;
   username: string;
@@ -47,7 +32,6 @@ export interface TimeReportBySpecialist {
   ticketCount: number;
   formattedTime: string;
 }
-
 export interface TimeReportByLine {
   lineId: number;
   lineName: string;
@@ -58,76 +42,41 @@ export interface TimeReportByLine {
   formattedTime: string;
 }
 
-export interface TicketHistory {
-  ticketId: number;
-  title: string;
-  status: string;
-  priority: string;
-  createdByFio: string;
+export type TicketHistory = Omit<Required<WireHistory>,
+  'assignedToFio' | 'supportLine' | 'resolvedAt' | 'closedAt' | 'deletedAt'> & {
   assignedToFio: string | null;
   supportLine: string | null;
-  createdAt: string;
   resolvedAt: string | null;
   closedAt: string | null;
   deletedAt: string | null;
-  firstResponseTimeSeconds: number;
-  totalUnassignedSeconds: number;
-  totalActiveSeconds: number;
-  statusHistory: TicketStatusHistory[];
-}
-
-export interface ReassignmentHistory {
-  assignmentId: number;
+};
+export type ReassignmentHistory = Omit<Required<WireReassignment>,
+  'fromUserFio' | 'toUserFio' | 'fromLine' | 'toLine' | 'note' | 'acceptedAt' | 'rejectedAt' | 'rejectedReason'> & {
   fromUserFio: string | null;
   toUserFio: string | null;
   fromLine: string | null;
   toLine: string | null;
-  mode: string;
-  status: string;
   note: string | null;
-  createdAt: string;
   acceptedAt: string | null;
   rejectedAt: string | null;
   rejectedReason: string | null;
-}
-
-export interface ResolutionTimeStats {
-  totalResolved: number;
-  avgResolutionSeconds: number;
-  minResolutionSeconds: number;
-  maxResolutionSeconds: number;
-  medianResolutionSeconds: number;
-  formattedAvgTime: string;
-}
-
-export interface TicketStatsByCategory {
+};
+export type ResolutionTimeStats = Required<WireResolution>;
+export type TicketStatsByCategory = Omit<Required<WireCategoryStats>,
+  'categoryId' | 'categoryName' | 'categoryType'> & {
   categoryId: number | null;
   categoryName: string | null;
   categoryType: string | null;
-  count: number;
-  percentage: number;
-}
-
-export interface TicketStatsByStatus {
-  status: string;
-  count: number;
-  percentage: number;
-}
-
-export interface TicketReportListResponse {
-  id: number;
-  title: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-  createdByFio: string;
+};
+export type TicketStatsByStatus = Required<WireStatusStats>;
+export type TicketReportListResponse = Omit<Required<WireTicketReport>,
+  'assignedToFio' | 'closedAt' | 'supportLine'> & {
   assignedToFio: string | null;
-  supportLineName: string | null;
-  createdAt: string;
-  resolvedAt: string | null;
   closedAt: string | null;
-  deletedAt: string | null;
-}
+  supportLine: string | null;
+};
 
+// Kept for the deprecated, unavailable report method's import signature.
 export interface SpecialistWorkload {
   specialistId: number;
   username: string;

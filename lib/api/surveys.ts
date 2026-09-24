@@ -1,5 +1,6 @@
-import api from "./client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { PaginatedResponse } from "@/types/api";
+import { getServiceDeskAPI } from './generated/client';
+import { toPage } from './page';
 import type {
   CreateSurveyRequest,
   MySurveyResponse,
@@ -8,38 +9,34 @@ import type {
   SurveyManagementResponse,
 } from "@/types/survey";
 
+const generated = getServiceDeskAPI();
+
 export const surveysApi = {
   create: async (request: CreateSurveyRequest): Promise<SurveyManagementResponse> => {
-    const response = await api.post<ApiResponse<SurveyManagementResponse>>("/surveys", request);
-    return response.data.data;
+    return (await generated.createSurvey(request)).data as SurveyManagementResponse;
   },
 
   list: async (page: number = 0, size: number = 20): Promise<PaginatedResponse<SurveyManagementResponse>> => {
-    const response = await api.get<ApiResponse<PaginatedResponse<SurveyManagementResponse>>>("/surveys", {
-      params: { page, size },
-    });
-    return response.data.data;
+    return toPage((await generated.getSurveys({ pageable: { page, size } })).data) as PaginatedResponse<SurveyManagementResponse>;
   },
 
   getMy: async (): Promise<MySurveyResponse[]> => {
-    const response = await api.get<ApiResponse<MySurveyResponse[]>>("/surveys/my");
-    return response.data.data;
+    return (await generated.getMySurveys()).data as MySurveyResponse[];
   },
 
   getById: async (id: number): Promise<SurveyDetailResponse> => {
-    const response = await api.get<ApiResponse<SurveyDetailResponse>>(`/surveys/${id}`);
-    return response.data.data;
+    return (await generated.getSurvey(id)).data as SurveyDetailResponse;
   },
 
   submitResponses: async (id: number, request: SubmitSurveyAnswersRequest): Promise<void> => {
-    await api.post<ApiResponse<void>>(`/surveys/${id}/responses`, request);
+    await generated.submitResponses(id, request);
   },
 
   close: async (id: number): Promise<void> => {
-    await api.post<ApiResponse<void>>(`/surveys/${id}/close`);
+    await generated.closeSurvey(id);
   },
 
   remove: async (id: number): Promise<void> => {
-    await api.delete<ApiResponse<void>>(`/surveys/${id}`);
+    await generated.deleteSurvey(id);
   },
 };

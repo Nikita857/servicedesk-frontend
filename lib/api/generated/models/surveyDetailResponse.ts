@@ -4,7 +4,7 @@
  * ServiceDesk API
  * OpenAPI spec version: 1.0
  */
-import type { JsonNode } from './jsonNode';
+import type { SurveyDetailResponseQuestions } from './surveyDetailResponseQuestions';
 
 export interface SurveyDetailResponse {
   alreadyAnswered?: boolean;
@@ -12,6 +12,7 @@ export interface SurveyDetailResponse {
   description?: string;
   endDate?: string;
   id?: number;
-  questions?: JsonNode;
+  /** SurveyJS question document */
+  questions?: SurveyDetailResponseQuestions;
   title?: string;
 }

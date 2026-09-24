@@ -4,8 +4,9 @@
  * ServiceDesk API
  * OpenAPI spec version: 1.0
  */
-import type { JsonNode } from './jsonNode';
+import type { SubmitSurveyAnswersRequestData } from './submitSurveyAnswersRequestData';
 
 export interface SubmitSurveyAnswersRequest {
-  data: JsonNode;
+  /** SurveyJS answers */
+  data: SubmitSurveyAnswersRequestData;
 }

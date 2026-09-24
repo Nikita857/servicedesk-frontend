@@ -320,7 +320,7 @@ export default function TicketHistoryReportPage() {
                       </Table.Cell>
                       <Table.Cell textAlign="right" fontWeight="medium">
                         {row.durationFormatted ||
-                          (row.durationSeconds !== null
+                          (typeof row.durationSeconds === "number"
                             ? formatDurationFull(row.durationSeconds)
                             : "—")}
                       </Table.Cell>
