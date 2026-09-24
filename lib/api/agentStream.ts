@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config";
 import { refreshAccessToken } from "./client";
+import { getServiceDeskAPI } from './generated/client';
 import type {
   AgentCancelledEvent,
   AgentDeltaEvent,
@@ -7,6 +8,8 @@ import type {
   AgentErrorEvent,
 } from "@/types/agent";
 import type { SendAgentMessageRequest } from './generated/models';
+
+const generated = getServiceDeskAPI();
 
 /**
  * Стриминг ответа ИИ-агента.
@@ -35,7 +38,7 @@ async function ensureCsrfToken(): Promise<string | null> {
   let token = getCookie("XSRF-TOKEN");
   if (!token) {
     try {
-      await fetch(`${API_BASE_URL}/auth/me`, { credentials: "include" });
+      await generated.me();
       token = getCookie("XSRF-TOKEN");
     } catch {
       /* offline — падать здесь смысла нет, ошибку отдаст основной запрос */

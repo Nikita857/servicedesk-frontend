@@ -1,8 +1,9 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
-const calls = vi.hoisted(() => ({ requests: [] as Array<{ url?: string; method?: string; params?: Record<string, unknown>; data?: unknown; responseType?: string }>, result: undefined as unknown, results: [] as unknown[] }));
+const calls = vi.hoisted(() => ({ requests: [] as Array<{ url?: string; method?: string; params?: Record<string, unknown>; data?: unknown; responseType?: string }>, result: undefined as unknown, results: [] as unknown[], onRequest: undefined as ((config: { url?: string; method?: string; params?: Record<string, unknown>; data?: unknown; responseType?: string }) => void) | undefined }));
 vi.mock('./mutator', () => ({ customInstance: async (config: { url?: string; method?: string; params?: Record<string, unknown>; data?: unknown; responseType?: string }) => {
   calls.requests.push(config);
+  calls.onRequest?.(config);
   return calls.results.length ? calls.results.shift() : calls.result;
 } }));
 vi.mock('@/stores/authStore', () => ({ useAuthStore: { getState: () => ({}) } }));
@@ -22,8 +23,9 @@ import { wikiApi } from './wiki';
 import { wikiImageApi } from './wikiImages';
 import { wikiVideoApi } from './wikiVideos';
 import axios from 'axios';
+import apiClient from './client';
 
-beforeEach(() => { calls.requests = []; calls.results = []; calls.result = { success: true, data: [] }; });
+beforeEach(() => { calls.requests = []; calls.results = []; calls.result = { success: true, data: [] }; calls.onRequest = undefined; });
 
 it('announcement pages keep nullable dates and public page metadata', async () => {
   const item = { id: 2, title: 'Notice', expiresAt: null, archivedAt: null, createdAt: '2026-09-23T09:30:00Z' };
@@ -85,6 +87,34 @@ it('keeps only SSE on native fetch and reports the pre-stream error envelope', a
   }
 });
 
+it('uses the generated current-user operation for CSRF bootstrap before the SSE fetch', async () => {
+  let cookie = '';
+  vi.stubGlobal('document', { get cookie() { return cookie; } });
+  calls.onRequest = (config) => {
+    if (config.url === '/api/v1/auth/me') cookie = 'XSRF-TOKEN=bootstrapped-token';
+  };
+  calls.result = { data: { id: 3 } };
+  const fetchSpy = vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: 'Denied' }), { status: 403 }));
+  vi.stubGlobal('fetch', fetchSpy);
+  const onError = vi.fn();
+  try {
+    await streamAgentMessage({
+      conversationId: 9, content: 'Hello', signal: new AbortController().signal,
+      onDelta: vi.fn(), onDone: vi.fn(), onError, onCancelled: vi.fn(),
+    });
+    expect(calls.requests).toEqual([expect.objectContaining({ url: '/api/v1/auth/me', method: 'GET' })]);
+    expect(apiClient.defaults.withCredentials).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/agent/conversations/9/messages'), expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({ 'X-XSRF-TOKEN': 'bootstrapped-token' }),
+    }));
+    expect(onError).toHaveBeenCalledWith({ code: 'HTTP_403', message: 'Denied', errorId: null });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 it('all tickets uses backend deletion flag and support-line field without fabricating a date', async () => {
   const ticket = { id: 8, title: 'Incident', isDeleted: true, supportLine: 'Line 1', createdAt: '2026-09-23T09:30:00Z' };
   calls.result = { data: { content: [ticket], number: 0, size: 20, totalElements: 1, totalPages: 1 } };
@@ -124,7 +154,7 @@ it('wiki category search wraps a raw result array for the public UI shape', asyn
 });
 
 it('wiki root list flattens article children and keeps the backend category page metadata', async () => {
-  const article = { id: 41, title: 'Setup', slug: 'setup', excerpt: null, categoryName: 'Guides', departments: [], tags: [], author: null, viewCount: 4, likeCount: 2, likedByCurrentUser: false, updatedAt: '2026-09-23T09:30:00Z' };
+  const article = { id: 41, title: 'Setup', slug: 'setup', excerpt: null, categoryName: 'Guides', departments: [], tags: [], author: null, viewCount: 4, likeCount: null, likedByCurrentUser: null, updatedAt: '2026-09-23T09:30:00Z' };
   const category = { id: 'category-12', name: 'Guides', children: [article] };
   calls.result = { data: { content: [category], number: 2, size: 5, totalElements: 13, totalPages: 3 } };
   await expect(wikiApi.list(2, 5)).resolves.toEqual({
@@ -132,6 +162,16 @@ it('wiki root list flattens article children and keeps the backend category page
     page: { number: 2, size: 5, totalElements: 13, totalPages: 3 },
   });
   expect(calls.requests[0]).toMatchObject({ url: '/api/v1/wiki', params: { pageable: { page: 2, size: 5 } } });
+});
+
+it('wiki search keeps nullable article like fields in the UI view', async () => {
+  const article = { id: 42, title: 'Safety', slug: 'safety', excerpt: null, categoryName: 'Guides', departments: [], tags: [], author: null, viewCount: 8, likeCount: null, likedByCurrentUser: null, updatedAt: '2026-09-24T09:30:00Z' };
+  calls.result = { data: [{ id: 2, name: 'Guides', article: [article], children: [] }] };
+  await expect(wikiApi.search('safety', 1, 10)).resolves.toEqual({
+    content: [article],
+    page: { number: 1, size: 10, totalElements: 1, totalPages: 1 },
+  });
+  expect(calls.requests[0]).toMatchObject({ url: '/api/v1/wiki/search', params: { q: 'safety', pageable: { page: 1, size: 10 } } });
 });
 
 it('wiki article creation rejects a missing required category before sending REST', async () => {

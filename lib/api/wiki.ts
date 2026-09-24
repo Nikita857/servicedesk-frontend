@@ -15,7 +15,10 @@ import type {
   PagedWikiArticleList,
   PagedWikiCategoryList,
 } from "@/types/wiki";
-import type { WikiArticleListResponse as WireArticleList } from './generated/models';
+import type {
+  WikiArticleListResponse as WireArticleList,
+  WikiCategoryWithArticlesTreeResponse as WireCategoryWithArticlesTree,
+} from './generated/models';
 
 const generated = getServiceDeskAPI();
 
@@ -45,9 +48,28 @@ function toWikiArticleListItem(article: WireArticleList): WikiArticleListItem {
       color: article.author.color ?? null,
     } : null,
     viewCount: required(article.viewCount, 'viewCount'),
-    likeCount: required(article.likeCount, 'likeCount'),
-    likedByCurrentUser: required(article.likedByCurrentUser, 'likedByCurrentUser'),
+    likeCount: article.likeCount ?? null,
+    likedByCurrentUser: article.likedByCurrentUser ?? null,
     updatedAt: required(article.updatedAt, 'updatedAt'),
+  };
+}
+
+function toWikiCategoryWithArticles(
+  category: WireCategoryWithArticlesTree,
+): WikiCategoryWithArticles {
+  return {
+    id: required(category.id, 'category.id'),
+    name: required(category.name, 'category.name'),
+    description: category.description ?? null,
+    parentId: category.parentId ?? null,
+    depth: category.depth ?? null,
+    displayOrder: category.displayOrder ?? null,
+    article: (category.article ?? []).map(toWikiArticleListItem),
+    children: (category.children ?? []).map(toWikiCategoryWithArticles),
+    departments: (category.departments ?? []).map(department => ({
+      id: required(department.id, 'category.department.id'),
+      name: required(department.name, 'category.department.name'),
+    })),
   };
 }
 
@@ -60,7 +82,12 @@ export const wikiApi = {
     onlyMyDepartment = false,
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
-    return toPage((await generated.getAllArticlesAsTree({ pageable: { page, size }, showAll, onlyMyDepartment, onlyPublic })).data) as PagedWikiCategoryList;
+    const wirePage = (await generated.getAllArticlesAsTree({ pageable: { page, size }, showAll, onlyMyDepartment, onlyPublic })).data;
+    const pageOfCategories = toPage(wirePage);
+    return {
+      content: pageOfCategories.content.map(toWikiCategoryWithArticles),
+      page: pageOfCategories.page,
+    };
   },
 
   // Search categories with articles (paginated)
@@ -73,7 +100,8 @@ export const wikiApi = {
     onlyPublic = false,
   ): Promise<PagedWikiCategoryList> => {
     void onlyMyDepartment; void onlyPublic;
-    const categories = (await generated.search({ q: query, pageable: { page, size }, showAll })).data as WikiCategoryWithArticles[];
+    const categories = ((await generated.search({ q: query, pageable: { page, size }, showAll })).data ?? [])
+      .map(toWikiCategoryWithArticles);
     return {
       content: categories,
       page: {
@@ -143,11 +171,12 @@ export const wikiApi = {
     size = 20,
     showAll = false,
   ): Promise<PagedWikiArticleList> => {
-    const categories = (await generated.search({ q: query, pageable: { page, size }, showAll })).data;
+    const categories = ((await generated.search({ q: query, pageable: { page, size }, showAll })).data ?? [])
+      .map(toWikiCategoryWithArticles);
     return {
-      content: categories?.flatMap(category => category.article ?? []) ?? [],
-      page: { number: page, size, totalElements: categories?.length ?? 0, totalPages: 1 },
-    } as PagedWikiArticleList;
+      content: categories.flatMap(category => category.article),
+      page: { number: page, size, totalElements: categories.length, totalPages: 1 },
+    };
   },
 
   // Get popular articles

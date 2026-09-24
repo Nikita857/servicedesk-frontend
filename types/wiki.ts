@@ -34,9 +34,11 @@ export type WikiCategory = Omit<Required<WireCategory>,
 };
 export type WikiCategoryTree = WikiCategory;
 export type WikiArticleListItem = Omit<Required<WireArticleList>,
-  'excerpt' | 'categoryName' | 'author' | 'departments'> & {
+  'excerpt' | 'categoryName' | 'author' | 'departments' | 'likeCount' | 'likedByCurrentUser'> & {
   excerpt: string | null;
   categoryName: string | null;
+  likeCount: number | null;
+  likedByCurrentUser: boolean | null;
   author: (Pick<Required<WireUser>, 'id' | 'username' | 'isSpecialist'> & {
     fio: string | null;
     avatarUrl: string | null;

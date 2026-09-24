@@ -180,8 +180,8 @@ export function useWikiCategoriesWithArticlesQuery(
                 ...a,
                 likedByCurrentUser: !isLiked,
                 likeCount: isLiked
-                  ? Math.max(0, a.likeCount - 1)
-                  : a.likeCount + 1,
+                  ? Math.max(0, (a.likeCount ?? 0) - 1)
+                  : (a.likeCount ?? 0) + 1,
               }),
             ),
           };
@@ -247,7 +247,7 @@ export function useWikiCategoriesWithArticlesQuery(
 
       likeMutation.mutate({
         articleId,
-        isLiked: article.likedByCurrentUser,
+        isLiked: article.likedByCurrentUser ?? false,
       });
     },
     [categoriesQuery.data?.content, likeMutation],
