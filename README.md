@@ -39,7 +39,7 @@
 
 ## Обновление сгенерированных API-контрактов
 
-Нужны Node.js 20 (как в `Dockerfile`) и npm с поддержкой `npm ci`. Размести backend и frontend рядом: `../backend/contracts` относительно корня frontend должен содержать `openapi.json` и `websocket-asyncapi.yml`. Если репозитории лежат иначе, укажи абсолютный путь к каталогу контрактов через `BACKEND_CONTRACTS_DIR`.
+Нужна актуальная стабильная версия Node.js (не ниже 22.19.0) и npm с поддержкой `npm ci`; Docker-образ также использует актуальную версию Node.js. Размести backend и frontend рядом: `../backend/contracts` относительно корня frontend должен содержать `openapi.json` и `websocket-asyncapi.yml`. Если репозитории лежат иначе, укажи абсолютный путь к каталогу контрактов через `BACKEND_CONTRACTS_DIR`.
 
 Если репозитории не лежат рядом, сначала задай в PowerShell `$env:BACKEND_CONTRACTS_DIR = 'C:\path\to\backend\contracts'`, подставив свой абсолютный путь. Затем из корня frontend:
 

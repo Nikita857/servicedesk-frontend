@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:latest-alpine AS base
 
 # ── Установка зависимостей ────────────────────────────────────
 FROM base AS deps
