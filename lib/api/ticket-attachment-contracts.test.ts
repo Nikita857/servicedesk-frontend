@@ -40,7 +40,10 @@ it('rejects a failed ApiResponse instead of returning missing data', async () =>
 });
 
 it('retains descending message sort and the public page shape', async () => {
-  wire.response = { success: true, data: { content: [{ id: 3 }], number: 1, size: 50, totalElements: 51, totalPages: 2, first: false, last: true } };
+  wire.response = { success: true, data: { content: [{
+    id: 3, ticketId: 8, content: 'Hello', sender: { id: 2, username: 'alice' },
+    senderType: 'USER', createdAt: '2026-09-23T10:00:00Z', updatedAt: '2026-09-23T10:00:00Z',
+  }], number: 1, size: 50, totalElements: 51, totalPages: 2, first: false, last: true } };
   await expect(messageApi.list(8, 1, 50)).resolves.toMatchObject({ content: [{ id: 3 }], number: 1, totalElements: 51, last: true });
   expect(wire.requests[0]).toMatchObject({ url: '/api/v1/tickets/8/messages', params: { pageable: { page: 1, size: 50, sort: ['createdAt,desc'] } } });
 });
@@ -65,7 +68,11 @@ it('sends a valid generated assignment request', async () => {
 
 it('sends generated multipart completion data and returns the attachment', async () => {
   const request = { fileKey: 'key', bucket: 'bucket', uploadId: 'upload', parts: [{ partNumber: 1, etag: 'etag' }], filename: 'a.bin', contentType: 'application/octet-stream', fileSize: 12, targetType: 'TICKET' as const, targetId: 8 };
-  wire.response = { success: true, data: { id: 12, filename: 'a.bin' } };
+  wire.response = { success: true, data: {
+    id: 12, filename: 'a.bin', url: '/files/a.bin', fileSize: 12,
+    mimeType: 'application/octet-stream', type: 'DOCUMENT',
+    uploadedBy: { id: 2, username: 'alice' }, createdAt: '2026-09-23T10:00:00Z',
+  } };
   await expect(attachmentApi.completeMultipart(request)).resolves.toMatchObject({ id: 12 });
   expect(wire.requests[0]).toMatchObject({ url: '/api/v1/attachments/multipart/complete', method: 'POST', data: request });
 });

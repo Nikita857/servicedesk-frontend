@@ -61,7 +61,13 @@ it('auth login returns the public socialNetworks field instead of the wire socia
 });
 
 it('profile update preserves nullable response values', async () => {
-  const data = { id: 3, fio: null, email: null };
+  const data = {
+    id: 3, username: 'alice', fio: null, email: null,
+    socialNetwork: { bitrixUserId: null, vkId: null, maxId: null },
+    avatarUrl: null, roles: ['USER'], specialistType: null,
+    department: null, position: null, isSpecialist: false,
+    averageRating: null, ratedTicketsCount: null, createdAt: '2026-09-23T10:00:00Z',
+  };
   calls.result = { data };
   await expect(profileApi.updateProfile({ fio: 'Name' })).resolves.toEqual(data);
   expect(calls.requests[0]).toMatchObject({ url: '/api/v1/profile', method: 'PATCH', data: { fio: 'Name' } });

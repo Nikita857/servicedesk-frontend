@@ -1,19 +1,11 @@
 import { SocialNetworks } from "./profile";
 import type { ActivityStatus } from "./support-line";
+import type { UserStatusResponse as WireUserStatusResponse, UserSearchResponse as WireUserSearchResponse } from '@/lib/api/generated/models';
 
 export type UserActivityStatus = ActivityStatus;
 
-export interface UserStatusResponse {
-  status: UserActivityStatus;
-  availableForAssignment: boolean;
-  updatedAt: string;
-}
-
-export interface UserSearchResult {
-  id: number;
-  username: string;
-  fio: string;
-}
+export type UserStatusResponse = Required<WireUserStatusResponse>;
+export type UserSearchResult = Required<WireUserSearchResponse>;
 
 export interface User {
   id: number;

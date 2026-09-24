@@ -157,6 +157,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(false);
     };
 
+    client.onWebSocketClose = () => {
+      setIsConnected(false);
+    };
+
     client.onStompError = async (frame) => {
       const errorMessage = frame.headers["message"];
       const errorBody = frame.body;
