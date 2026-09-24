@@ -6,7 +6,6 @@ import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import type { TicketStatus, PagedTicketList } from "@/types/ticket";
 import { useAuthStore } from "@/stores";
 import { useTicketListSubscription } from "./useTicketListSubscription";
-import { TicketListEventWS } from "@/types/websocket";
 
 interface StatusTicketsVM {
   data: PagedTicketList | null;

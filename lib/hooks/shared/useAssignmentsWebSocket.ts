@@ -4,7 +4,7 @@ import { useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { useAuthStore } from "@/stores";
-import { AssignmentWS } from "@/types/websocket";
+import type { AssignmentResponse } from "@/lib/websocket/generated/models";
 import { queryKeys } from "@/lib/queryKeys";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
@@ -31,7 +31,7 @@ export function useAssignmentsWebSocket() {
   }, [queryClient]);
 
   const handleAssignmentRejected = useCallback(
-    (assignment: AssignmentWS) => {
+    (assignment: AssignmentResponse) => {
       // Инвалидируем данные тикета чтобы обновить UI (rejection alert в сайдбаре)
       queryClient.invalidateQueries({
         queryKey: queryKeys.tickets.detail(assignment.ticketId),

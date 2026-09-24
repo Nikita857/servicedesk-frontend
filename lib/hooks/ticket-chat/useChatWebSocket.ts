@@ -6,11 +6,11 @@ import { messageApi } from "@/lib/api/messages";
 import { useWebSocket } from "@/lib/providers";
 import type { Message, MessageAttachment } from "@/types/message";
 import type {
-  AttachmentWS,
-  ChatMessageWS,
+  AttachmentResponse as AttachmentWS,
+  MessageResponse as ChatMessageWS,
   ReadReceiptWS,
   TypingIndicator,
-} from "@/types/websocket";
+} from "@/lib/websocket/generated/models";
 import { SenderType, Ticket } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
@@ -121,11 +121,14 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
   // Обработка входящего сообщения (обычное и внутреннее)
   const handleIncomingMessage = useCallback(
     (wsMessage: ChatMessageWS) => {
-      // Формируем отправителя, если не хватает данных (плоская структура vs вложенная)
-      const sender = wsMessage.sender || {
-        id: wsMessage.senderId!,
-        username: wsMessage.senderUsername || "unknown",
-        fio: wsMessage.senderFio || null,
+      // Сообщения от системы могут не содержать отправителя.
+      const sender = wsMessage.sender ? {
+        ...wsMessage.sender,
+        color: wsMessage.sender.color ?? undefined,
+      } : {
+        id: 0,
+        username: "unknown",
+        fio: null,
         avatarUrl: null,
         isSpecialist: false,
       };
@@ -140,23 +143,23 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
           filename: att.filename,
           url: att.url,
           fileSize: att.fileSize,
-          mimeType: att.mimeType,
-          type: att.type,
+          mimeType: att.mimeType ?? "",
+          type: att.type as MessageAttachment["type"],
         }));
       };
 
       const newMsg: Message = {
         id: wsMessage.id,
         ticketId: wsMessage.ticketId,
-        content: wsMessage.content,
+        content: wsMessage.content ?? "",
         sender: sender,
         senderType: wsMessage.senderType as SenderType,
         internal: wsMessage.internal,
         readByUser: false,
         readBySpecialist: false,
         edited: false,
-        createdAt: wsMessage.createdAt,
-        updatedAt: wsMessage.createdAt,
+        createdAt: wsMessage.createdAt ?? "",
+        updatedAt: wsMessage.createdAt ?? "",
         attachments: convertWsAttachments(wsMessage.attachments),
       };
 
@@ -289,8 +292,8 @@ export function useChatWebSocket(ticketId: number): UseChatWebSocketReturn {
         filename: attachment.filename,
         url: attachment.url,
         fileSize: attachment.fileSize,
-        mimeType: attachment.mimeType,
-        type: attachment.type,
+        mimeType: attachment.mimeType ?? "",
+        type: attachment.type as MessageAttachment["type"],
       };
 
       const messageId = attachment.messageId;

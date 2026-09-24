@@ -13,17 +13,17 @@ import SockJS from "sockjs-client";
 import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
 import { refreshAccessToken } from "@/lib/api/client";
-import { Ticket } from "@/types/ticket";
-import { Notification } from "@/types/notification";
-import type {
-  AssignmentWS,
-  AttachmentWS,
-  ChatMessageWS,
-  ReadReceiptWS,
-  TicketListEventWS,
-  TypingIndicator,
-  UserStatusWS,
-} from "@/types/websocket";
+import { createWebSocketContract } from "@/lib/websocket/contract";
+import type { ClientMessages, ServerMessages } from "@/lib/websocket/generated/catalog";
+
+type TicketListEventWS = ServerMessages["tickets"];
+type TicketWS = ServerMessages["ticket"];
+type ChatMessageWS = ServerMessages["ticketMessages"];
+type TypingIndicator = ServerMessages["ticketTyping"];
+type AttachmentWS = ServerMessages["ticketAttachments"];
+type ReadReceiptWS = ServerMessages["ticketReadReceipts"];
+type AssignmentWS = ServerMessages["assignments"];
+type UserStatusWS = ServerMessages["userStatus"];
 
 interface WebSocketContextValue {
   isConnected: boolean;
@@ -37,11 +37,11 @@ interface WebSocketContextValue {
   ) => () => void;
   subscribeToTicketUpdates: (
     ticketId: number,
-    callback: (ticket: Ticket) => void,
+    callback: (ticket: TicketWS) => void,
   ) => () => void;
   subscribeToTicketDeleted: (
     ticketId: number,
-    callback: (data: { id: number }) => void,
+    callback: (data: ServerMessages["ticketDeleted"]) => void,
   ) => () => void;
   // Chat (for tickets)
   sendMessage: (
@@ -74,7 +74,7 @@ interface WebSocketContextValue {
   // User subscriptions
   subscribeToUserNotifications: (
     userId: number,
-    callback: (notification: Notification) => void,
+    callback: (notification: ServerMessages["notifications"]) => void,
   ) => () => void;
   // Assignment subscriptions (user-specific topics)
   subscribeToAssignments: (
@@ -249,213 +249,117 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const publishTransport = useCallback((frame: { destination: string; body: string }) => {
+    clientRef.current?.publish(frame);
+  }, []);
+  const getContract = useCallback(() => createWebSocketContract({
+    subscribe,
+    publish: publishTransport,
+  }), [subscribe, publishTransport]);
+
   // ==================== Ticket Subscriptions ====================
 
   const subscribeToTickets = useCallback(
-    (callback: (event: TicketListEventWS) => void) => {
-      return subscribe("/topic/tickets", (message) => {
-        try {
-          const event: TicketListEventWS = JSON.parse(message.body);
-          callback(event);
-        } catch (e) {
-          console.error(
-            "[WS] Ошибка подписки на агрегированный поток тикетов: ",
-            e,
-          );
-        }
-      });
-    },
-    [subscribe],
+    (callback: (event: TicketListEventWS) => void) =>
+      getContract().subscribeTyped<"tickets">("/topic/tickets", callback),
+    [getContract],
   );
 
   const subscribeToTicketUpdates = useCallback(
-    (ticketId: number, callback: (ticket: Ticket) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}`, (message) => {
-        try {
-          const ticket: Ticket = JSON.parse(message.body);
-          callback(ticket);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на обновления тикетов: ", e);
-        }
-      });
+    (ticketId: number, callback: (ticket: TicketWS) => void) => {
+      return getContract().subscribeTyped<"ticket">(`/topic/ticket/${ticketId}`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToTicketDeleted = useCallback(
-    (ticketId: number, callback: (data: { id: number }) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/deleted`, (message) => {
-        try {
-          const data = JSON.parse(message.body);
-          callback(data);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на событие удаления тикета: ", e);
-        }
-      });
+    (ticketId: number, callback: (data: ServerMessages["ticketDeleted"]) => void) => {
+      return getContract().subscribeTyped<"ticketDeleted">(`/topic/ticket/${ticketId}/deleted`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   // ==================== Chat Subscriptions ====================
 
   const subscribeToChatMessages = useCallback(
     (ticketId: number, callback: (message: ChatMessageWS) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/messages`, (message) => {
-        try {
-          const chatMessage: ChatMessageWS = JSON.parse(message.body);
-          callback(chatMessage);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на тикет чат: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"ticketMessages">(`/topic/ticket/${ticketId}/messages`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToInternalComments = useCallback(
     (ticketId: number, callback: (message: ChatMessageWS) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/internal`, (message) => {
-        try {
-          const chatMessage: ChatMessageWS = JSON.parse(message.body);
-          callback(chatMessage);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на внутренние комментарии: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"ticketInternal">(`/topic/ticket/${ticketId}/internal`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToTyping = useCallback(
     (ticketId: number, callback: (indicator: TypingIndicator) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/typing`, (message) => {
-        try {
-          const indicator: TypingIndicator = JSON.parse(message.body);
-          callback(indicator);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на индикатор печати: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"ticketTyping">(`/topic/ticket/${ticketId}/typing`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToAttachments = useCallback(
     (ticketId: number, callback: (attachment: AttachmentWS) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/attachments`, (message) => {
-        try {
-          const attachment: AttachmentWS = JSON.parse(message.body);
-          callback(attachment);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на вложения: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"ticketAttachments">(`/topic/ticket/${ticketId}/attachments`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToReadReceipts = useCallback(
     (ticketId: number, callback: (receipt: ReadReceiptWS) => void) => {
-      return subscribe(`/topic/ticket/${ticketId}/read`, (message) => {
-        try {
-          const receipt: ReadReceiptWS = JSON.parse(message.body);
-          callback(receipt);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на read receipts: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"ticketReadReceipts">(`/topic/ticket/${ticketId}/read`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const sendReadReceipt = useCallback((ticketId: number) => {
     const client = clientRef.current;
     if (!client?.connected) return;
 
-    client.publish({
-      destination: `/app/ticket/${ticketId}/read`,
-      body: "{}",
-    });
-  }, []);
+    getContract().publishTyped<"ticketRead">(`/app/ticket/${ticketId}/read`, null);
+  }, [getContract]);
 
   // ==================== User Subscriptions ====================
 
   const subscribeToUserNotifications = useCallback(
-    (userId: number, callback: (notification: Notification) => void) => {
-      return subscribe(`/topic/user/${userId}/notifications`, (message) => {
-        try {
-          const notification: Notification = JSON.parse(message.body);
-          callback(notification);
-        } catch (e) {
-          console.error(
-            "[WS] Ошибка подписки на уведомления пользователя: ",
-            e,
-          );
-        }
-      });
+    (userId: number, callback: (notification: ServerMessages["notifications"]) => void) => {
+      return getContract().subscribeTyped<"notifications">(`/topic/user/${userId}/notifications`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToAssignments = useCallback(
     (userId: number, callback: (assignment: AssignmentWS) => void) => {
-      return subscribe(`/topic/user/${userId}/assignments`, (message) => {
-        try {
-          const assignment: AssignmentWS = JSON.parse(message.body);
-          callback(assignment);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на назначения: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"assignments">(`/topic/user/${userId}/assignments`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToAssignmentRejected = useCallback(
     (userId: number, callback: (assignment: AssignmentWS) => void) => {
-      return subscribe(
-        `/topic/user/${userId}/assignments/rejected`,
-        (message) => {
-          try {
-            const assignment: AssignmentWS = JSON.parse(message.body);
-            callback(assignment);
-          } catch (e) {
-            console.error("[WS] Ошибка подписки на отклонение назначения: ", e);
-          }
-        },
-      );
+      return getContract().subscribeTyped<"rejectedAssignments">(`/topic/user/${userId}/assignments/rejected`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   // ==================== Status Subscriptions ====================
 
   const subscribeToUserStatus = useCallback(
     (userId: number, callback: (payload: UserStatusWS) => void) => {
-      return subscribe(`/topic/user/${userId}/status`, (message) => {
-        try {
-          const payload: UserStatusWS = JSON.parse(message.body);
-          callback(payload);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на статус пользователя: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"userStatus">(`/topic/user/${userId}/status`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   const subscribeToLineStatus = useCallback(
     (lineId: number, callback: (payload: UserStatusWS) => void) => {
-      return subscribe(`/topic/line/${lineId}/status`, (message) => {
-        try {
-          const payload: UserStatusWS = JSON.parse(message.body);
-          callback(payload);
-        } catch (e) {
-          console.error("[WS] Ошибка подписки на статус линии: ", e);
-        }
-      });
+      return getContract().subscribeTyped<"lineStatus">(`/topic/line/${lineId}/status`, callback);
     },
-    [subscribe],
+    [getContract],
   );
 
   // ==================== Send Methods ====================
@@ -468,25 +372,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      client.publish({
-        destination: `/app/ticket/${ticketId}/send`,
-        body: JSON.stringify({ content, internal }),
-      });
+      getContract().publishTyped<"ticketSend">(`/app/ticket/${ticketId}/send`, { content, internal });
 
       return true;
     },
-    [],
+    [getContract],
   );
 
   const sendTyping = useCallback((ticketId: number, typing: boolean) => {
     const client = clientRef.current;
     if (!client?.connected) return;
 
-    client.publish({
-      destination: `/app/ticket/${ticketId}/typing`,
-      body: JSON.stringify({ typing }),
-    });
-  }, []);
+    getContract().publishTyped<"ticketTypingCommand">(`/app/ticket/${ticketId}/typing`, { typing } as ClientMessages["ticketTypingCommand"]);
+  }, [getContract]);
 
   // ==================== Context Value ====================
 

@@ -5,6 +5,7 @@ import { useWebSocket } from "@/lib/providers";
 import { toast } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Ticket } from "@/types/ticket";
+import type { TicketResponse } from "@/lib/websocket/generated/models";
 import { User } from "@/types";
 
 interface UseTicketWebSocketOptions {
@@ -87,7 +88,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
 
     const unsubscribeUpdate = subscribeToTicketUpdates(
       ticketId,
-      (updatedTicket: Ticket) => {
+      (updatedTicket: TicketResponse) => {
         const currentUser = currentUserRef.current;
         const oldTicket = currentTicketRef.current;
 
@@ -135,7 +136,7 @@ export function useTicketWebSocket(options: UseTicketWebSocketOptions) {
         });
 
         // Update ticket state
-        updateCallbackRef.current?.(updatedTicket);
+        updateCallbackRef.current?.(updatedTicket as Ticket);
       },
     );
 

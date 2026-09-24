@@ -3,7 +3,7 @@ import { QueryClient, QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useWebSocket } from "@/lib/providers/WebSocketProvider";
 import { queryKeys } from "@/lib/queryKeys";
 import type { PagedTicketList } from "@/types/ticket";
-import { TicketListEventWS } from "@/types/websocket";
+import type { TicketListEventResponse } from "@/lib/websocket/generated/models";
 
 interface UseTicketListSubscriptionOptions {
   /**
@@ -17,12 +17,12 @@ interface UseTicketListSubscriptionOptions {
    * Используется, чтобы вьюха реагировала только на "свои" тикеты
    * (по assigneeId, supportLineId и т.п.).
    */
-  filter?: (event: TicketListEventWS) => boolean;
+  filter?: (event: TicketListEventResponse) => boolean;
   /**
    * Побочные эффекты — тосты, плавные UI-анимации.
    * Вызывается после применения события к кешу.
    */
-  onEvent?: (event: TicketListEventWS) => void;
+  onEvent?: (event: TicketListEventResponse) => void;
   enabled?: boolean;
 }
 
@@ -56,7 +56,7 @@ export function useTicketListSubscription(
       console.log("[tickets-list] received", event);
       const prev = lastSeenRef.current.get(event.id);
 
-      if (prev && event.timestamp <= prev) {
+      if (prev && event.timestamp && event.timestamp <= prev) {
         console.log("[tickets-list] dropped by timestamp", {
           prev,
           cur: event.timestamp,
@@ -64,7 +64,7 @@ export function useTicketListSubscription(
         return;
       }
 
-      lastSeenRef.current.set(event.id, event.timestamp);
+      if (event.timestamp) lastSeenRef.current.set(event.id, event.timestamp);
 
       if (filterRef.current && !filterRef.current(event)) {
         console.log("[tickets-list] dropped by filter", event);
@@ -82,7 +82,7 @@ export function useTicketListSubscription(
 function applyEventToCache(
   queryClient: QueryClient,
   listQueryKey: QueryKey,
-  event: TicketListEventWS,
+  event: TicketListEventResponse,
 ): void {
   console.log("[tickets-list] apply", {
     eventType: event.eventType,

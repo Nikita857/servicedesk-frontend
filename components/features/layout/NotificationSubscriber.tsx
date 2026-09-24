@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useWebSocket } from "@/lib/providers";
 import { useAuthStore } from "@/stores";
 import { toast } from "@/lib/utils";
-import type { Notification, NotificationType } from "@/types/notification";
+import type { NotificationType } from "@/types/notification";
 
 type ToastLevel = "info" | "success" | "warning" | "error";
 
@@ -51,8 +51,9 @@ export function NotificationSubscriber() {
 
     const unsubscribe = subscribeToUserNotifications(
       user.id,
-      (notification: Notification) => {
-        const level = TOAST_LEVEL_BY_TYPE[notification.type];
+      (notification) => {
+        if (!("title" in notification)) return;
+        const level = TOAST_LEVEL_BY_TYPE[notification.type as NotificationType];
         if (!level) return;
         toast[level](notification.title, notification.body);
       },

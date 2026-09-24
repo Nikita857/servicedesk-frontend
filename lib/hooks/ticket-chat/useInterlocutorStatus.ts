@@ -6,8 +6,8 @@ import { userApi } from "@/lib/api/users";
 import {
   statusConfig,
   type UserActivityStatus,
-  type UserStatusWS,
 } from "@/types/websocket";
+import type { UserStatusChangeEvent } from "@/lib/websocket/generated/models";
 
 export function useInterlocutorStatus(interlocutorId: number | undefined) {
   const { isConnected, subscribeToUserStatus } = useWebSocket();
@@ -28,8 +28,8 @@ export function useInterlocutorStatus(interlocutorId: number | undefined) {
 
   useEffect(() => {
     if (!isConnected || !interlocutorId) return;
-    return subscribeToUserStatus(interlocutorId, (payload: UserStatusWS) => {
-      setWsStatus(payload.status);
+    return subscribeToUserStatus(interlocutorId, (payload: UserStatusChangeEvent) => {
+      if (payload.status in statusConfig) setWsStatus(payload.status as UserActivityStatus);
     });
   }, [isConnected, interlocutorId, subscribeToUserStatus]);
 

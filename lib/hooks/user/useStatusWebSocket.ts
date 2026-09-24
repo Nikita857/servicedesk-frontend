@@ -4,7 +4,7 @@ import {useQueryClient} from "@tanstack/react-query";
 import {useWebSocket} from "@/lib/providers/WebSocketProvider";
 import {useAuthStore} from "@/stores";
 import {queryKeys} from "@/lib/queryKeys";
-import type {UserStatusWS} from "@/types/websocket";
+import type { UserStatusChangeEvent } from "@/lib/websocket/generated/models";
 import { useCurrentPermissions } from "@/lib/hooks/shared/usePermissions";
 import { PERM } from "@/lib/constants/permissions";
 
@@ -37,7 +37,7 @@ export function useStatusWebSocket() {
 
         return subscribeToUserStatus(
             user.id,
-            (payload: UserStatusWS) => {
+            (payload: UserStatusChangeEvent) => {
 
                 // Update the cache for myStatus
                 queryClient.setQueryData(queryKeys.users.myStatus(), (oldData: any) => {
