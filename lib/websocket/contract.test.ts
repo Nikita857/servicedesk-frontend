@@ -56,4 +56,11 @@ describe('typed WebSocket contract', () => {
 
     expect(transport.published).toEqual([{ destination: '/app/ticket/42/send', body: '{"content":"Hello","internal":false}' }]);
   });
+
+  it('publishes the typing command without broadcast identity fields', () => {
+    const transport = fakeTransport();
+    createWebSocketContract(transport).publishTyped<'ticketTypingCommand'>('/app/ticket/42/typing', { typing: true });
+
+    expect(transport.published).toEqual([{ destination: '/app/ticket/42/typing', body: '{"typing":true}' }]);
+  });
 });

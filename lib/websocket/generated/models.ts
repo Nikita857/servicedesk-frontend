@@ -244,6 +244,13 @@ export interface TicketResponse {
 }
 /**
  * This interface was referenced by `WebSocketModels`'s JSON-Schema
+ * via the `definition` "TicketTypingCommand".
+ */
+export interface TicketTypingCommand {
+  typing: boolean;
+}
+/**
+ * This interface was referenced by `WebSocketModels`'s JSON-Schema
  * via the `definition` "TypingIndicator".
  */
 export interface TypingIndicator {

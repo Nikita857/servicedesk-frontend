@@ -14,7 +14,7 @@ import { WS_URL } from "@/lib/config";
 import { useAuthStore } from "@/stores";
 import { refreshAccessToken } from "@/lib/api/client";
 import { createWebSocketContract } from "@/lib/websocket/contract";
-import type { ClientMessages, ServerMessages } from "@/lib/websocket/generated/catalog";
+import type { ServerMessages } from "@/lib/websocket/generated/catalog";
 
 type TicketListEventWS = ServerMessages["tickets"];
 type TicketWS = ServerMessages["ticket"];
@@ -383,7 +383,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     const client = clientRef.current;
     if (!client?.connected) return;
 
-    getContract().publishTyped<"ticketTypingCommand">(`/app/ticket/${ticketId}/typing`, { typing } as ClientMessages["ticketTypingCommand"]);
+    getContract().publishTyped<"ticketTypingCommand">(`/app/ticket/${ticketId}/typing`, { typing });
   }, [getContract]);
 
   // ==================== Context Value ====================

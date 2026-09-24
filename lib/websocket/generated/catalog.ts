@@ -16,7 +16,7 @@ export interface ClientMessages {
   dmTypingCommand: Models.DmTypingIndicator;
   ticketRead: null;
   ticketSend: Models.SendMessageRequest;
-  ticketTypingCommand: Models.TypingIndicator;
+  ticketTypingCommand: Models.TicketTypingCommand;
 }
 
 export const serverDestinations = {
