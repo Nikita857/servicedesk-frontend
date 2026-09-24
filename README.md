@@ -36,3 +36,19 @@
 ⠀⠀⠀⠀⠀⠀⠘⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠐⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠑⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⡀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠃⠀⠀⠀⠀⠀
+
+## Обновление сгенерированных API-контрактов
+
+Нужны Node.js 20 (как в `Dockerfile`) и npm с поддержкой `npm ci`. Размести backend и frontend рядом: `../backend/contracts` относительно корня frontend должен содержать `openapi.json` и `websocket-asyncapi.yml`. Если репозитории лежат иначе, укажи абсолютный путь к каталогу контрактов через `BACKEND_CONTRACTS_DIR`.
+
+Если репозитории не лежат рядом, сначала задай в PowerShell `$env:BACKEND_CONTRACTS_DIR = 'C:\path\to\backend\contracts'`, подставив свой абсолютный путь. Затем из корня frontend:
+
+```powershell
+npm ci
+npm run generate:api
+npm run check:generated
+npm run test -- --run
+npm run typecheck
+```
+
+`generate:api` создаёт типы WebSocket из AsyncAPI и REST-клиент через Orval из OpenAPI. Результат находится в `lib/websocket/generated` и `lib/api/generated`; эти generated-файлы коммитятся вместе с обновлёнными backend-контрактами. `check:generated` сверяет их с контрактами и не меняет файлы. В CI backend сначала проверяет оба снимка и frontend, затем собирает Docker-образ из той же зафиксированной ревизии frontend.
